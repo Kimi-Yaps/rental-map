@@ -1,0 +1,43 @@
+.navBar {
+  text-align: center;
+  background-color: #f0f0f0;
+  width: 100%;
+  height: 3em;
+  padding: 8px;
+  margin: 0.5rem 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  font-weight: 500;
+  transition: background-color 0.3s, transform 0.2s;
+}
+
+.navBar:hover {
+  background-color: #dcdcdc;
+  transform: scale(1.02);
+  cursor: pointer;
+}
+
+.navBar a {
+  text-decoration: none;
+  color: inherit;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+}
+
+#profile {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  margin-right: 0.5rem;
+  background-color: #bbb;
+}
+
+.currency {
+  font-weight: bold;
+  font-size: 1rem;
+}

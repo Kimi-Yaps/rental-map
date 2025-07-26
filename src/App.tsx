@@ -29,9 +29,13 @@ import '@ionic/react/css/display.css';
 /* import '@ionic/react/css/palettes/dark.always.css'; */
 /* import '@ionic/react/css/palettes/dark.class.css'; */
 import '@ionic/react/css/palettes/dark.system.css';
+import LandLordHome from './pages/landlordHome';
 
 /* Theme variables */
 import './theme/variables.css';
+import PropertyType from './pages/PropertyType';
+import HomeBestFit from './pages/HomeBestFIt';
+import homeSearched from './pages/HomeSearched';
 
 setupIonicReact();
 
@@ -39,12 +43,12 @@ const App: React.FC = () => (
   <IonApp>
     <IonReactRouter>
       <IonRouterOutlet>
-        <Route exact path="/home">
-          <Home />
-        </Route>
-        <Route exact path="/">
-          <Redirect to="/home" />
-        </Route>
+        <Route exact path="/home" component={Home} />
+        <Route exact path="/landlord" component={LandLordHome} />
+        <Route exact path="/propertyType" component={PropertyType} />
+        <Route exact path="/HomeBestFit" component={HomeBestFit} />
+        <Route exact path="/homeSearched" component={homeSearched} />
+        <Redirect exact from="/" to="/home" />
       </IonRouterOutlet>
     </IonReactRouter>
   </IonApp>
