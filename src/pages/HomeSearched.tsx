@@ -27,7 +27,12 @@ import { useState, useEffect, useCallback } from 'react';
 import { locationOutline, checkmarkCircle, warningOutline, mapOutline } from 'ionicons/icons';
 import SearchbarWithSuggestions from '../components/SearchbarWithSuggestions';
 import { useLocation } from 'react-router-dom';
-import supabase from '../supabaseConfig'; // Adjust the path if needed
+import { createClient } from '@supabase/supabase-js';
+
+// Supabase configuration
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 // OpenStreetMap Nominatim API configuration
 const NOMINATIM_BASE_URL = 'https://nominatim.openstreetmap.org';
@@ -38,14 +43,7 @@ interface PropertyAddress {
   id: number;
   building_name?: string;
   street_address?: string;
-  city?: string;
-  state?: string;
   postal_code?: string;
-  latitude?: number;
-  longitude?: number;
-  osm_place_id?: string;
-  address_verified?: boolean;
-  formatted_address?: string;
   [key: string]: any;
 }
 
