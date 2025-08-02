@@ -36,7 +36,8 @@ import './theme/variables.css';
 import PropertyType from './pages/PropertyType';
 import HomeBestFit from './pages/HomeBestFIt';
 import homeSearched from './pages/HomeSearched';
-import PropertyListingFlow from './pages/setHome';
+import AmenitiesStepPage from './pages/AmenitiesStepPage';
+import LocationStepPage from './pages/LocationStepPage';
 
 setupIonicReact();
 
@@ -49,7 +50,8 @@ const App: React.FC = () => (
         <Route exact path="/propertyType" component={PropertyType} />
         <Route exact path="/HomeBestFit" component={HomeBestFit} />
         <Route exact path="/homeSearched" component={homeSearched} />
-        <Route exact path="/PropertyListingFlow" component={PropertyListingFlow} />
+        <Route exact path="/LocationStepPage" component={LocationStepPage} />
+         <Route exact path="/amenities" component={AmenitiesStepPage} />
         <Redirect exact from="/" to="/home" />
       </IonRouterOutlet>
     </IonReactRouter>

@@ -82,8 +82,8 @@ const HomeTypes: React.FC = () => {
 
   const handleNext = useCallback(() => {
     if (!homeType) return;
-    console.log("Moving to next step in property listing flow");
-    history.push('/PropertyListingFlow');
+    console.log("Moving to next step in property location Step Page");
+    history.push('/LocationStepPage');
   }, [history, homeType]);
 
   const homeTypeOptions = [

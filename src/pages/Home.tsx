@@ -26,7 +26,7 @@ import { useHistory } from 'react-router-dom';
 import supabase from '../../supabaseConfig';
 import { mapOutline, settingsOutline } from 'ionicons/icons';
 import SearchbarWithSuggestions from '../components/SearchbarWithSuggestions';
-import './Home.css';
+import './Main.css';
 
 // OpenStreetMap Nominatim API configuration
 const NOMINATIM_BASE_URL = 'https://nominatim.openstreetmap.org';
@@ -59,8 +59,6 @@ export interface Property {
   property_type: string | null;
   house_rules: string | null;
   max_guests: number | null;
-  check_in_time: string | null;
-  check_out_time: string | null;
   instant_booking: boolean | null;
   is_active: boolean | null;
   amenities: RentalAmenities | null; // Changed from any | null to RentalAmenities | null
@@ -91,7 +89,6 @@ interface EnhancedSuggestion {
   text: string;
   type: 'database' | 'geocoded' | 'recent';
   source?: string;
-  coordinates?: { lat: number; lon: number };
   property_type?: string | null;
   HomeType?: string | null;
 }
@@ -297,7 +294,6 @@ const Home: React.FC = () => {
               text: result.display_name,
               type: 'geocoded' as const,
               source: 'OpenStreetMap',
-              coordinates: { lat: parseFloat(result.lat), lon: parseFloat(result.lon) }
             }));
           
           enrichedSuggestions.push(...geoSuggestions);

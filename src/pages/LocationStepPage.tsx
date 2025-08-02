@@ -1,3 +1,4 @@
+// src/pages/LocationStepPage.tsx
 import React, { useState, useCallback, useEffect, useMemo, Suspense } from "react";
 import {
   IonContent,
@@ -16,17 +17,21 @@ import {
   IonToast,
   IonSpinner,
   IonSearchbar,
+  IonGrid,
+  IonRow,
+  IonCol,
 } from "@ionic/react";
+import { useHistory } from 'react-router-dom';
 import {
   locationOutline,
   saveOutline,
   searchOutline,
-  cloudUploadOutline,
 } from "ionicons/icons";
-// Importing the pre-configured supabase client from the local file
-import supabase from '../../supabaseConfig'; 
+import supabase from '../../supabaseConfig';
+import { Property } from "../components/DbCrud"; // Updated import path
+import PublishPropertyButton from "./PublishPropertyButton";
 
-// Types
+// LatLng interface (can stay here or be moved to rentalTypes.ts if used elsewhere)
 interface LatLng {
   lat: number;
   lng: number;
@@ -54,83 +59,7 @@ interface NominatimResult {
   importance: number;
 }
 
-// Property type conversion mappings
-const PROPERTY_TYPE_MAPPING = {
-  'Home': 'home',
-  'Hotel': 'hotel',
-  'Unique': 'unique'
-} as const;
-
-const HOME_TYPE_MAPPING = {
-  'Homestay': 'homestay',
-  'Entire House': 'entire_house',
-  'Bungalow': 'bungalow'
-} as const;
-
-// Conversion functions
-const convertPropertyTypeForDB = (displayType: string): string => {
-  return PROPERTY_TYPE_MAPPING[displayType as keyof typeof PROPERTY_TYPE_MAPPING] || displayType.toLowerCase().replace(/\s+/g, '_');
-};
-
-const convertHomeTypeForDB = (displayType: string): string => {
-  return HOME_TYPE_MAPPING[displayType as keyof typeof HOME_TYPE_MAPPING] || displayType.toLowerCase().replace(/\s+/g, '_');
-};
-
-
-// Interface for localStorage rental draft data
-
-export interface RentalAmenities {
-  wifi_included?: boolean;
-  air_conditioning?: boolean;
-  in_unit_laundry?: boolean;
-  dishwasher?: boolean;
-  balcony_patio?: boolean;
-  pet_friendly?: {
-    dogs_allowed?: boolean;
-    cats_allowed?: boolean;
-  };
-  parking?: {
-    type?: 'garage' | 'carport' | 'off_street' | 'street';
-    spots?: number;
-  };
-  community_pool?: boolean;
-  fitness_center?: boolean;
-  [key: string]: any; // Allows for additional, less structured properties
-}
-
-export interface RentalDraft{
-  id: string;
-  building_name: string | null;
-  address: string;
-  property_type: string | null;
-  house_rules: string | null;
-  max_guests: number | null;
-  instant_booking: boolean | null;
-  is_active: boolean | null;
-  amenities: RentalAmenities | null; // Changed from any | null to RentalAmenities | null
-  created_at: string;
-  updated_at: string | null;
-  HomeType: string | null;
-}
-
-// Function to convert draft data for database insertion
-const prepareDraftForDB = (draft: any) => {
-  const converted = { ...draft };
-  
-  // Convert property type
-  if (draft.propertyTypeCategory) {
-    converted.propertyTypeDB = convertPropertyTypeForDB(draft.propertyTypeCategory);
-  }
-  
-  // Convert home type
-  if (draft.HomeTypesCategory) {
-    converted.homeTypeDB = convertHomeTypeForDB(draft.HomeTypesCategory);
-  }
-  
-  return converted;
-};
-
-// --- Lazy Map Component ---
+// --- Lazy Map Component (Keep as is) ---
 const LazyMapComponent = React.lazy(() =>
   Promise.all([
     import("react-leaflet"),
@@ -240,7 +169,7 @@ const LazyMapComponent = React.lazy(() =>
   })
 );
 
-// --- Geocoding Service using Nominatim ---
+// --- Geocoding Service using Nominatim (Keep as is) ---
 class GeoCodingService {
   private static readonly NOMINATIM_BASE_URL =
     "https://nominatim.openstreetmap.org";
@@ -320,7 +249,7 @@ class GeoCodingService {
   }
 }
 
-// --- Loading Skeleton for Map ---
+// --- Loading Skeleton for Map (Keep as is) ---
 const MapSkeleton = () => (
   <IonCard>
     <div
@@ -348,13 +277,14 @@ const MapSkeleton = () => (
 );
 
 // --- Main Component ---
-const MapTestPage: React.FC = () => {
+const LocationStepPage: React.FC = () => {
+  const history = useHistory();
   const [data, setData] = useState<PropertyData>({
-    location: { lat: 2.4312, lng: 103.8403 }, // Default to Malaysia
+    location: { lat: 2.4312, lng: 103.8403 },
     address: "",
     searchQuery: "",
   });
-  
+
   const [markerPosition, setMarkerPosition] = useState<LatLng>(
     data.location || { lat: 2.4312, lng: 103.8403 }
   );
@@ -366,14 +296,14 @@ const MapTestPage: React.FC = () => {
   const [shouldZoom, setShouldZoom] = useState(false);
   const [manualAddress, setManualAddress] = useState<string>(data.address || "");
   const [manualMode, setManualMode] = useState(false);
-  
+
   // Toast states
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
-  // LocalStorage draft data
-  const [rentalDraft, setRentalDraft] = useState<RentalDraft | null>(null);
+
+  // LocalStorage rental draft data
+  const [Property, setProperty] = useState<Property | null>(null);
 
   const searchTimeoutRef = React.useRef<NodeJS.Timeout>();
 
@@ -388,31 +318,46 @@ const MapTestPage: React.FC = () => {
   useEffect(() => {
     const loadDraftData = () => {
       try {
-        const saved = localStorage.getItem('rentalDraft');
+        const saved = localStorage.getItem('Property');
         if (saved) {
-          const draft = JSON.parse(saved);
-          setRentalDraft(draft);
+          const draft: Property = JSON.parse(saved); // Use Property type
+          setProperty(draft);
           console.log("Loaded rental draft:", draft);
-          
-          // Debug property type conversions
-          if (draft.propertyTypeCategory) {
-            const convertedPropertyType = convertPropertyTypeForDB(draft.propertyTypeCategory);
-            console.log(`Property Type: ${draft.propertyTypeCategory} → ${convertedPropertyType}`);
-          }
-          
-          if (draft.HomeTypesCategory) {
-            const convertedHomeType = convertHomeTypeForDB(draft.HomeTypesCategory);
-            console.log(`Home Type: ${draft.HomeTypesCategory} → ${convertedHomeType}`);
+
+          // If location data exists in draft, use it
+          if (draft.location) {
+            setMarkerPosition(draft.location);
+            setAddress(draft.address || draft.searchQuery || '');
+            setSearchQuery(draft.searchQuery || draft.address || '');
+            setManualAddress(draft.address || draft.searchQuery || '');
           }
         }
       } catch (error) {
         console.error("Error loading rental draft:", error);
-        setRentalDraft(null);
+        setProperty(null);
       }
     };
 
     loadDraftData();
   }, []);
+
+  // Function to save current state to localStorage draft
+  const saveCurrentStepToDraft = useCallback(() => {
+    const currentDraft: Property = JSON.parse(localStorage.getItem('Property') || '{}');
+    const updatedDraft: Property = {
+      ...currentDraft,
+      location: markerPosition,
+      address: manualMode ? manualAddress : address,
+      searchQuery: searchQuery,
+      updated_at: new Date().toISOString(),
+      latitude: markerPosition.lat,
+      longitude: markerPosition.lng,
+    };
+    localStorage.setItem('Property', JSON.stringify(updatedDraft));
+    setProperty(updatedDraft);
+    console.log("Location step data saved to draft:", updatedDraft);
+  }, [markerPosition, address, searchQuery, manualAddress, manualMode]);
+
 
   // Update data when location or address changes
   const onUpdate = useCallback((updatedData: Partial<PropertyData>) => {
@@ -550,120 +495,38 @@ const MapTestPage: React.FC = () => {
               setMarkerPosition(newPosition);
               setShouldZoom(true);
               onUpdate({ location: newPosition });
+            } else {
+                console.warn("Could not geocode manual address:", manualAddress);
+                setToastMessage("Could not find coordinates for the manual address. Please refine it.");
+                setShowToast(true);
             }
-          }).catch(err => console.error("Geocoding manual address error:", err));
+          }).catch(err => {
+              console.error("Geocoding manual address error:", err);
+              setToastMessage("Error geocoding manual address.");
+              setShowToast(true);
+          });
         }
       }
       return newMode;
     });
   }, [address, manualAddress, onUpdate]);
 
-  // Test database insertion with localStorage data
-  const handleTestPublish = async () => {
-    setIsSubmitting(true);
-    try {
-      // Get the current rental draft from localStorage
-      const currentDraft = localStorage.getItem('rentalDraft');
-      let draftData: RentalDraft = {};
-      
-      if (currentDraft) {
-        try {
-          draftData = JSON.parse(currentDraft);
-        } catch (parseError) {
-          console.error("Error parsing rental draft:", parseError);
-        }
-      }
-
-      // Convert the draft data for database insertion
-      const convertedDraft = prepareDraftForDB(draftData);
-      
-      // Log the converted values for debugging
-      console.log("Original draft data:", draftData);
-      console.log("Converted draft data:", convertedDraft);
-      console.log("Property Type for DB:", convertedDraft.propertyTypeDB);
-      console.log("Home Type for DB:", convertedDraft.homeTypeDB);
-
-      // Create variables to store database-ready values
-      const propertyTypeDB = convertedDraft.propertyTypeDB || "home";
-      const homeTypeDB = convertedDraft.homeTypeDB || "homestay";
-
-      // Combine localStorage data with current location/address data
-      // REMOVED 'description' field that was causing the error
-      const propertyData = {
-        building_name: draftData.propertyName || "Property from Draft",
-        address: address || "No address specified",
-        property_type: propertyTypeDB, // Using converted variable
-        house_rules: draftData.houseRules || "Standard house rules apply",
-        max_guests: draftData.maxGuests || 2,
-        instant_booking: draftData.instantBooking ?? true,
-        is_active: true,
-        amenities: draftData.amenities || {
-          wifi_included: true,
-          air_conditioning: false,
-          in_unit_laundry: false,
-          dishwasher: false,
-          balcony_patio: false,
-          pet_friendly: {
-            dogs_allowed: false,
-            cats_allowed: false,
-          },
-          parking: {
-            type: "street",
-            spots: 0
-          },
-          community_pool: false,
-          fitness_center: false,
-        },
-        HomeType: homeTypeDB, // Using converted variable
-        // REMOVED description field - it doesn't exist in the properties table
-      };
-
-
-
-      console.log("Final property data for database:", propertyData);
-      console.log("Database values - Property Type:", propertyTypeDB, "Home Type:", homeTypeDB);
-
-      const { data: insertedData, error } = await supabase
-        .from('properties')
-        .insert([propertyData])
-        .select();
-
-      if (error) {
-        throw error;
-      }
-
-      // Success - clear the draft and show success message
-      localStorage.removeItem('rentalDraft');
-      setRentalDraft(null);
-      
-      setToastMessage(`Successfully published property! ID: ${insertedData[0]?.id} | Type: ${propertyTypeDB} | Home: ${homeTypeDB}`);
-      setShowToast(true);
-      console.log("Successfully inserted property:", insertedData);
-      
-    } catch (error) {
-      console.error("Database insertion error:", error);
-      setToastMessage(`Error publishing property: ${error.message}`);
-      setShowToast(true);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  // Test database insertion (original functionality)
+  // Test database insertion (original functionality - kept as requested)
   const handleTestInsert = async () => {
     setIsSubmitting(true);
     try {
+      // Use existing draft data if available, otherwise use defaults
+      const draftToInsert = Property ? { ...Property } : {};
+
       const testProperty = {
-        building_name: "Test Property",
-        address: address || "Test Address",
-        property_type: "apartment",
-        house_rules: "No smoking",
-        max_guests: 4,
-        check_in_time: "15:00",
-        check_out_time: "11:00",
-        instant_booking: true,
-        is_active: true,
-        amenities: {
+        building_name: draftToInsert.propertyName || "Test Property",
+        address: draftToInsert.address || address || "Test Address",
+        property_type: draftToInsert.propertyTypeCategory ? (draftToInsert.propertyTypeCategory.toLowerCase().replace(/\s+/g, '_')) : "apartment",
+        house_rules: draftToInsert.houseRules || "No smoking",
+        max_guests: draftToInsert.maxGuests || 4,
+        instant_booking: draftToInsert.instantBooking !== undefined ? draftToInsert.instantBooking : true,
+        is_active: draftToInsert.is_active !== undefined ? draftToInsert.is_active : true,
+        amenities: draftToInsert.amenities || { // Sample amenities
           wifi_included: true,
           air_conditioning: true,
           in_unit_laundry: false,
@@ -680,7 +543,9 @@ const MapTestPage: React.FC = () => {
           community_pool: false,
           fitness_center: false,
         },
-        HomeType: "apartment"
+        HomeType: draftToInsert.HomeTypesCategory ? (draftToInsert.HomeTypesCategory.toLowerCase().replace(/\s+/g, '_')) : "apartment",
+        latitude: markerPosition.lat,
+        longitude: markerPosition.lng,
       };
 
       const { data: insertedData, error } = await supabase
@@ -695,8 +560,8 @@ const MapTestPage: React.FC = () => {
       setToastMessage(`Successfully inserted test property with ID: ${insertedData[0]?.id}`);
       setShowToast(true);
       console.log("Inserted test property:", insertedData);
-      
-    } catch (error) {
+
+    } catch (error: any) {
       console.error("Database insertion error:", error);
       setToastMessage(`Error inserting property: ${error.message}`);
       setShowToast(true);
@@ -714,38 +579,62 @@ const MapTestPage: React.FC = () => {
     };
   }, []);
 
+  const handleNextStep = () => {
+    saveCurrentStepToDraft();
+    history.push('/amenities'); // Navigate to the amenities step
+  };
+
+
+
   return (
     <IonPage>
       <IonHeader>
         <IonToolbar>
-          <IonTitle>Property Location & Publish</IonTitle>
+          <IonTitle>Property Location</IonTitle>
         </IonToolbar>
       </IonHeader>
       <IonContent fullscreen className="ion-padding">
-        <IonText>
-          <h2>Property Location</h2>
-          <p>Select a location and publish your property from draft data</p>
-        </IonText>
+        <div style={{ display: 'flex', alignItems: 'center', marginBottom: '20px' }}>
+          <div style={{
+            width: '30px',
+            height: '30px',
+            borderRadius: '50%',
+            backgroundColor: '#007bff',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: 'white',
+            fontWeight: 'bold',
+            marginRight: '10px'
+          }}>
+            1
+          </div>
+          <IonText>
+            <h2>Location</h2>
+          </IonText>
+        </div>
 
         {/* Display current draft data if available */}
-        {rentalDraft && (
+        {Property && (
           <IonCard color="success" className="ion-margin-bottom">
             <IonCardContent>
               <IonText color="dark">
                 <h3>Draft Data Found</h3>
-                <p><strong>Property Type:</strong> {rentalDraft.propertyTypeCategory || 'Not specified'}</p>
-                <p><strong>Home Type:</strong> {rentalDraft.HomeTypesCategory || 'Not specified'}</p>
-                <p><strong>Last Updated:</strong> {rentalDraft.lastUpdated ? new Date(rentalDraft.lastUpdated).toLocaleString() : 'Unknown'}</p>
+                <p><strong>Property Type:</strong> {Property.propertyTypeCategory || 'Not specified'}</p>
+                <p><strong>Home Type:</strong> {Property.HomeTypesCategory || 'Not specified'}</p>
+                <p><strong>Last Updated:</strong> {Property.updated_at ? new Date(Property.updated_at).toLocaleString() : 'Unknown'}</p>
+                {/* Display location related draft data */}
+                <p><strong>Draft Address:</strong> {Property.address || 'Not specified'}</p>
               </IonText>
             </IonCardContent>
           </IonCard>
         )}
 
-        {!rentalDraft && (
+        {!Property && (
           <IonCard color="warning" className="ion-margin-bottom">
             <IonCardContent>
               <IonText color="dark">
-                <p><strong>No draft data found in localStorage.</strong> The test publish will use default values.</p>
+                <p><strong>No draft data found in localStorage.</strong> The test insert will use default values.</p>
               </IonText>
             </IonCardContent>
           </IonCard>
@@ -758,6 +647,7 @@ const MapTestPage: React.FC = () => {
             onIonInput={handleSearchInput}
             onIonClear={handleSearchClear}
             showClearButton="focus"
+            value={searchQuery}
           />
 
           {/* Loading indicator */}
@@ -878,11 +768,6 @@ const MapTestPage: React.FC = () => {
                 <h3 className="ion-text-wrap">
                   {manualMode ? manualAddress || "No manual address entered" : address || "Select location on map or search"}
                 </h3>
-                {data.location && (
-                  <p>
-                    Coordinates: {data.location.lat.toFixed(6)}, {data.location.lng.toFixed(6)}
-                  </p>
-                )}
               </IonLabel>
             </IonItem>
           </IonCardContent>
@@ -890,28 +775,17 @@ const MapTestPage: React.FC = () => {
 
         {/* Action Buttons */}
         <div className="ion-margin-top">
-          {/* Test Publish Button - Uses localStorage data */}
-          <IonButton 
-            expand="block" 
-            onClick={handleTestPublish} 
-            disabled={isSubmitting}
-            color="success"
+          <IonButton
+            expand="block"
+            onClick={handleNextStep}
             className="ion-margin-bottom"
           >
-            {isSubmitting ? (
-              <IonSpinner name="crescent" />
-            ) : (
-              <>
-                <IonIcon icon={cloudUploadOutline} slot="start" />
-                Test Publish (from Draft)
-              </>
-            )}
+            Next
           </IonButton>
 
-          {/* Original Test Insert Button */}
-          <IonButton 
-            expand="block" 
-            onClick={handleTestInsert} 
+          <IonButton
+            expand="block"
+            onClick={handleTestInsert}
             disabled={isSubmitting}
             fill="outline"
           >
@@ -926,15 +800,17 @@ const MapTestPage: React.FC = () => {
           </IonButton>
         </div>
 
+        <PublishPropertyButton/>
+
         <IonToast
           isOpen={showToast}
           onDidDismiss={() => setShowToast(false)}
           message={toastMessage}
-          duration={4000}
+          duration={2000}
         />
       </IonContent>
     </IonPage>
   );
 };
 
-export default MapTestPage;
+export default LocationStepPage;
