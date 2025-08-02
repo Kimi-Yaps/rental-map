@@ -7,30 +7,35 @@ import {
   IonLabel, 
   IonIcon,
   IonSpinner,
-  IonBadge
+  IonBadge,
+  IonList
 } from '@ionic/react';
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { locationOutline, homeOutline, businessOutline, mapOutline } from 'ionicons/icons';
 
+// These interfaces match the data structure from the parent component.
+// They are needed to correctly type the props and local state.
+
 // Enhanced suggestion interface with metadata
-interface EnhancedSuggestion {
+export interface EnhancedSuggestion {
   text: string;
   type: 'database' | 'geocoded' | 'recent';
   source?: string;
   coordinates?: { lat: number; lon: number };
-  matchCount?: number;
+  property_type?: string | null;
+  HomeType?: string | null;
 }
 
 // Props interface for the enhanced searchbar component
 interface SearchbarWithSuggestionsProps {
   value: string;
   setValue: (val: string) => void;
-  fetchSuggestions: (term: string) => Promise<string[]>;
+  // This prop's type has been corrected to match the parent's function signature.
+  fetchSuggestions: (term: string) => Promise<EnhancedSuggestion[]>;
   placeholder?: string;
   maxSuggestions?: number;
   enableGeocoding?: boolean;
-  recentSearches?: string[];
-  onRecentSearchUpdate?: (searches: string[]) => void;
+  onSearch?: (term: string, suggestion?: EnhancedSuggestion) => void;
 }
 
 // Main functional component for the enhanced searchbar with intelligent suggestions
@@ -41,8 +46,7 @@ const SearchbarWithSuggestions: React.FC<SearchbarWithSuggestionsProps> = ({
   placeholder = "Search address, unit, or building",
   maxSuggestions = 8,
   enableGeocoding = true,
-  recentSearches = [],
-  onRecentSearchUpdate
+  onSearch
 }) => {
   // Local state management
   const [suggestions, setSuggestions] = useState<EnhancedSuggestion[]>([]);
@@ -55,102 +59,49 @@ const SearchbarWithSuggestions: React.FC<SearchbarWithSuggestionsProps> = ({
   const suggestionsRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<NodeJS.Timeout>();
 
-  // Enhanced suggestion fetching with categorization
-  const fetchEnhancedSuggestions = async (term: string): Promise<EnhancedSuggestion[]> => {
+  // Debounced handler to fetch suggestions
+  const handleFetchSuggestions = useCallback(async (term: string) => {
     if (!term || term.length < 2) {
-      // Show recent searches when no input
-      return recentSearches.slice(0, 3).map(search => ({
-        text: search,
-        type: 'recent' as const
-      }));
+      setSuggestions([]);
+      setLoading(false);
+      return;
     }
 
     try {
       setLoading(true);
-      
-      // Fetch suggestions from parent component
-      const rawSuggestions = await fetchSuggestions(term);
-      
-      // Categorize and enhance suggestions
-      const enhancedSuggestions: EnhancedSuggestion[] = [];
-      
-      // Process each suggestion and categorize
-      for (const suggestion of rawSuggestions) {
-        // Determine suggestion type based on content patterns
-        let type: 'database' | 'geocoded' = 'database';
-        
-        // Check if it looks like a formatted OSM address (contains commas and multiple parts)
-        if (suggestion.includes(',') && suggestion.split(',').length >= 3) {
-          type = 'geocoded';
-        }
-        
-        // Check for specific address patterns
-        const hasStreetNumber = /^\d+/.test(suggestion.trim());
-        const hasStreetTypes = /(street|st|avenue|ave|road|rd|lane|ln|drive|dr|boulevard|blvd|way|place|pl|court|ct)/i.test(suggestion);
-        
-        if (hasStreetNumber && hasStreetTypes) {
-          type = 'geocoded';
-        }
-
-        enhancedSuggestions.push({
-          text: suggestion,
-          type,
-          source: type === 'geocoded' ? 'OpenStreetMap' : 'Database'
-        });
-      }
-
-      // Add recent searches that match the term
-      const matchingRecent = recentSearches
-        .filter(recent => 
-          recent.toLowerCase().includes(term.toLowerCase()) && 
-          !enhancedSuggestions.some(s => s.text === recent)
-        )
-        .slice(0, 2)
-        .map(search => ({
-          text: search,
-          type: 'recent' as const
-        }));
-
-      const allSuggestions = [...enhancedSuggestions, ...matchingRecent];
-      
-      // Sort suggestions by relevance
-      return allSuggestions
-        .sort((a, b) => {
-          // Prioritize exact matches
-          if (a.text.toLowerCase().startsWith(term.toLowerCase()) && !b.text.toLowerCase().startsWith(term.toLowerCase())) return -1;
-          if (!a.text.toLowerCase().startsWith(term.toLowerCase()) && b.text.toLowerCase().startsWith(term.toLowerCase())) return 1;
-          
-          // Then prioritize by type: recent > database > geocoded
-          const typeOrder = { recent: 0, database: 1, geocoded: 2 };
-          return typeOrder[a.type] - typeOrder[b.type];
-        })
-        .slice(0, maxSuggestions);
-        
+      const results = await fetchSuggestions(term);
+      setSuggestions(results);
     } catch (error) {
-      console.error('Error fetching enhanced suggestions:', error);
-      return [];
+      console.error('Error fetching suggestions:', error);
+      setSuggestions([]);
     } finally {
       setLoading(false);
     }
-  };
+  }, [fetchSuggestions]);
 
-  // Debounced input handler
-  const handleInput = async (e: CustomEvent) => {
+  // Handle input changes with a debounce
+  const handleInput = (e: CustomEvent) => {
     const val = e.detail.value;
     setValue(val);
     setFocusedIndex(-1);
     
-    // Clear existing debounce
+    // New logic: Show/hide suggestions based on input value
+    setShowSuggestions(!!val);
+
+    // Clear existing debounce timeout
     if (debounceRef.current) {
       clearTimeout(debounceRef.current);
     }
     
-    // Debounce the suggestion fetching
-    debounceRef.current = setTimeout(async () => {
-      const results = await fetchEnhancedSuggestions(val);
-      setSuggestions(results);
-      setShowSuggestions(results.length > 0 || val.length === 0);
-    }, 300); // 300ms debounce
+    // Set a new debounce timeout to fetch suggestions if the term is long enough
+    if (val && val.length >= 2) {
+      debounceRef.current = setTimeout(() => {
+        handleFetchSuggestions(val);
+      }, 300); // 300ms debounce
+    } else {
+        // If the input is too short, clear the suggestions immediately
+        setSuggestions([]);
+    }
   };
 
   // Handle suggestion selection
@@ -159,14 +110,9 @@ const SearchbarWithSuggestions: React.FC<SearchbarWithSuggestionsProps> = ({
     setSuggestions([]);
     setShowSuggestions(false);
     
-    // Update recent searches
-    if (onRecentSearchUpdate && suggestion.type !== 'recent') {
-      const updatedRecent = [
-        suggestion.text,
-        ...recentSearches.filter(s => s !== suggestion.text)
-      ].slice(0, 5); // Keep only 5 recent searches
-      
-      onRecentSearchUpdate(updatedRecent);
+    // Trigger the onSearch prop
+    if (onSearch) {
+      onSearch(suggestion.text, suggestion);
     }
     
     // Blur the searchbar
@@ -175,8 +121,8 @@ const SearchbarWithSuggestions: React.FC<SearchbarWithSuggestionsProps> = ({
     }
   };
 
-  // Handle keyboard navigation
-  const handleKeyDown = (e: KeyboardEvent) => {
+  // Handle keyboard navigation for accessibility
+  const handleKeyDown = useCallback((e: KeyboardEvent) => {
     if (!showSuggestions || suggestions.length === 0) return;
     
     switch (e.key) {
@@ -192,6 +138,8 @@ const SearchbarWithSuggestions: React.FC<SearchbarWithSuggestionsProps> = ({
         e.preventDefault();
         if (focusedIndex >= 0 && focusedIndex < suggestions.length) {
           handleSuggestionSelect(suggestions[focusedIndex]);
+        } else if (value && onSearch) {
+          onSearch(value); // If no suggestion is selected, perform a search with the current text
         }
         break;
       case 'Escape':
@@ -199,26 +147,25 @@ const SearchbarWithSuggestions: React.FC<SearchbarWithSuggestionsProps> = ({
         setFocusedIndex(-1);
         break;
     }
-  };
+  }, [showSuggestions, suggestions, focusedIndex, value, onSearch, handleSuggestionSelect]);
 
   // Handle focus and blur events
-  const handleFocus = async () => {
-    if (value.length === 0) {
-      // Show recent searches when focusing empty input
-      const recentSuggestions = await fetchEnhancedSuggestions('');
-      setSuggestions(recentSuggestions);
+  const handleFocus = useCallback(() => {
+    setShowSuggestions(true);
+    // Fetch initial suggestions on focus if there's existing text
+    if (value.length >= 2) {
+      handleFetchSuggestions(value);
     }
-    setShowSuggestions(suggestions.length > 0 || value.length === 0);
-  };
+  }, [value, handleFetchSuggestions]);
 
-  const handleBlur = (e: FocusEvent) => {
-    // Delay hiding suggestions to allow clicks
+  const handleBlur = useCallback((e: FocusEvent) => {
+    // Delay hiding suggestions to allow clicks to register
     setTimeout(() => {
       if (!suggestionsRef.current?.contains(e.relatedTarget as Node)) {
         setShowSuggestions(false);
       }
     }, 150);
-  };
+  }, []);
 
   // Get appropriate icon for suggestion type
   const getSuggestionIcon = (suggestion: EnhancedSuggestion) => {
@@ -240,26 +187,7 @@ const SearchbarWithSuggestions: React.FC<SearchbarWithSuggestionsProps> = ({
     }
   };
 
-  // Get label for suggestion type
-  const getSuggestionLabel = (suggestion: EnhancedSuggestion) => {
-    switch (suggestion.type) {
-      case 'recent': return 'Recent';
-      case 'geocoded': return 'OSM';
-      case 'database': return 'DB';
-      default: return '';
-    }
-  };
-
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      if (debounceRef.current) {
-        clearTimeout(debounceRef.current);
-      }
-    };
-  }, []);
-
-  // Add keyboard event listeners
+  // Add and clean up keyboard/focus/blur event listeners
   useEffect(() => {
     const searchbarElement = searchbarRef.current?.querySelector('input');
     if (searchbarElement) {
@@ -273,7 +201,16 @@ const SearchbarWithSuggestions: React.FC<SearchbarWithSuggestionsProps> = ({
         searchbarElement.removeEventListener('blur', handleBlur);
       };
     }
-  }, [showSuggestions, suggestions, focusedIndex]);
+  }, [handleKeyDown, handleFocus, handleBlur]);
+
+  // Clean up debounce timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (debounceRef.current) {
+        clearTimeout(debounceRef.current);
+      }
+    };
+  }, []);
 
   return (
     <div style={{ position: 'relative' }}>
@@ -291,7 +228,7 @@ const SearchbarWithSuggestions: React.FC<SearchbarWithSuggestionsProps> = ({
         debounce={0} // We handle debouncing manually
       />
       
-      {/* Enhanced suggestions dropdown */}
+      {/* Enhanced suggestions dropdown with backdrop filter */}
       {showSuggestions && (suggestions.length > 0 || loading) && (
         <div 
           ref={suggestionsRef}
@@ -302,15 +239,23 @@ const SearchbarWithSuggestions: React.FC<SearchbarWithSuggestionsProps> = ({
             right: 0, 
             zIndex: 1000, 
             marginTop: '-15px',
-            boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-            borderRadius: '12px',
-            overflow: 'hidden'
+            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12)',
+            borderRadius: '16px',
+            overflow: 'hidden',
+            backdropFilter: 'blur(16px) saturate(180%)',
+            WebkitBackdropFilter: 'blur(16px) saturate(180%)',
+            backgroundColor: 'rgba(255, 255, 255, 0.85)',
+            border: '1px solid rgba(255, 255, 255, 0.18)'
           }}
         >
-          <IonCard style={{ margin: 0, boxShadow: 'none' }}>
+          <IonCard style={{ 
+            margin: 0, 
+            boxShadow: 'none',
+            backgroundColor: 'transparent'
+          }}>
             <IonCardContent style={{ padding: '0' }}>
               {loading && (
-                <IonItem>
+                <IonItem style={{ backgroundColor: 'transparent' }}>
                   <IonSpinner name="crescent" style={{ marginRight: '12px' }} />
                   <IonLabel>
                     <p>Searching{enableGeocoding ? ' database and OpenStreetMap' : ' database'}...</p>
@@ -319,7 +264,7 @@ const SearchbarWithSuggestions: React.FC<SearchbarWithSuggestionsProps> = ({
               )}
               
               {!loading && suggestions.length === 0 && value.length > 0 && (
-                <IonItem>
+                <IonItem style={{ backgroundColor: 'transparent' }}>
                   <IonIcon icon={locationOutline} style={{ marginRight: '12px', opacity: 0.5 }} />
                   <IonLabel>
                     <p style={{ color: '#666' }}>No suggestions found</p>
@@ -327,57 +272,49 @@ const SearchbarWithSuggestions: React.FC<SearchbarWithSuggestionsProps> = ({
                 </IonItem>
               )}
               
-              {!loading && suggestions.map((suggestion, idx) => (
-                <IonItem 
-                  key={`${suggestion.type}-${idx}`}
-                  button 
-                  onClick={() => handleSuggestionSelect(suggestion)}
-                  style={{
-                    backgroundColor: focusedIndex === idx ? '#f0f0f0' : 'transparent',
-                    transition: 'background-color 0.1s ease'
-                  }}
-                >
-                  <IonIcon 
-                    icon={getSuggestionIcon(suggestion)} 
-                    style={{ marginRight: '12px', opacity: 0.7 }} 
-                  />
-                  <IonLabel>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                      <div style={{ flex: 1 }}>
-                        <h3 style={{ margin: 0, fontSize: '14px' }}>
-                          {suggestion.text}
-                        </h3>
-                        {suggestion.source && (
-                          <p style={{ margin: '2px 0 0 0', fontSize: '12px', color: '#666' }}>
-                            Source: {suggestion.source}
-                          </p>
-                        )}
-                      </div>
-                      <IonBadge 
-                        color={getSuggestionColor(suggestion)}
-                        style={{ marginLeft: '8px', fontSize: '10px' }}
-                      >
-                        {getSuggestionLabel(suggestion)}
-                      </IonBadge>
-                    </div>
-                  </IonLabel>
-                </IonItem>
-              ))}
-              
-              {!loading && suggestions.length > 0 && value.length > 0 && (
-                <div style={{ 
-                  padding: '8px 16px', 
-                  borderTop: '1px solid #e0e0e0', 
-                  backgroundColor: '#f9f9f9',
-                  fontSize: '11px',
-                  color: '#666',
-                  textAlign: 'center'
-                }}>
-                  {enableGeocoding ? 
-                    'Results from database and OpenStreetMap • Use ↑↓ to navigate' : 
-                    'Results from database • Use ↑↓ to navigate'
-                  }
-                </div>
+              {!loading && suggestions.length > 0 && (
+                <IonList style={{ backgroundColor: 'transparent' }}>
+                  {suggestions.map((suggestion, idx) => (
+                    <IonItem 
+                      key={`${suggestion.type}-${idx}`}
+                      button 
+                      onClick={() => handleSuggestionSelect(suggestion)}
+                      style={{
+                        backgroundColor: focusedIndex === idx 
+                          ? 'rgba(0, 0, 0, 0.08)' 
+                          : 'transparent',
+                        transition: 'background-color 0.2s ease',
+                        borderRadius: focusedIndex === idx ? '8px' : '0',
+                        margin: focusedIndex === idx ? '2px 8px' : '0'
+                      }}
+                    >
+                      <IonIcon 
+                        icon={getSuggestionIcon(suggestion)} 
+                        style={{ marginRight: '12px', opacity: 0.7 }} 
+                      />
+                      <IonLabel>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                          <div style={{ flex: 1 }}>
+                            <h3 style={{ margin: 0, fontSize: '14px' }}>
+                              {suggestion.text}
+                            </h3>
+                            {suggestion.source && (
+                              <p style={{ fontSize: '11px', color: '#888', margin: 0 }}>
+                                From: {suggestion.source}
+                              </p>
+                            )}
+                          </div>
+                          <IonBadge 
+                            color={getSuggestionColor(suggestion)}
+                            style={{ marginLeft: '8px', fontSize: '10px' }}
+                          >
+                            {suggestion.type}
+                          </IonBadge>
+                        </div>
+                      </IonLabel>
+                    </IonItem>
+                  ))}
+                </IonList>
               )}
             </IonCardContent>
           </IonCard>

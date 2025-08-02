@@ -23,19 +23,51 @@ import {
 } from '@ionic/react';
 import { useState, useEffect, useCallback } from 'react';
 import { useHistory } from 'react-router-dom';
-import { createClient } from '@supabase/supabase-js';
+import supabase from '../../supabaseConfig';
 import { mapOutline, settingsOutline } from 'ionicons/icons';
 import SearchbarWithSuggestions from '../components/SearchbarWithSuggestions';
 import './Home.css';
 
-// Supabase configuration
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-const supabase = createClient(supabaseUrl, supabaseAnonKey);
-
 // OpenStreetMap Nominatim API configuration
 const NOMINATIM_BASE_URL = 'https://nominatim.openstreetmap.org';
 const GEOCODING_DELAY = 1000;
+
+export interface RentalAmenities {
+  wifi_included?: boolean;
+  air_conditioning?: boolean;
+  in_unit_laundry?: boolean;
+  dishwasher?: boolean;
+  balcony_patio?: boolean;
+  pet_friendly?: {
+    dogs_allowed?: boolean;
+    cats_allowed?: boolean;
+    breed_restrictions?: string[];
+  };
+  parking?: {
+    type?: 'garage' | 'carport' | 'off_street' | 'street';
+    spots?: number;
+  };
+  community_pool?: boolean;
+  fitness_center?: boolean;
+  [key: string]: any; // Allows for additional, less structured properties
+}
+
+export interface Property {
+  id: string;
+  building_name: string | null;
+  address: string;
+  property_type: string | null;
+  house_rules: string | null;
+  max_guests: number | null;
+  check_in_time: string | null;
+  check_out_time: string | null;
+  instant_booking: boolean | null;
+  is_active: boolean | null;
+  amenities: RentalAmenities | null; // Changed from any | null to RentalAmenities | null
+  created_at: string;
+  updated_at: string | null;
+  HomeType: string | null;
+}
 
 // Enhanced Nominatim result interface
 interface NominatimResult {
@@ -52,6 +84,16 @@ interface NominatimResult {
     country?: string;
   };
   importance: number;
+}
+
+// Enhanced suggestion interface - MUST match SearchbarWithSuggestions component
+interface EnhancedSuggestion {
+  text: string;
+  type: 'database' | 'geocoded' | 'recent';
+  source?: string;
+  coordinates?: { lat: number; lon: number };
+  property_type?: string | null;
+  HomeType?: string | null;
 }
 
 // OpenStreetMap Geocoding Service (same as HomeSearched)
@@ -114,8 +156,9 @@ const Home: React.FC = () => {
   // Get table structure to know available columns
   const getTableStructure = async () => {
     try {
+      // Updated to use the correct table name
       const { data, error } = await supabase
-        .from('property_addresses')
+        .from('properties') // Changed from 'Property' to 'properties'
         .select('*')
         .limit(1);
       
@@ -131,88 +174,197 @@ const Home: React.FC = () => {
     }
   };
 
-  // Enhanced suggestion fetching with OpenStreetMap integration
-  const fetchEnhancedSuggestions = useCallback(async (term: string): Promise<string[]> => {
-    if (!term || term.length < 2) return [];
+  // FIXED: Enhanced suggestion fetching with proper return type
+  const fetchEnhancedSuggestions = useCallback(async (term: string): Promise<EnhancedSuggestion[]> => {
+    console.log('fetchEnhancedSuggestions called with term:', term);
+    
+    if (!term || term.length < 2) {
+      console.log('Term too short, returning empty array');
+      return [];
+    }
 
     try {
-      // Fetch database suggestions
-      const { data: allData, error } = await supabase
-        .from('property_addresses')
-        .select('*')
-        .limit(100);
+      const enrichedSuggestions: EnhancedSuggestion[] = [];
 
-      if (error) {
-        console.error('Error fetching database suggestions:', error);
-        return [];
-      }
-
-      const dbSuggestions = new Set<string>();
+      // First, try to get recent searches
+      const matchingRecent = recentSearches
+        .filter(search => search.toLowerCase().includes(term.toLowerCase()))
+        .slice(0, 2)
+        .map(search => ({
+          text: search,
+          type: 'recent' as const,
+          source: 'Recent Search'
+        }));
       
-      if (allData) {
-        allData.forEach(item => {
-          const possibleFields = [
-            'street_address', 'address', 'full_address',
-            'unit_number', 'unit',
-            'building_name', 'building', 'property_name',
-            'city', 'town', 'area',
-            'state', 'province'
-          ];
+      enrichedSuggestions.push(...matchingRecent);
+
+      // Fetch database suggestions from multiple possible tables
+      try {
+        console.log('Fetching database suggestions...');
+        
+        // Try properties table first
+        const { data: propertiesData, error: propertiesError } = await supabase
+          .from('properties')
+          .select('address, building_name, property_type, HomeType')
+          .limit(50);
+
+        if (!propertiesError && propertiesData && propertiesData.length > 0) {
+          console.log('Properties data found:', propertiesData.length, 'items');
           
-          possibleFields.forEach(field => {
-            if (item[field] && typeof item[field] === 'string') {
-              const value = item[field].toString().toLowerCase();
-              const searchTerm = term.toLowerCase();
-              if (value.includes(searchTerm)) {
-                dbSuggestions.add(item[field]);
+          propertiesData.forEach(item => {
+            // Check address field
+            if (item.address && typeof item.address === 'string') {
+              const value = item.address.toLowerCase();
+              if (value.includes(term.toLowerCase())) {
+                enrichedSuggestions.push({
+                  text: item.address,
+                  type: 'database',
+                  source: 'Properties Database',
+                  property_type: item.property_type,
+                  HomeType: item.HomeType
+                });
+              }
+            }
+            
+            // Check building_name field
+            if (item.building_name && typeof item.building_name === 'string') {
+              const value = item.building_name.toLowerCase();
+              if (value.includes(term.toLowerCase()) && item.building_name !== item.address) {
+                enrichedSuggestions.push({
+                  text: item.building_name,
+                  type: 'database',
+                  source: 'Properties Database',
+                  property_type: item.property_type,
+                  HomeType: item.HomeType
+                });
               }
             }
           });
-        });
+        }
+
+        // Try address table as fallback
+        if (enrichedSuggestions.filter(s => s.type === 'database').length === 0) {
+          console.log('Trying address table...');
+          const { data: addressData, error: addressError } = await supabase
+            .from('address')
+            .select('*')
+            .limit(50);
+
+          if (!addressError && addressData && addressData.length > 0) {
+            console.log('Address data found:', addressData.length, 'items');
+            
+            addressData.forEach(item => {
+              const possibleFields = [
+                'street_address', 'address', 'full_address',
+                'unit_number', 'unit',
+                'building_name', 'building', 'property_name',
+                'city', 'town', 'area',
+                'state', 'province'
+              ];
+              
+              possibleFields.forEach(field => {
+                if (item[field] && typeof item[field] === 'string') {
+                  const value = item[field].toString().toLowerCase();
+                  const searchTerm = term.toLowerCase();
+                  if (value.includes(searchTerm)) {
+                    enrichedSuggestions.push({
+                      text: item[field],
+                      type: 'database',
+                      source: 'Address Database'
+                    });
+                  }
+                }
+              });
+            });
+          }
+        }
+
+        console.log('Database suggestions found:', enrichedSuggestions.filter(s => s.type === 'database').length);
+      } catch (dbError) {
+        console.error('Database suggestions error:', dbError);
       }
 
       // Get OpenStreetMap suggestions if enabled
-      let osmSuggestions: string[] = [];
-      if (enableGeocoding && term.length > 3) {
+      if (enableGeocoding && term.length >= 3) {
         try {
+          console.log('Fetching geocoding suggestions...');
           const osmResults = await GeoCodingService.geocodeAddress(term);
-          osmSuggestions = osmResults
-            .slice(0, 4) // Limit OSM suggestions
-            .map(result => result.display_name);
+          console.log('OSM results:', osmResults.length);
+          
+          const geoSuggestions: EnhancedSuggestion[] = osmResults
+            .slice(0, 4)
+            .map(result => ({
+              text: result.display_name,
+              type: 'geocoded' as const,
+              source: 'OpenStreetMap',
+              coordinates: { lat: parseFloat(result.lat), lon: parseFloat(result.lon) }
+            }));
+          
+          enrichedSuggestions.push(...geoSuggestions);
+          console.log('Geocoding suggestions found:', geoSuggestions.length);
         } catch (error) {
           console.error('Error fetching OSM suggestions:', error);
         }
       }
 
-      // Combine suggestions and remove duplicates
-      const allSuggestions = [...Array.from(dbSuggestions), ...osmSuggestions];
-      const uniqueSuggestions = [...new Set(allSuggestions)];
-      
-      // Sort by relevance (exact matches first, then partial matches)
-      return uniqueSuggestions
+      // Remove duplicates and sort
+      const seen = new Set<string>();
+      const uniqueSuggestions = enrichedSuggestions.filter(suggestion => {
+        const normalizedText = suggestion.text.toLowerCase().trim();
+        if (seen.has(normalizedText)) {
+          return false;
+        }
+        seen.add(normalizedText);
+        return true;
+      });
+
+      // Sort suggestions with better logic
+      const sortedSuggestions = uniqueSuggestions
         .sort((a, b) => {
-          const aLower = a.toLowerCase();
-          const bLower = b.toLowerCase();
           const termLower = term.toLowerCase();
+          const aTextLower = a.text.toLowerCase();
+          const bTextLower = b.text.toLowerCase();
           
-          // Exact matches first
-          if (aLower.startsWith(termLower) && !bLower.startsWith(termLower)) return -1;
-          if (!aLower.startsWith(termLower) && bLower.startsWith(termLower)) return 1;
+          // Recent searches first
+          if (a.type === 'recent' && b.type !== 'recent') return -1;
+          if (a.type !== 'recent' && b.type === 'recent') return 1;
           
-          // Then by length (shorter first)
-          return a.length - b.length;
+          // Exact matches next
+          const aExact = aTextLower === termLower;
+          const bExact = bTextLower === termLower;
+          if (aExact && !bExact) return -1;
+          if (!aExact && bExact) return 1;
+          
+          // Starts with matches
+          const aStarts = aTextLower.startsWith(termLower);
+          const bStarts = bTextLower.startsWith(termLower);
+          if (aStarts && !bStarts) return -1;
+          if (!aStarts && bStarts) return 1;
+          
+          // Database results before geocoded
+          const typeOrder = { database: 0, geocoded: 1, recent: 2 };
+          const typeComparison = typeOrder[a.type] - typeOrder[b.type];
+          if (typeComparison !== 0) return typeComparison;
+          
+          // Shorter text first (more specific)
+          return a.text.length - b.text.length;
         })
         .slice(0, 8);
+
+      console.log('Final sorted suggestions:', sortedSuggestions);
+      return sortedSuggestions;
 
     } catch (err: any) {
       console.error('Error in fetchEnhancedSuggestions:', err);
       return [];
     }
-  }, [enableGeocoding]);
+  }, [enableGeocoding, recentSearches]);
 
   // Enhanced search handler with validation
-  const handleSearch = async () => {
-    if (!searchText.trim()) {
+  const handleSearch = async (term?: string, suggestion?: EnhancedSuggestion) => {
+    const searchTerm = term || searchText;
+    
+    if (!searchTerm.trim()) {
       setError('Please enter a search term');
       setShowAlert(true);
       return;
@@ -250,21 +402,32 @@ const Home: React.FC = () => {
     try {
       // Add to recent searches
       const updatedRecent = [
-        searchText,
-        ...recentSearches.filter(s => s !== searchText)
+        searchTerm,
+        ...recentSearches.filter(s => s !== searchTerm)
       ].slice(0, 5);
       setRecentSearches(updatedRecent);
+
+      console.log('Navigating to search results with:', {
+        searchText: searchTerm,
+        checkIn,
+        checkOut,
+        guests,
+        selectedTab,
+        enableGeocoding,
+        suggestion
+      });
 
       // Navigate to search results with all parameters
       history.push({
         pathname: '/homeSearched',
         state: { 
-          searchText,
+          searchText: searchTerm,
           checkIn,
           checkOut,
           guests,
           selectedTab,
-          enableGeocoding
+          enableGeocoding,
+          suggestion
         }
       });
     } catch (err: any) {
@@ -314,7 +477,7 @@ const Home: React.FC = () => {
             <IonCol size="2" className="navBar">Logo</IonCol>
             <IonCol size="2" className="navBar">Hotel & Homes</IonCol>
             <IonCol size="2" className="navBar">
-              <a href="/landlord">list your Place</a>
+              <a href="/landlord" >list your Place</a>
             </IonCol>
             <IonCol size="2" className="navBar">
               <img id="profile" src="" alt="Profile" />
@@ -331,7 +494,6 @@ const Home: React.FC = () => {
             <IonCardContent>
               <div style={{ textAlign: 'center', marginBottom: '20px' }}>
                 <h2>Home & Apts</h2>
-                {enableGeocoding}
               </div>
 
               {/* Tab Segment */}
@@ -355,9 +517,8 @@ const Home: React.FC = () => {
                 fetchSuggestions={fetchEnhancedSuggestions}
                 placeholder="Search your destination or property"
                 enableGeocoding={enableGeocoding}
-                recentSearches={recentSearches}
-                onRecentSearchUpdate={setRecentSearches}
                 maxSuggestions={8}
+                onSearch={handleSearch}
               />
 
               {/* Date and Guest Inputs */}
@@ -453,7 +614,7 @@ const Home: React.FC = () => {
               {/* Search Button */}
               <div style={{ width: '100%', display: 'flex', justifyContent: 'center', marginTop: '20px' }}>
                 <IonButton 
-                  onClick={handleSearch}
+                  onClick={() => handleSearch()}
                   disabled={loading}
                   style={{ maxWidth: '250px', width: '100%', maxHeight: '40px', margin: '8px', justifyContent: 'center', alignItems: 'center', display: 'flex' }}
                   size="large"

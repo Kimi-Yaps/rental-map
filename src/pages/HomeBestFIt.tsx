@@ -5,8 +5,6 @@ import {
   IonGrid,
   IonRow,
   IonButton,
-  IonToolbar,
-  IonTitle,
   IonCol,
   IonCard,
   IonCardContent,
@@ -16,7 +14,7 @@ import {
   IonToast
 } from '@ionic/react';
 import { useHistory } from 'react-router-dom';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   homeOutline,
   businessOutline,
@@ -25,8 +23,20 @@ import {
   golfOutline
 } from 'ionicons/icons';
 
+// Home type conversion mappings
+const HOME_TYPE_MAPPING = {
+  'Homestay': 'homestay',
+  'Entire House': 'entire_house',
+  'Bungalow': 'bungalow'
+} as const;
+
+// Conversion function
+const convertHomeTypeForDB = (displayType: string): string => {
+  return HOME_TYPE_MAPPING[displayType as keyof typeof HOME_TYPE_MAPPING] || displayType.toLowerCase().replace(/\s+/g, '_');
+};
+
 const HomeTypes: React.FC = () => {
-  const [homeTypes, setHomeTypes] = useState<string | null>(null);
+  const [homeType, setHomeType] = useState<string | null>(null);
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const history = useHistory();
@@ -36,8 +46,8 @@ const HomeTypes: React.FC = () => {
     if (saved) {
       try {
         const draft = JSON.parse(saved);
-        if (draft.HomeTypesCategory && draft.HomeTypesCategory === 'Home') {
-          setHomeTypes(draft.HomeTypesCategory);
+        if (draft.HomeTypesCategory) {
+          setHomeType(draft.HomeTypesCategory);
         }
       } catch {
         localStorage.removeItem('rentalDraft');
@@ -46,53 +56,37 @@ const HomeTypes: React.FC = () => {
   }, []);
 
   const handleSelect = (type: string) => {
-    setHomeTypes(type);
-    // If not Home, remove draft data
-    if (type !== 'Home') {
-      localStorage.removeItem('rentalDraft');
-    } else {
-      // Save to localStorage only for Home
-      const draft = JSON.parse(localStorage.getItem('rentalDraft') || '{}');
-      draft.HomeTypesCategory = type;
-      draft.lastUpdated = new Date().toISOString();
-      localStorage.setItem('rentalDraft', JSON.stringify(draft));
-    }
-    setToastMessage(`${type} property type selected`);
+    setHomeType(type);
+    
+    // Convert for database and log conversion
+    const dbValue = convertHomeTypeForDB(type);
+    console.log(`Home Type Selected - Display: ${type} → Database: ${dbValue}`);
+    
+    // Save to localStorage
+    const draft = JSON.parse(localStorage.getItem('rentalDraft') || '{}');
+    draft.HomeTypesCategory = type;
+    draft.homeTypeDB = dbValue; // Store converted value too
+    draft.lastUpdated = new Date().toISOString();
+    localStorage.setItem('rentalDraft', JSON.stringify(draft));
+    
+    setToastMessage(`${type} home type selected`);
     setShowToast(true);
-    console.log("Property type selected:", type);
+    console.log("Home type selected:", type);
   };
 
   const handleBack = () => {
-    // Clear localStorage when going back
-    localStorage.removeItem('rentalDraft');
-    setToastMessage('Draft cleared');
-    setShowToast(true);
-    
-    console.log("localStorage cleared - going back to /landlord");
-    history.push('/landlord');
+    // Don't clear localStorage when going back - just go to previous step
+    console.log("Going back to /propertyType");
+    history.push('/propertyType');
   };
 
+  const handleNext = useCallback(() => {
+    if (!homeType) return;
+    console.log("Moving to next step in property listing flow");
+    history.push('/PropertyListingFlow');
+  }, [history, homeType]);
 
-
-  const handleNext = () => {
-    if (!HomeTypes) return;
-    
-    // Navigate based on property type
-    switch (homeTypes) {
-      case 'Homestay':
-        history.push('/homeBestFit');
-        break;
-      case 'Entire House':
-        history.push('/HotelRoomTypes');
-        break;
-      case 'Bungalow':
-        history.push('/UniquePropertyDescription');
-        break;
-      default:
-        console.log("Unknown property type:", HomeTypes);
-    }
-  };
-  const HomeTypes = [
+  const homeTypeOptions = [
     {
       type: 'Homestay',
       title: 'Homestay property',
@@ -115,17 +109,15 @@ const HomeTypes: React.FC = () => {
       color: 'blue'
     }
   ];
+
   return (
     <IonPage>
       <IonHeader>
-        <IonToolbar>
-          <IonTitle>Select which home types</IonTitle>
-        </IonToolbar>
       </IonHeader>
 
       <IonContent className="ion-padding">
         <div style={{ marginBottom: '20px', textAlign: 'center' }}>
-          <h2>which home-type property are you listing?</h2>
+          <h2>Which home-type property are you listing?</h2>
           <p style={{ color: '#666', fontSize: '14px' }}>
             Choose the category that best describes your property (no default selection)
           </p>
@@ -141,9 +133,9 @@ const HomeTypes: React.FC = () => {
         />
 
         <IonGrid>
-          {HomeTypes.map((option) => {
+          {homeTypeOptions.map((option) => {
             // Use a subtle, less bold outline only when selected
-            const isSelected = homeTypes === option.type;
+            const isSelected = homeType === option.type;
             const outlineColor = `var(--ion-color-${option.color}-tint, #b3e5fc)`; // fallback to a light tint
             return (
               <IonRow key={option.type}>
@@ -190,18 +182,19 @@ const HomeTypes: React.FC = () => {
           })}
         </IonGrid>
 
-        {/* Selected Property Type Summary */}
-        {HomeTypes && (
+        {/* Selected Home Type Summary */}
+        {homeType && (
           <IonCard style={{ marginTop: '20px', backgroundColor: '#f0f8ff' }}>
             <IonCardContent>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <IonIcon icon={HomeTypes.find(opt => opt.type === homeTypes)?.icon} color="primary" />
-                <strong>Selected: {homeTypes}-Type Property</strong>
+                <IonIcon icon={homeTypeOptions.find(opt => opt.type === homeType)?.icon} color="primary" />
+                <strong>Selected: {homeType}</strong>
               </div>
               <p style={{ margin: '8px 0 0 0', fontSize: '12px', color: '#666' }}>
-                {homeTypes === 'Homestay' && 'Next: Return to previous page for home setup'}
-                {homeTypes === 'Hotel' && 'Next: Configure hotel rooms and amenities'}
-                {homeTypes === 'Unique' && 'Next: Describe your unique property features'}
+                Database value: {convertHomeTypeForDB(homeType)}
+              </p>
+              <p style={{ margin: '8px 0 0 0', fontSize: '12px', color: '#666' }}>
+                Next: Continue with property listing details
               </p>
             </IonCardContent>
           </IonCard>
@@ -224,17 +217,15 @@ const HomeTypes: React.FC = () => {
             <IonCol size="6">
               <IonButton
                 expand="block"
-                color={HomeTypes ? "primary" : "medium"}
+                color={homeType ? "primary" : "medium"}
                 onClick={handleNext}
-                disabled={!HomeTypes}
+                disabled={!homeType}
               >
                 Next
                 <IonIcon icon={arrowForwardOutline} slot="end" />
               </IonButton>
             </IonCol>
           </IonRow>
-
-
         </IonGrid>
       </IonContent>
     </IonPage>

@@ -5,8 +5,6 @@ import {
   IonGrid,
   IonRow,
   IonButton,
-  IonToolbar,
-  IonTitle,
   IonCol,
   IonCard,
   IonCardContent,
@@ -25,6 +23,18 @@ import {
   arrowForwardOutline
 } from 'ionicons/icons';
 
+// Property type conversion mappings
+const PROPERTY_TYPE_MAPPING = {
+  'Home': 'home',
+  'Hotel': 'hotel',
+  'Unique': 'unique'
+} as const;
+
+// Conversion function
+const convertPropertyTypeForDB = (displayType: string): string => {
+  return PROPERTY_TYPE_MAPPING[displayType as keyof typeof PROPERTY_TYPE_MAPPING] || displayType.toLowerCase().replace(/\s+/g, '_');
+};
+
 const PropertyType: React.FC = () => {
   const [propertyType, setPropertyType] = useState<string | null>(null);
   const [showToast, setShowToast] = useState(false);
@@ -36,7 +46,7 @@ const PropertyType: React.FC = () => {
     if (saved) {
       try {
         const draft = JSON.parse(saved);
-        if (draft.propertyTypeCategory && draft.propertyTypeCategory === 'Home') {
+        if (draft.propertyTypeCategory) {
           setPropertyType(draft.propertyTypeCategory);
         }
       } catch {
@@ -47,16 +57,18 @@ const PropertyType: React.FC = () => {
 
   const handleSelect = (type: string) => {
     setPropertyType(type);
-    // If not Home, remove draft data
-    if (type !== 'Home') {
-      localStorage.removeItem('rentalDraft');
-    } else {
-      // Save to localStorage only for Home
-      const draft = JSON.parse(localStorage.getItem('rentalDraft') || '{}');
-      draft.propertyTypeCategory = type;
-      draft.lastUpdated = new Date().toISOString();
-      localStorage.setItem('rentalDraft', JSON.stringify(draft));
-    }
+    
+    // Convert for database and log conversion
+    const dbValue = convertPropertyTypeForDB(type);
+    console.log(`Property Type Selected - Display: ${type} → Database: ${dbValue}`);
+    
+    // Save to localStorage for all property types
+    const draft = JSON.parse(localStorage.getItem('rentalDraft') || '{}');
+    draft.propertyTypeCategory = type;
+    draft.propertyTypeDB = dbValue; // Store converted value too
+    draft.lastUpdated = new Date().toISOString();
+    localStorage.setItem('rentalDraft', JSON.stringify(draft));
+    
     setToastMessage(`${type} property type selected`);
     setShowToast(true);
     console.log("Property type selected:", type);
@@ -71,8 +83,6 @@ const PropertyType: React.FC = () => {
     console.log("localStorage cleared - going back to /landlord");
     history.push('/landlord');
   };
-
-
 
   const handleNext = () => {
     if (!propertyType) return;
@@ -121,9 +131,6 @@ const PropertyType: React.FC = () => {
   return (
     <IonPage>
       <IonHeader>
-        <IonToolbar>
-          <IonTitle>Select Property Type Category</IonTitle>
-        </IonToolbar>
       </IonHeader>
       
       <IonContent className="ion-padding">
@@ -202,7 +209,10 @@ const PropertyType: React.FC = () => {
                 <strong>Selected: {propertyType}-Type Property</strong>
               </div>
               <p style={{ margin: '8px 0 0 0', fontSize: '12px', color: '#666' }}>
-                {propertyType === 'Home' && 'Next: Return to previous page for home setup'}
+                Database value: {convertPropertyTypeForDB(propertyType)}
+              </p>
+              <p style={{ margin: '8px 0 0 0', fontSize: '12px', color: '#666' }}>
+                {propertyType === 'Home' && 'Next: Choose specific home type'}
                 {propertyType === 'Hotel' && 'Next: Configure hotel rooms and amenities'}
                 {propertyType === 'Unique' && 'Next: Describe your unique property features'}
               </p>
@@ -236,8 +246,6 @@ const PropertyType: React.FC = () => {
               </IonButton>
             </IonCol>
           </IonRow>
-          
-
         </IonGrid>
       </IonContent>
     </IonPage>
