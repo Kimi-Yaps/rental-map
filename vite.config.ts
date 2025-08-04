@@ -10,6 +10,15 @@ export default defineConfig({
     react(),
     legacy()
   ],
+  server: {
+    proxy: {
+      '/nominatim': {
+        target: 'https://nominatim.openstreetmap.org',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/nominatim/, ''),
+      },
+    },
+  },
   test: {
     globals: true,
     environment: 'jsdom',

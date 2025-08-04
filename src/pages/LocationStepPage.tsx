@@ -1,5 +1,5 @@
 // src/pages/LocationStepPage.tsx
-import React, { useState, useCallback, useEffect, useMemo, Suspense } from "react";
+import React, { useState, useCallback, useEffect, Suspense } from "react";
 import {
   IonContent,
   IonHeader,
@@ -17,49 +17,63 @@ import {
   IonToast,
   IonSpinner,
   IonSearchbar,
-  IonGrid,
-  IonRow,
-  IonCol,
+  IonToggle,
 } from "@ionic/react";
 import { useHistory } from 'react-router-dom';
 import {
   locationOutline,
-  saveOutline,
   searchOutline,
 } from "ionicons/icons";
 import supabase from '../../supabaseConfig';
-import { Property } from "../components/DbCrud"; // Updated import path
-import PublishPropertyButton from "./PublishPropertyButton";
+import { Property } from "../components/DbCrud";
 
-// LatLng interface (can stay here or be moved to rentalTypes.ts if used elsewhere)
+// LatLng interface
 interface LatLng {
   lat: number;
   lng: number;
 }
 
-interface PropertyData {
-  location?: LatLng;
-  address?: string;
-  searchQuery?: string;
-}
-
-interface NominatimResult {
+// Geoapify API types
+interface GeoapifyProperties {
+  formatted: string;
+  address_line1?: string;
+  address_line2?: string;
+  category?: string;
+  city?: string;
+  country?: string;
+  country_code?: string;
+  county?: string;
+  district?: string;
+  postcode?: string;
+  state?: string;
+  suburb?: string;
+  housenumber?: string;
+  street?: string;
+  name?: string;
   place_id: string;
-  lat: string;
-  lon: string;
-  display_name: string;
-  address?: {
-    house_number?: string;
-    road?: string;
-    city?: string;
-    state?: string;
-    postcode?: string;
-    country?: string;
-  };
-  importance: number;
+  confidence?: number;
+  distance?: number;
 }
 
-// --- Lazy Map Component (Keep as is) ---
+interface GeoapifyFeature {
+  type: "Feature";
+  geometry: {
+    type: "Point";
+    coordinates: [number, number]; // [longitude, latitude]
+  };
+  properties: GeoapifyProperties;
+}
+
+interface GeoapifyResponse {
+  type: "FeatureCollection";
+  features: GeoapifyFeature[];
+  query?: {
+    text?: string;
+    parsed?: any;
+  };
+}
+
+// --- Lazy Map Component (remains the same) ---
 const LazyMapComponent = React.lazy(() =>
   Promise.all([
     import("react-leaflet"),
@@ -169,87 +183,273 @@ const LazyMapComponent = React.lazy(() =>
   })
 );
 
-// --- Geocoding Service using Nominatim (Keep as is) ---
-class GeoCodingService {
-  private static readonly NOMINATIM_BASE_URL =
-    "https://nominatim.openstreetmap.org";
-  private static readonly GEOCODING_DELAY = 1000;
+// --- Geoapify Geocoding Service ---
+class GeoapifyGeocodingService {
+  private static readonly AUTOCOMPLETE_API_KEY = import.meta.env.VITE_GEOAPIFY_AUTOCOMPLETE_API_KEY || '9a225b37e2aa487da7857b3e72048a26';
+  private static readonly REVERSE_API_KEY = import.meta.env.VITE_GEOAPIFY_REVERSE_API_KEY || 'cf9ee03b61b14d778e338e910106aa2b';
+  private static readonly GEOCODING_API_KEY = import.meta.env.VITE_GEOAPIFY_GEOCODING_API_KEY || 'e38e5df6d2fd4b47aa2517296911458d';
+  
+  private static readonly AUTOCOMPLETE_BASE_URL = 'https://api.geoapify.com/v1/geocode/autocomplete';
+  private static readonly REVERSE_BASE_URL = 'https://api.geoapify.com/v1/geocode/reverse';
+  private static readonly GEOCODING_BASE_URL = 'https://api.geoapify.com/v1/geocode/search';
+  
+  private static readonly GEOCODING_DELAY = 300; // Delay to prevent too many requests for autocomplete
   private static lastRequestTime = 0;
+  private static readonly MAX_RETRIES = 2;
+  private static readonly REQUEST_TIMEOUT = 10000;
 
-  static async geocodeAddress(address: string): Promise<NominatimResult[]> {
-    const now = Date.now();
-    const timeSinceLastRequest = now - this.lastRequestTime;
-    if (timeSinceLastRequest < this.GEOCODING_DELAY) {
-      await new Promise((resolve) =>
-        setTimeout(resolve, this.GEOCODING_DELAY - timeSinceLastRequest)
-      );
+  private static buildUrl(baseUrl: string, params: Record<string, any>): string {
+    const url = new URL(baseUrl);
+    for (const key in params) {
+      if (params[key] !== undefined && params[key] !== null) {
+        url.searchParams.append(key, String(params[key]));
+      }
     }
-    this.lastRequestTime = Date.now();
+    return url.toString();
+  }
+
+  private static async delay(ms: number): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
+  private static validateCoordinates(lat: number, lng: number): boolean {
+    return !isNaN(lat) && !isNaN(lng) &&
+      lat >= -90 && lat <= 90 &&
+      lng >= -180 && lng <= 180;
+  }
+
+  private static async makeRequest<T>(url: string, retryCount = 0): Promise<T> {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), this.REQUEST_TIMEOUT);
 
     try {
-      const params = new URLSearchParams({
-        q: address,
-        format: "json",
-        addressdetails: "1",
-        limit: "8",
-        countrycodes: "my,sg,th,id,ph,vn",
-        "accept-language": "en",
+      console.log(`Making Geoapify request to: ${url} (attempt ${retryCount + 1})`);
+
+      const response = await fetch(url, {
+        signal: controller.signal,
+        headers: {
+          'Content-Type': 'application/json',
+        }
       });
 
-      const response = await fetch(
-        `${this.NOMINATIM_BASE_URL}/search?${params}`,
-        {
-          headers: {
-            "User-Agent": "PropertyLocationApp/1.0",
-          },
-        }
-      );
+      clearTimeout(timeoutId);
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        const errorBody = await response.text();
+        throw new Error(`HTTP ${response.status}: ${response.statusText} - ${errorBody}`);
       }
 
-      const data: NominatimResult[] = await response.json();
-      return data.sort((a, b) => (b.importance || 0) - (a.importance || 0));
-    } catch (error) {
-      console.error("Geocoding error:", error);
-      return [];
+      return await response.json() as T;
+    } catch (error: any) {
+      clearTimeout(timeoutId);
+
+      if (error.name === 'AbortError') {
+        console.error(`Geoapify request timed out after ${this.REQUEST_TIMEOUT}ms`);
+        throw new Error('Geoapify request timed out');
+      }
+
+      if (retryCount < this.MAX_RETRIES) {
+        console.warn(`Geoapify network error, retry ${retryCount + 1}/${this.MAX_RETRIES}:`, error.message);
+        await this.delay(2000 * (retryCount + 1));
+        return this.makeRequest<T>(url, retryCount + 1);
+      }
+
+      throw error;
     }
   }
 
-  static async reverseGeocode(lat: number, lng: number): Promise<string> {
+  // Autocomplete address using Geoapify /v1/geocode/autocomplete
+  static async autocompleteAddress(address: string, focusPoint?: LatLng): Promise<GeoapifyFeature[]> {
+    if (!address || address.trim().length < 3) {
+      return [];
+    }
+
+    const now = Date.now();
+    const timeSinceLastRequest = now - this.lastRequestTime;
+    if (timeSinceLastRequest < this.GEOCODING_DELAY) {
+      await this.delay(this.GEOCODING_DELAY - timeSinceLastRequest);
+    }
+    this.lastRequestTime = Date.now();
+
+    const params: Record<string, any> = {
+      text: address,
+      limit: 10,
+      apiKey: this.AUTOCOMPLETE_API_KEY,
+      filter: 'countrycode:my', // Filter results to Malaysia only
+      format: 'geojson'
+    };
+
+    if (focusPoint && this.validateCoordinates(focusPoint.lat, focusPoint.lng)) {
+      params.bias = `proximity:${focusPoint.lng},${focusPoint.lat}`;
+    }
+
     try {
-      const params = new URLSearchParams({
-        lat: lat.toString(),
-        lon: lng.toString(),
-        format: "json",
-        addressdetails: "1",
-        "accept-language": "en",
-      });
+      const url = this.buildUrl(this.AUTOCOMPLETE_BASE_URL, params);
+      const data = await this.makeRequest<GeoapifyResponse>(url);
+      console.log('Geoapify Autocomplete Response:', data);
+      return data.features || [];
+    } catch (error: any) {
+      console.error("Geoapify Autocomplete error:", error.message || error);
+      throw new Error(`Autocomplete failed: ${error.message || 'Unknown error'}`);
+    }
+  }
 
-      const response = await fetch(
-        `${this.NOMINATIM_BASE_URL}/reverse?${params}`,
-        {
-          headers: {
-            "User-Agent": "PropertyLocationApp/1.0",
-          },
-        }
-      );
+  // Geocode address using Geoapify /v1/geocode/search
+  static async geocodeAddress(address: string, focusPoint?: LatLng): Promise<GeoapifyFeature[]> {
+    if (!address || address.trim().length < 3) {
+      return [];
+    }
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+    const now = Date.now();
+    const timeSinceLastRequest = now - this.lastRequestTime;
+    if (timeSinceLastRequest < this.GEOCODING_DELAY) {
+      await this.delay(this.GEOCODING_DELAY - timeSinceLastRequest);
+    }
+    this.lastRequestTime = Date.now();
+
+    const params: Record<string, any> = {
+      text: address,
+      limit: 10,
+      apiKey: this.GEOCODING_API_KEY,
+      filter: 'countrycode:my', // Filter results to Malaysia only
+      format: 'geojson'
+    };
+
+    if (focusPoint && this.validateCoordinates(focusPoint.lat, focusPoint.lng)) {
+      params.bias = `proximity:${focusPoint.lng},${focusPoint.lat}`;
+    }
+
+    try {
+      const url = this.buildUrl(this.GEOCODING_BASE_URL, params);
+      const data = await this.makeRequest<GeoapifyResponse>(url);
+      console.log('Geoapify Geocode Response:', data);
+      return data.features || [];
+    } catch (error: any) {
+      console.error("Geoapify Geocoding error:", error.message || error);
+      throw new Error(`Geocoding failed: ${error.message || 'Unknown error'}`);
+    }
+  }
+
+  // Reverse geocode using Geoapify /v1/geocode/reverse
+  static async reverseGeocode(lat: number, lng: number): Promise<string> {
+    if (!this.validateCoordinates(lat, lng)) {
+      console.error(`Invalid coordinates for reverse geocoding: lat=${lat}, lng=${lng}`);
+      throw new Error('Invalid coordinates provided');
+    }
+
+    const now = Date.now();
+    const timeSinceLastRequest = now - this.lastRequestTime;
+    if (timeSinceLastRequest < this.GEOCODING_DELAY) {
+      await this.delay(this.GEOCODING_DELAY - timeSinceLastRequest);
+    }
+    this.lastRequestTime = Date.now();
+
+    const params: Record<string, any> = {
+      lat: lat,
+      lon: lng,
+      limit: 1,
+      apiKey: this.REVERSE_API_KEY,
+      format: 'geojson'
+    };
+
+    try {
+      const url = this.buildUrl(this.REVERSE_BASE_URL, params);
+      const data = await this.makeRequest<GeoapifyResponse>(url);
+      console.log('Geoapify Reverse Geocode Response:', data);
+
+      if (data.features && data.features.length > 0) {
+        const feature = data.features[0];
+        // Use formatted address from Geoapify
+        return feature.properties.formatted || `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+      } else {
+        console.warn('No reverse geocoding results found for:', { lat, lng });
+        return `${lat.toFixed(6)}, ${lng.toFixed(6)}`; // Fallback to coordinates
+      }
+    } catch (error: any) {
+      console.error("Geoapify Reverse geocoding error:", error.message || error);
+      const fallbackAddress = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+      console.log('Using coordinate fallback:', fallbackAddress);
+      return fallbackAddress;
+    }
+  }
+
+  // Geolocation using browser API
+  static async getCurrentPosition(): Promise<{ lat: number; lng: number } | null> {
+    return new Promise((resolve) => {
+      if (!navigator.geolocation) {
+        console.warn('Geolocation is not supported by this browser');
+        resolve(null);
+        return;
       }
 
-      const data = await response.json();
-      return data.display_name || "Address not found";
-    } catch (error) {
-      console.error("Reverse geocoding error:", error);
-      return "Address not found";
+      const timeoutId = setTimeout(() => {
+        console.warn('Geolocation request timed out');
+        resolve(null);
+      }, 15000);
+
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          clearTimeout(timeoutId);
+          const lat = position.coords.latitude;
+          const lng = position.coords.longitude;
+
+          if (this.validateCoordinates(lat, lng)) {
+            resolve({ lat, lng });
+          } else {
+            console.warn('Invalid coordinates from geolocation API:', { lat, lng });
+            resolve(null);
+          }
+        },
+        (error) => {
+          clearTimeout(timeoutId);
+          console.warn('Error getting current position:', error.message);
+
+          switch (error.code) {
+            case error.PERMISSION_DENIED:
+              console.warn('User denied the request for Geolocation');
+              break;
+            case error.POSITION_UNAVAILABLE:
+              console.warn('Location information is unavailable');
+              break;
+            case error.TIMEOUT:
+              console.warn('The request to get user location timed out');
+              break;
+          }
+
+          resolve(null);
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 300000
+        }
+      );
+    });
+  }
+
+  // Test method to verify service availability
+  static async testService(): Promise<boolean> {
+    try {
+      console.log('Testing Geoapify geocoding service...');
+      // Test with a known location in Malaysia
+      const results = await this.geocodeAddress('Kuala Lumpur', {lat: 3.1390, lng: 101.6869});
+      const serviceWorking = results && results.length > 0;
+
+      if (serviceWorking) {
+        console.log('✅ Geoapify service is working, found:', results[0].properties.formatted);
+      } else {
+        console.warn('⚠️ Geoapify service returned no results for test query');
+      }
+
+      return serviceWorking;
+    } catch (error: any) {
+      console.error('❌ Geoapify service test failed:', error.message);
+      return false;
     }
   }
 }
 
-// --- Loading Skeleton for Map (Keep as is) ---
+// --- Loading Skeleton for Map ---
 const MapSkeleton = () => (
   <IonCard>
     <div
@@ -279,28 +479,21 @@ const MapSkeleton = () => (
 // --- Main Component ---
 const LocationStepPage: React.FC = () => {
   const history = useHistory();
-  const [data, setData] = useState<PropertyData>({
-    location: { lat: 2.4312, lng: 103.8403 },
-    address: "",
-    searchQuery: "",
-  });
-
-  const [markerPosition, setMarkerPosition] = useState<LatLng>(
-    data.location || { lat: 2.4312, lng: 103.8403 }
-  );
-  const [searchQuery, setSearchQuery] = useState(data.searchQuery || "");
-  const [address, setAddress] = useState<string>(data.address || "");
-  const [suggestions, setSuggestions] = useState<NominatimResult[]>([]);
-  const [showSuggestions, setShowSuggestions] = useState(false);
-  const [isSearching, setIsSearching] = useState(false);
-  const [shouldZoom, setShouldZoom] = useState(false);
-  const [manualAddress, setManualAddress] = useState<string>(data.address || "");
-  const [manualMode, setManualMode] = useState(false);
+  // Default to a central Malaysian location (e.g., Kuala Lumpur)
+  const [markerPosition, setMarkerPosition] = useState<LatLng>({ lat: 3.1390, lng: 101.6869 });
+  const [searchQuery, setSearchQuery] = useState<string>("");
+  const [address, setAddress] = useState<string>("");
+  const [suggestions, setSuggestions] = useState<GeoapifyFeature[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState<boolean>(false);
+  const [isSearching, setIsSearching] = useState<boolean>(false);
+  const [isReverseGeocoding, setIsReverseGeocoding] = useState<boolean>(false);
+  const [shouldZoom, setShouldZoom] = useState<boolean>(false);
+  const [manualAddress, setManualAddress] = useState<string>("");
+  const [manualMode, setManualMode] = useState<boolean>(false);
 
   // Toast states
-  const [showToast, setShowToast] = useState(false);
-  const [toastMessage, setToastMessage] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showToast, setShowToast] = useState<boolean>(false);
+  const [toastMessage, setToastMessage] = useState<string>("");
 
   // LocalStorage rental draft data
   const [Property, setProperty] = useState<Property | null>(null);
@@ -314,13 +507,30 @@ const LocationStepPage: React.FC = () => {
       '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
   };
 
+  // Test geocoding service function
+  const testGeocodingService = useCallback(async () => {
+    try {
+      console.log('Testing Geoapify geocoding service...');
+      const serviceWorking = await GeoapifyGeocodingService.testService();
+
+      if (!serviceWorking) {
+        setToastMessage('Location service may not be working properly. Check API key or URL.');
+        setShowToast(true);
+      }
+    } catch (error: any) {
+      console.error('Geoapify service test failed:', error);
+      setToastMessage('Location service is not available.');
+      setShowToast(true);
+    }
+  }, []);
+
   // Load localStorage data on component mount
   useEffect(() => {
     const loadDraftData = () => {
       try {
         const saved = localStorage.getItem('Property');
         if (saved) {
-          const draft: Property = JSON.parse(saved); // Use Property type
+          const draft: Property = JSON.parse(saved);
           setProperty(draft);
           console.log("Loaded rental draft:", draft);
 
@@ -330,76 +540,94 @@ const LocationStepPage: React.FC = () => {
             setAddress(draft.address || draft.searchQuery || '');
             setSearchQuery(draft.searchQuery || draft.address || '');
             setManualAddress(draft.address || draft.searchQuery || '');
+            return;
           }
         }
       } catch (error) {
         console.error("Error loading rental draft:", error);
         setProperty(null);
       }
+
+      fetchInitialLocation();
+    };
+
+    const fetchInitialLocation = async () => {
+      try {
+        // Try browser geolocation first for accuracy
+        const currentPosition = await GeoapifyGeocodingService.getCurrentPosition();
+        if (currentPosition) {
+          setMarkerPosition(currentPosition);
+          console.log('Using browser geolocation:', currentPosition);
+          return;
+        }
+        
+        // Fallback to default location if browser geolocation fails
+        const defaultLocation = { lat: 3.1390, lng: 101.6869 };
+        setMarkerPosition(defaultLocation);
+        console.log('Using default location:', defaultLocation);
+
+      } catch (error) {
+        console.warn('Error getting initial location:', error);
+        // Final fallback to default location
+        const defaultLocation = { lat: 3.1390, lng: 101.6869 };
+        setMarkerPosition(defaultLocation);
+        console.log('Using default location:', defaultLocation);
+      }
     };
 
     loadDraftData();
-  }, []);
+    testGeocodingService();
+  }, [testGeocodingService]);
 
   // Function to save current state to localStorage draft
-  const saveCurrentStepToDraft = useCallback(() => {
-    const currentDraft: Property = JSON.parse(localStorage.getItem('Property') || '{}');
+  const saveCurrentStepToDraft = useCallback(async () => {
+    let currentDraft: Property = JSON.parse(localStorage.getItem('Property') || '{}');
+
+    if (!currentDraft.id) {
+      currentDraft.id = `draft_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    }
+
+    const finalAddress = manualMode ? manualAddress : address;
     const updatedDraft: Property = {
       ...currentDraft,
       location: markerPosition,
-      address: manualMode ? manualAddress : address,
+      address: finalAddress,
       searchQuery: searchQuery,
       updated_at: new Date().toISOString(),
       latitude: markerPosition.lat,
       longitude: markerPosition.lng,
     };
+
     localStorage.setItem('Property', JSON.stringify(updatedDraft));
     setProperty(updatedDraft);
-    console.log("Location step data saved to draft:", updatedDraft);
   }, [markerPosition, address, searchQuery, manualAddress, manualMode]);
 
-
-  // Update data when location or address changes
-  const onUpdate = useCallback((updatedData: Partial<PropertyData>) => {
-    setData(prev => ({ ...prev, ...updatedData }));
-  }, []);
-
-  // Sync searchQuery to address when not in manual mode
-  useEffect(() => {
-    if (!manualMode && !showSuggestions && searchQuery !== address) {
-      setAddress(searchQuery);
-      onUpdate({ address: searchQuery });
-    }
-  }, [searchQuery, manualMode, showSuggestions, address, onUpdate]);
-
-  // Update address when marker position changes
+  // Update address when marker position changes (reverse geocoding)
   useEffect(() => {
     if (!manualMode) {
       const fetchAddress = async () => {
+        setIsReverseGeocoding(true);
         try {
-          const addressText = await GeoCodingService.reverseGeocode(
+          const addressText = await GeoapifyGeocodingService.reverseGeocode(
             markerPosition.lat,
             markerPosition.lng
           );
           setAddress(addressText);
           setManualAddress(addressText);
           setSearchQuery(addressText);
-          onUpdate({
-            location: markerPosition,
-            address: addressText,
-            searchQuery: addressText,
-          });
-        } catch (error) {
+        } catch (error: any) {
           console.error("Error fetching address:", error);
           setAddress("Address not found");
           setSearchQuery("Address not found");
+        } finally {
+          setIsReverseGeocoding(false);
         }
       };
       fetchAddress();
     }
-  }, [markerPosition, onUpdate, manualMode]);
+  }, [markerPosition, manualMode]);
 
-  // Debounced search handler
+  // Debounced search handler for Geoapify autocomplete
   const fetchSuggestions = useCallback(async (query: string) => {
     if (!query || query.length < 3) {
       setSuggestions([]);
@@ -408,17 +636,20 @@ const LocationStepPage: React.FC = () => {
     }
     setIsSearching(true);
     try {
-      const results = await GeoCodingService.geocodeAddress(query);
+      // Use autocomplete for better suggestions
+      const results = await GeoapifyGeocodingService.autocompleteAddress(query, markerPosition);
       setSuggestions(results);
       setShowSuggestions(results.length > 0);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error fetching suggestions:", error);
       setSuggestions([]);
       setShowSuggestions(false);
+      setToastMessage("Error fetching location suggestions.");
+      setShowToast(true);
     } finally {
       setIsSearching(false);
     }
-  }, []);
+  }, [markerPosition]);
 
   // Handle search input
   const handleSearchInput = useCallback(
@@ -437,32 +668,86 @@ const LocationStepPage: React.FC = () => {
 
   // Handle suggestion selection
   const handleSuggestionSelect = useCallback(
-    (suggestion: NominatimResult) => {
+    (suggestion: GeoapifyFeature) => {
       const newPosition = {
-        lat: parseFloat(suggestion.lat),
-        lng: parseFloat(suggestion.lon),
+        lat: suggestion.geometry.coordinates[1], // Geoapify returns [lon, lat]
+        lng: suggestion.geometry.coordinates[0],
       };
-      setSearchQuery(suggestion.display_name);
-      setAddress(suggestion.display_name);
-      setManualAddress(suggestion.display_name);
+      setSearchQuery(suggestion.properties.formatted);
+      setAddress(suggestion.properties.formatted);
+      setManualAddress(suggestion.properties.formatted);
       setMarkerPosition(newPosition);
       setShowSuggestions(false);
       setSuggestions([]);
       setShouldZoom(true);
-      onUpdate({
-        location: newPosition,
-        address: suggestion.display_name,
-        searchQuery: suggestion.display_name,
-      });
     },
-    [onUpdate]
+    []
   );
 
-  // Handle location change from map
-  const handleLocationChange = useCallback((location: LatLng) => {
+  // Handle location change from map (drag or click)
+  const handleLocationChange = useCallback(async (location: LatLng) => {
+    console.log('Location changed to:', location);
+
+    if (!location || typeof location.lat !== 'number' || typeof location.lng !== 'number' || isNaN(location.lat) || isNaN(location.lng)) {
+      console.error('Invalid location object:', location);
+      setToastMessage('Invalid location coordinates');
+      setShowToast(true);
+      return;
+    }
+
+    if (location.lat < -90 || location.lat > 90 || location.lng < -180 || location.lng > 180) {
+      console.error('Coordinates out of valid range:', location);
+      setToastMessage('Coordinates are out of valid range');
+      setShowToast(true);
+      return;
+    }
+
     setMarkerPosition(location);
     setShouldZoom(false);
-  }, []);
+
+    if (manualMode) {
+      console.log('Manual mode active, skipping reverse geocoding');
+      return;
+    }
+
+    setIsReverseGeocoding(true);
+    setAddress('Getting address...');
+
+    try {
+      console.log('Starting reverse geocoding for:', location);
+      const reverseGeocodedAddress = await GeoapifyGeocodingService.reverseGeocode(location.lat, location.lng);
+
+      if (!reverseGeocodedAddress) {
+        throw new Error('Empty address returned from reverse geocoding');
+      }
+
+      console.log('Reverse geocoding successful:', reverseGeocodedAddress);
+      setAddress(reverseGeocodedAddress);
+      setSearchQuery(reverseGeocodedAddress);
+      setManualAddress(reverseGeocodedAddress);
+
+    } catch (error: any) {
+      console.error("Reverse geocoding failed:", error);
+      const fallbackAddress = `${location.lat.toFixed(6)}, ${location.lng.toFixed(6)}`;
+      setAddress(fallbackAddress);
+      setSearchQuery(fallbackAddress);
+      setManualAddress(fallbackAddress);
+
+      let errorMessage = 'Unable to get address for this location.';
+      if (error instanceof Error) {
+        if (error.message.includes('timeout')) {
+          errorMessage = 'Address lookup timed out. Using coordinates instead.';
+        } else if (error.message.includes('network')) {
+          errorMessage = 'Network error getting address. Using coordinates instead.';
+        }
+      }
+      setToastMessage(errorMessage);
+      setShowToast(true);
+
+    } finally {
+      setIsReverseGeocoding(false);
+    }
+  }, [manualMode]);
 
   // Clear suggestions when search query is cleared
   const handleSearchClear = useCallback(() => {
@@ -480,95 +765,43 @@ const LocationStepPage: React.FC = () => {
       const newMode = !m;
       if (newMode) {
         setManualAddress(address);
+        setSearchQuery("");
+        setSuggestions([]);
+        setShowSuggestions(false);
       } else {
-        setAddress(manualAddress);
-        setSearchQuery(manualAddress);
-        onUpdate({ address: manualAddress, searchQuery: manualAddress });
         if (manualAddress) {
-          GeoCodingService.geocodeAddress(manualAddress).then(results => {
+          GeoapifyGeocodingService.geocodeAddress(manualAddress).then(results => {
             if (results.length > 0) {
               const firstResult = results[0];
               const newPosition = {
-                lat: parseFloat(firstResult.lat),
-                lng: parseFloat(firstResult.lon),
+                lat: firstResult.geometry.coordinates[1],
+                lng: firstResult.geometry.coordinates[0],
               };
               setMarkerPosition(newPosition);
               setShouldZoom(true);
-              onUpdate({ location: newPosition });
+              setAddress(firstResult.properties.formatted);
+              setSearchQuery(firstResult.properties.formatted);
             } else {
-                console.warn("Could not geocode manual address:", manualAddress);
-                setToastMessage("Could not find coordinates for the manual address. Please refine it.");
-                setShowToast(true);
+              console.warn("Could not geocode manual address:", manualAddress);
+              setToastMessage("Could not find coordinates for the manual address. Please refine it.");
+              setShowToast(true);
+              setAddress(manualAddress);
+              setSearchQuery(manualAddress);
             }
           }).catch(err => {
-              console.error("Geocoding manual address error:", err);
-              setToastMessage("Error geocoding manual address.");
-              setShowToast(true);
+            console.error("Geocoding manual address error:", err);
+            setToastMessage("Error geocoding manual address. Using current map coordinates.");
+            setShowToast(true);
+            setAddress(manualAddress);
+            setSearchQuery(manualAddress);
           });
+        } else {
+          setSearchQuery(address);
         }
       }
       return newMode;
     });
-  }, [address, manualAddress, onUpdate]);
-
-  // Test database insertion (original functionality - kept as requested)
-  const handleTestInsert = async () => {
-    setIsSubmitting(true);
-    try {
-      // Use existing draft data if available, otherwise use defaults
-      const draftToInsert = Property ? { ...Property } : {};
-
-      const testProperty = {
-        building_name: draftToInsert.propertyName || "Test Property",
-        address: draftToInsert.address || address || "Test Address",
-        property_type: draftToInsert.propertyTypeCategory ? (draftToInsert.propertyTypeCategory.toLowerCase().replace(/\s+/g, '_')) : "apartment",
-        house_rules: draftToInsert.houseRules || "No smoking",
-        max_guests: draftToInsert.maxGuests || 4,
-        instant_booking: draftToInsert.instantBooking !== undefined ? draftToInsert.instantBooking : true,
-        is_active: draftToInsert.is_active !== undefined ? draftToInsert.is_active : true,
-        amenities: draftToInsert.amenities || { // Sample amenities
-          wifi_included: true,
-          air_conditioning: true,
-          in_unit_laundry: false,
-          dishwasher: false,
-          balcony_patio: false,
-          pet_friendly: {
-            dogs_allowed: false,
-            cats_allowed: false,
-          },
-          parking: {
-            type: "garage",
-            spots: 1
-          },
-          community_pool: false,
-          fitness_center: false,
-        },
-        HomeType: draftToInsert.HomeTypesCategory ? (draftToInsert.HomeTypesCategory.toLowerCase().replace(/\s+/g, '_')) : "apartment",
-        latitude: markerPosition.lat,
-        longitude: markerPosition.lng,
-      };
-
-      const { data: insertedData, error } = await supabase
-        .from('properties')
-        .insert([testProperty])
-        .select();
-
-      if (error) {
-        throw error;
-      }
-
-      setToastMessage(`Successfully inserted test property with ID: ${insertedData[0]?.id}`);
-      setShowToast(true);
-      console.log("Inserted test property:", insertedData);
-
-    } catch (error: any) {
-      console.error("Database insertion error:", error);
-      setToastMessage(`Error inserting property: ${error.message}`);
-      setShowToast(true);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+  }, [address, manualAddress]);
 
   // Cleanup timeout on unmount
   useEffect(() => {
@@ -581,10 +814,23 @@ const LocationStepPage: React.FC = () => {
 
   const handleNextStep = () => {
     saveCurrentStepToDraft();
-    history.push('/amenities'); // Navigate to the amenities step
+    history.push('/amenities');
   };
 
+  const handleBack = () => {
+    localStorage.removeItem('Property');
+    setToastMessage('Draft cleared');
+    setShowToast(true);
+    history.push('/propertyType');
+  };
 
+  // Get the display address based on current mode
+  const getDisplayAddress = (): string => {
+    if (manualMode) {
+      return manualAddress || "No manual address entered";
+    }
+    return address || "Select location on map or search";
+  };
 
   return (
     <IonPage>
@@ -620,10 +866,9 @@ const LocationStepPage: React.FC = () => {
             <IonCardContent>
               <IonText color="dark">
                 <h3>Draft Data Found</h3>
-                <p><strong>Property Type:</strong> {Property.propertyTypeCategory || 'Not specified'}</p>
-                <p><strong>Home Type:</strong> {Property.HomeTypesCategory || 'Not specified'}</p>
+                <p><strong>Property Type:</strong> {Property.property_type || 'Not specified'}</p>
+                <p><strong>Home Type:</strong> {Property.HomeType || 'Not specified'}</p>
                 <p><strong>Last Updated:</strong> {Property.updated_at ? new Date(Property.updated_at).toLocaleString() : 'Unknown'}</p>
-                {/* Display location related draft data */}
                 <p><strong>Draft Address:</strong> {Property.address || 'Not specified'}</p>
               </IonText>
             </IonCardContent>
@@ -640,114 +885,94 @@ const LocationStepPage: React.FC = () => {
           </IonCard>
         )}
 
-        {/* Search Bar with Suggestions */}
-        <div style={{ position: "relative" }}>
-          <IonSearchbar
-            placeholder="Search for your property location"
-            onIonInput={handleSearchInput}
-            onIonClear={handleSearchClear}
-            showClearButton="focus"
-            value={searchQuery}
+        {/* Manual Address Toggle */}
+        <IonItem lines="none" className="ion-margin-bottom">
+          <IonLabel>Enter Address Manually</IonLabel>
+          <IonToggle
+            checked={manualMode}
+            onIonChange={toggleManualMode}
+            aria-label="Toggle manual address entry"
           />
-
-          {/* Loading indicator */}
-          {isSearching && (
-            <div
-              style={{
-                position: "absolute",
-                right: "50px",
-                top: "50%",
-                transform: "translateY(-50%)",
-                zIndex: 10,
-              }}
-            >
-              <IonSpinner
-                name="crescent"
-                style={{ width: "20px", height: "20px" }}
-              />
-            </div>
-          )}
-
-          {/* Suggestions Dropdown */}
-          {showSuggestions && suggestions.length > 0 && (
-            <IonCard
-              style={{
-                position: "absolute",
-                top: "100%",
-                left: 0,
-                right: 0,
-                zIndex: 1000,
-                maxHeight: "300px",
-                overflowY: "auto",
-                margin: 0,
-              }}
-            >
-              {suggestions.map((suggestion) => (
-                <IonItem
-                  key={suggestion.place_id}
-                  button
-                  onClick={() => handleSuggestionSelect(suggestion)}
-                >
-                  <IonIcon icon={searchOutline} slot="start" color="medium" />
-                  <IonLabel>
-                    <h3>{suggestion.display_name}</h3>
-                    {suggestion.address && (
-                      <p>
-                        {[
-                          suggestion.address.road,
-                          suggestion.address.city,
-                          suggestion.address.state,
-                          suggestion.address.country,
-                        ]
-                          .filter(Boolean)
-                          .join(", ")}
-                      </p>
-                    )}
-                  </IonLabel>
-                </IonItem>
-              ))}
-            </IonCard>
-          )}
-        </div>
-
-        <IonItem lines="none" className="ion-no-padding">
-          <IonLabel>
-            <IonText color="medium">
-              <p>Can't find the exact location?</p>
-            </IonText>
-            <IonButton fill="clear" size="small" onClick={toggleManualMode}>
-              {manualMode ? "Use Map" : "Enter it manually"}
-            </IonButton>
-          </IonLabel>
         </IonItem>
 
-        {/* Manual address input */}
-        {manualMode && (
-          <IonCard color="light">
-            <IonCardContent>
-              <IonItem>
-                <IonLabel position="stacked">Manual Address</IonLabel>
-                <IonInput
-                  value={manualAddress}
-                  placeholder="Type your address manually"
-                  onIonInput={(e) => {
-                    setManualAddress(e.detail.value!);
-                    setAddress(e.detail.value!);
-                    onUpdate({ address: e.detail.value! });
-                  }}
+        {manualMode ? (
+          <IonItem className="ion-margin-bottom">
+            <IonInput
+              label="Property Address"
+              labelPlacement="floating"
+              value={manualAddress}
+              onIonChange={(e) => setManualAddress(e.detail.value!)}
+              placeholder="Enter full address manually"
+            />
+          </IonItem>
+        ) : (
+          <div style={{ position: "relative" }}>
+            <IonSearchbar
+              placeholder="Search for your property location"
+              onIonInput={handleSearchInput}
+              onIonClear={handleSearchClear}
+              showClearButton="focus"
+              value={searchQuery}
+            />
+
+            {/* Loading indicator for search */}
+            {isSearching && (
+              <div
+                style={{
+                  position: "absolute",
+                  right: "50px",
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  zIndex: 10,
+                }}
+              >
+                <IonSpinner
+                  name="crescent"
+                  style={{ width: "20px", height: "20px" }}
                 />
-              </IonItem>
-              <IonText color="medium">
-                <p>
-                  This address will be used for your listing. You can switch back to map mode anytime.
-                </p>
-              </IonText>
-            </IonCardContent>
-          </IonCard>
+              </div>
+            )}
+
+            {/* Suggestions Dropdown */}
+            {showSuggestions && suggestions.length > 0 && !manualMode && (
+              <IonCard
+                style={{
+                  position: "absolute",
+                  top: "100%",
+                  left: 0,
+                  right: 0,
+                  zIndex: 100,
+                  maxHeight: "200px",
+                  overflowY: "auto",
+                  boxShadow: "0 4px 8px rgba(0,0,0,0.1)",
+                  marginTop: "5px",
+                }}
+              >
+                <IonCardContent className="ion-no-padding">
+                  {suggestions.map((suggestion, index) => (
+                    <IonItem
+                      key={suggestion.properties.place_id || index}
+                      button
+                      onClick={() => handleSuggestionSelect(suggestion)}
+                      detail={false}
+                    >
+                      <IonIcon icon={locationOutline} slot="start" color="medium" />
+                      <IonLabel>
+                        <h2>{suggestion.properties.formatted}</h2>
+                        {suggestion.properties.confidence && (
+                          <p>Confidence: {Math.round(suggestion.properties.confidence * 100)}%</p>
+                        )}
+                      </IonLabel>
+                    </IonItem>
+                  ))}
+                </IonCardContent>
+              </IonCard>
+            )}
+          </div>
         )}
 
-        {!manualMode && (
-          <div style={{ height: "400px", width: "100%", marginTop: "16px" }}>
+        <IonCard className="ion-margin-top" style={{ height: "400px", width: "100%" }}>
+          <IonCardContent className="ion-no-padding" style={{ height: "100%" }}>
             <Suspense fallback={<MapSkeleton />}>
               <LazyMapComponent
                 position={markerPosition}
@@ -756,57 +981,40 @@ const LocationStepPage: React.FC = () => {
                 shouldZoom={shouldZoom}
               />
             </Suspense>
-          </div>
-        )}
-
-        {/* Display selected address/location */}
-        <IonCard className="ion-margin-top">
-          <IonCardContent>
-            <IonItem lines="none">
-              <IonIcon icon={locationOutline} slot="start" color="primary" />
-              <IonLabel>
-                <h3 className="ion-text-wrap">
-                  {manualMode ? manualAddress || "No manual address entered" : address || "Select location on map or search"}
-                </h3>
-              </IonLabel>
-            </IonItem>
           </IonCardContent>
         </IonCard>
 
-        {/* Action Buttons */}
-        <div className="ion-margin-top">
-          <IonButton
-            expand="block"
-            onClick={handleNextStep}
-            className="ion-margin-bottom"
-          >
-            Next
-          </IonButton>
+        <IonItem className="ion-margin-top">
+          <IonIcon icon={locationOutline} slot="start" />
+          <IonLabel position="stacked">Selected Location Address</IonLabel>
+          <IonText>
+            <p className="ion-padding-top ion-padding-bottom">
+              {isReverseGeocoding && !manualMode ? (
+                <>
+                  <IonSpinner name="dots" /> Getting address...
+                </>
+              ) : (
+                getDisplayAddress()
+              )}
+            </p>
+          </IonText>
+        </IonItem>
 
-          <IonButton
-            expand="block"
-            onClick={handleTestInsert}
-            disabled={isSubmitting}
-            fill="outline"
-          >
-            {isSubmitting ? (
-              <IonSpinner name="crescent" />
-            ) : (
-              <>
-                <IonIcon icon={saveOutline} slot="start" />
-                Test Insert (Sample Data)
-              </>
-            )}
+        <div className="ion-padding-top">
+          <IonButton expand="block" onClick={handleNextStep}>
+            Continue
+          </IonButton>
+          <IonButton expand="block" fill="outline" className="ion-margin-top" onClick={handleBack} color="danger">
+            Back and Clear Draft
           </IonButton>
         </div>
 
-        <PublishPropertyButton/>
-
         <IonToast
           isOpen={showToast}
-          onDidDismiss={() => setShowToast(false)}
           message={toastMessage}
-          duration={2000}
+          duration={3000}
+          onDidDismiss={() => setShowToast(false)}
+          color="dark"
         />
       </IonContent>
     </IonPage>

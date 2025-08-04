@@ -8,7 +8,6 @@ export interface RentalAmenities {
   pet_friendly?: {
     dogs_allowed?: boolean;
     cats_allowed?: boolean;
-    breed_restrictions?: string[];
   };
   parking?: {
     type?: 'garage' | 'carport' | 'off_street' | 'street';

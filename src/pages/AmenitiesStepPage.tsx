@@ -20,11 +20,24 @@ import {
   IonRow,
   IonCol,
   IonToast,
-  IonInput, // Import IonInput for the number of spots
+  IonInput,
+  IonAlert,
 } from '@ionic/react';
-import { checkmarkCircleOutline, closeCircleOutline, wifiOutline, businessOutline, leafOutline, carOutline, sunnyOutline, fastFoodOutline, flashOutline, accessibilityOutline } from 'ionicons/icons';
+import { 
+  checkmarkCircleOutline, 
+  closeCircleOutline, 
+  wifiOutline, 
+  businessOutline, 
+  leafOutline, 
+  carOutline, 
+  sunnyOutline, 
+  fastFoodOutline, 
+  flashOutline, 
+  accessibilityOutline 
+} from 'ionicons/icons';
 import { RentalAmenities, RentalDraft } from "../components/DbCrud";
-import  PublishPropertyButton  from '../pages/PublishPropertyButton';
+import PublishPropertyButton from '../pages/PublishPropertyButton';
+import supabase from '../../supabaseConfig';
 
 // Helper to get or initialize rental draft
 const getRentalDraft = (): RentalDraft => {
@@ -34,10 +47,34 @@ const getRentalDraft = (): RentalDraft => {
       return JSON.parse(saved);
     } catch (e) {
       console.error("Failed to parse rentalDraft from localStorage, initializing new.", e);
-      return { id: '', building_name: null, address: '', property_type: null, house_rules: null, max_guests: null, instant_booking: null, is_active: null, amenities: {}, created_at: new Date().toISOString(), updated_at: null };
+      return { 
+        id: '', 
+        building_name: null, 
+        address: '', 
+        property_type: null, 
+        house_rules: null, 
+        max_guests: null, 
+        instant_booking: null, 
+        is_active: null, 
+        amenities: {}, 
+        created_at: new Date().toISOString(), 
+        updated_at: null 
+      };
     }
   }
-  return { id: '', building_name: null, address: '', property_type: null, house_rules: null, max_guests: null, instant_booking: null, is_active: null, amenities: {}, created_at: new Date().toISOString(), updated_at: null };
+  return { 
+    id: '', 
+    building_name: null, 
+    address: '', 
+    property_type: null, 
+    house_rules: null, 
+    max_guests: null, 
+    instant_booking: null, 
+    is_active: null, 
+    amenities: {}, 
+    created_at: new Date().toISOString(), 
+    updated_at: null 
+  };
 };
 
 const AmenitiesStepPage: React.FC = () => {
@@ -45,6 +82,7 @@ const AmenitiesStepPage: React.FC = () => {
   const [amenities, setAmenities] = useState<RentalAmenities>({});
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
+  const [showBackAlert, setShowBackAlert] = useState(false);
 
   useEffect(() => {
     // Load amenities from rentalDraft in localStorage
@@ -70,46 +108,115 @@ const AmenitiesStepPage: React.FC = () => {
   };
 
   const handleParkingTypeChange = (type: 'garage' | 'carport' | 'off_street' | 'street') => {
-    setAmenities(prevAmenities => ({
-      ...prevAmenities,
-      parking: {
-        ...prevAmenities.parking,
-        type: type
-      }
-    }));
+    setAmenities(prevAmenities => {
+      const newAmenities = {
+        ...prevAmenities,
+        parking: {
+          ...prevAmenities.parking,
+          type: type
+        }
+      };
+      return newAmenities;
+    });
   };
 
   const handleParkingSpotsChange = (spots: number) => {
-    setAmenities(prevAmenities => ({
-      ...prevAmenities,
-      parking: {
-        ...prevAmenities.parking,
-        spots: spots
-      }
-    }));
+    setAmenities(prevAmenities => {
+      const newAmenities = {
+        ...prevAmenities,
+        parking: {
+          ...prevAmenities.parking,
+          spots: spots
+        }
+      };
+      saveAmenitiesToDraft(newAmenities);
+      return newAmenities;
+    });
   };
 
-  const saveAmenitiesToDraft = () => {
+  const saveAmenitiesToDraft = async (updatedAmenities: RentalAmenities) => {
     const draft = getRentalDraft();
     const updatedDraft: RentalDraft = {
       ...draft,
-      amenities: amenities,
+      amenities: updatedAmenities,
       updated_at: new Date().toISOString(),
     };
+    
     localStorage.setItem('rentalDraft', JSON.stringify(updatedDraft));
+    
+    // Also save to Supabase if draft has an ID
+    if (updatedDraft.id) {
+      try {
+        const { error } = await supabase
+          .from('rental_drafts')
+          .upsert([{
+            id: updatedDraft.id,
+            amenities_data: updatedAmenities,
+            updated_at: updatedDraft.updated_at,
+          }], { onConflict: 'id' });
+
+        if (error) {
+          console.error('Error saving amenities to Supabase:', error);
+        }
+      } catch (error) {
+        console.error('Error saving amenities to Supabase:', error);
+      }
+    }
+    
     setToastMessage('Amenities saved to draft!');
     setShowToast(true);
     console.log('Amenities saved:', updatedDraft.amenities);
   };
 
+  const clearDraftAndStorage = async () => {
+    const draft = getRentalDraft();
+    
+    // Clear amenities in localStorage
+    const updatedDraft = { ...draft, amenities: {} };
+    localStorage.setItem('rentalDraft', JSON.stringify(updatedDraft));
+    setAmenities({}); // Also clear the local state
+    
+    // Clear amenities in Supabase if draft exists
+    if (draft.id) {
+      try {
+        const { error } = await supabase
+          .from('rental_drafts')
+          .update({ amenities_data: {} })
+          .eq('id', draft.id);
+        
+        if (error) {
+          console.error('Error clearing amenities in Supabase:', error);
+        } else {
+          console.log('Amenities cleared in Supabase');
+        }
+      } catch (error) {
+        console.error('Error clearing amenities in Supabase:', error);
+      }
+    }
+    
+    setToastMessage('Amenities cleared from draft and database');
+    setShowToast(true);
+  };
+
   const handleNext = () => {
-    saveAmenitiesToDraft();
-    history.push('/final-review');
+    saveAmenitiesToDraft(amenities);
+    history.push('/finalReview');
   };
 
   const handleBack = () => {
-    saveAmenitiesToDraft();
-    history.push('/LocationStepPage');
+    // Show confirmation alert before going back and clearing draft
+    setShowBackAlert(true);
+  };
+
+  const confirmBack = async () => {
+    setShowBackAlert(false);
+    await clearDraftAndStorage();
+    // Navigate back to location step
+    history.push('/LocationStepPage'); // Updated to use correct route path
+  };
+
+  const cancelBack = () => {
+    setShowBackAlert(false);
   };
 
   return (
@@ -302,7 +409,25 @@ const AmenitiesStepPage: React.FC = () => {
           </IonButton>
         </div>
 
-        <PublishPropertyButton/>
+        {/* Back confirmation alert */}
+        <IonAlert
+          isOpen={showBackAlert}
+          onDidDismiss={cancelBack}
+          header="Go Back?"
+          message="Going back will clear your current draft data. Are you sure you want to continue?"
+          buttons={[
+            {
+              text: 'Cancel',
+              role: 'cancel',
+              handler: cancelBack
+            },
+            {
+              text: 'Yes, Go Back',
+              role: 'confirm',
+              handler: confirmBack
+            }
+          ]}
+        />
 
         <IonToast
           isOpen={showToast}

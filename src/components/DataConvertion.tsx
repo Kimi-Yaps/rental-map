@@ -3,7 +3,7 @@
 // This file contains the logic to convert the client-side rental draft
 // data into the format required by the Supabase database schema.
 
-import { Property } from "./DbCrud"; // Import shared types
+import { RentalDraft } from "./DbCrud"; // Import shared types
 
 // Property type conversion mappings
 const PROPERTY_TYPE_MAPPING = {
@@ -29,13 +29,13 @@ const convertHomeTypeForDB = (displayType: string): string => {
 };
 
 /**
- * Prepares the Property object for insertion into the Supabase 'properties' table.
+ * Prepares the RentalDraft object for insertion into the Supabase 'properties' table.
  * This function handles renaming, data type conversion, and setting default values.
  *
- * @param draft The Property object from localStorage.
+ * @param draft The RentalDraft object from localStorage.
  * @returns An object formatted for direct insertion into Supabase.
  */
-export const prepareDraftForDB = (draft: Property) => {
+export const prepareDraftForDB = (draft: RentalDraft) => {
   const converted: any = { ...draft };
 
   // --- Map client-side specific fields to database schema fields ---
@@ -104,7 +104,7 @@ export const prepareDraftForDB = (draft: Property) => {
       converted.amenities = null;
   }
 
-  // --- Handle fields directly from Property if they match Property (DB) schema ---
+  // --- Handle fields directly from RentalDraft if they match Property (DB) schema ---
   // Ensure 'id' is not sent for new inserts
   if (converted.id === '' || converted.id === undefined) {
     delete converted.id;

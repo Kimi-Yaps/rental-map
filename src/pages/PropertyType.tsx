@@ -66,6 +66,9 @@ const PropertyType: React.FC = () => {
     const draft = JSON.parse(localStorage.getItem('rentalDraft') || '{}');
     draft.propertyTypeCategory = type;
     draft.propertyTypeDB = dbValue; // Store converted value too
+    if (type !== 'Home') {
+      delete draft.HomeTypesCategory;
+    }
     draft.lastUpdated = new Date().toISOString();
     localStorage.setItem('rentalDraft', JSON.stringify(draft));
     
