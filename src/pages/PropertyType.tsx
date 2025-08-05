@@ -42,15 +42,15 @@ const PropertyType: React.FC = () => {
   const history = useHistory();
 
   useEffect(() => {
-    const saved = localStorage.getItem('rentalDraft');
+    const saved = localStorage.getItem('Property');
     if (saved) {
       try {
         const draft = JSON.parse(saved);
-        if (draft.propertyTypeCategory) {
-          setPropertyType(draft.propertyTypeCategory);
+        if (draft.property_type) {
+          setPropertyType(draft.property_type);
         }
       } catch {
-        localStorage.removeItem('rentalDraft');
+        localStorage.removeItem('Property');
       }
     }
   }, []);
@@ -63,14 +63,13 @@ const PropertyType: React.FC = () => {
     console.log(`Property Type Selected - Display: ${type} → Database: ${dbValue}`);
     
     // Save to localStorage for all property types
-    const draft = JSON.parse(localStorage.getItem('rentalDraft') || '{}');
-    draft.propertyTypeCategory = type;
-    draft.propertyTypeDB = dbValue; // Store converted value too
+    const draft = JSON.parse(localStorage.getItem('Property') || '{}');
+    draft.property_type = type; // Save directly to property_type
     if (type !== 'Home') {
-      delete draft.HomeTypesCategory;
+      delete draft.HomeType; // Use HomeType instead of HomeTypesCategory
     }
     draft.lastUpdated = new Date().toISOString();
-    localStorage.setItem('rentalDraft', JSON.stringify(draft));
+    localStorage.setItem('Property', JSON.stringify(draft));
     
     setToastMessage(`${type} property type selected`);
     setShowToast(true);

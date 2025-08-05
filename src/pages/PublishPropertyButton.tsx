@@ -22,7 +22,7 @@ const PublishPropertyButton: React.FC<PublishPropertyButtonProps> = ({ onPublish
   let message = '';
   try {
    // Get the current rental draft from localStorage
-   const currentDraftString = localStorage.getItem('rentalDraft');
+   const currentDraftString = localStorage.getItem('Property');
    let draftData: Property = {};
 
    if (currentDraftString) {
@@ -52,7 +52,7 @@ const PublishPropertyButton: React.FC<PublishPropertyButtonProps> = ({ onPublish
    // Insert into Supabase
    const { data: insertedData, error } = await supabase
     .from('properties')
-    .insert([convertedDraft]) // Use the prepared draft
+    .upsert([convertedDraft], { onConflict: 'id' }) // Use upsert for insert/update
     .select();
 
    if (error) {
@@ -60,7 +60,7 @@ const PublishPropertyButton: React.FC<PublishPropertyButtonProps> = ({ onPublish
    }
 
    // Success - clear the draft and show success message
-   localStorage.removeItem('rentalDraft');
+   localStorage.removeItem('Property');
    message = `Successfully published property! ID: ${insertedData[0]?.id || 'N/A'}`;
    success = true;
    console.log("Successfully inserted property:", insertedData);

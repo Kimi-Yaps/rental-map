@@ -16,8 +16,6 @@ import {
 interface DraftProperty {
   building_name?: string;
   address?: string; // Address from the location page
-  latitude?: number;  // Latitude from the location page
-  longitude?: number; // Longitude from the location page
   property_type?: string;
   HomeType?: string;
   max_guests?: number;
@@ -142,12 +140,6 @@ const FinalReviewPage: React.FC = () => {
                   </ul>
                 </IonText>
               )}
-
-              <IonText className="ion-margin-top">
-                <h3>Location Details</h3>
-                <p><strong>Latitude:</strong> {property.latitude?.toFixed(6) || 'N/A'}</p>
-                <p><strong>Longitude:</strong> {property.longitude?.toFixed(6) || 'N/A'}</p>
-              </IonText>
             </IonCardContent>
           </IonCard>
         ) : (

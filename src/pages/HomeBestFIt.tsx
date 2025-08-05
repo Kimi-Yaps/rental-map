@@ -42,15 +42,15 @@ const HomeTypes: React.FC = () => {
   const history = useHistory();
 
   useEffect(() => {
-    const saved = localStorage.getItem('rentalDraft');
+    const saved = localStorage.getItem('Property');
     if (saved) {
       try {
         const draft = JSON.parse(saved);
-        if (draft.HomeTypesCategory) {
-          setHomeType(draft.HomeTypesCategory);
+        if (draft.HomeType) {
+          setHomeType(draft.HomeType);
         }
       } catch {
-        localStorage.removeItem('rentalDraft');
+        localStorage.removeItem('Property');
       }
     }
   }, []);
@@ -63,11 +63,10 @@ const HomeTypes: React.FC = () => {
     console.log(`Home Type Selected - Display: ${type} → Database: ${dbValue}`);
     
     // Save to localStorage
-    const draft = JSON.parse(localStorage.getItem('rentalDraft') || '{}');
-    draft.HomeTypesCategory = type;
-    draft.homeTypeDB = dbValue; // Store converted value too
+    const draft = JSON.parse(localStorage.getItem('Property') || '{}');
+    draft.HomeType = type;
     draft.lastUpdated = new Date().toISOString();
-    localStorage.setItem('rentalDraft', JSON.stringify(draft));
+    localStorage.setItem('Property', JSON.stringify(draft));
     
     setToastMessage(`${type} home type selected`);
     setShowToast(true);

@@ -3,7 +3,7 @@
 // This file contains the logic to convert the client-side rental draft
 // data into the format required by the Supabase database schema.
 
-import { RentalDraft } from "./DbCrud"; // Import shared types
+import { Property } from "./DbCrud"; // Import shared types
 
 // Property type conversion mappings
 const PROPERTY_TYPE_MAPPING = {
@@ -35,26 +35,16 @@ const convertHomeTypeForDB = (displayType: string): string => {
  * @param draft The RentalDraft object from localStorage.
  * @returns An object formatted for direct insertion into Supabase.
  */
-export const prepareDraftForDB = (draft: RentalDraft) => {
+export const prepareDraftForDB = (draft: Property) => {
   const converted: any = { ...draft };
 
   // --- Map client-side specific fields to database schema fields ---
 
   // Property Type
-  if (draft.propertyTypeCategory) {
-    converted.property_type = convertPropertyTypeForDB(draft.propertyTypeCategory);
-  } else {
-    converted.property_type = null;
-  }
-  delete converted.propertyTypeCategory;
+  converted.property_type = draft.property_type;
 
   // Home Type
-  if (draft.HomeTypesCategory) {
-    converted.HomeType = convertHomeTypeForDB(draft.HomeTypesCategory);
-  } else {
-    converted.HomeType = null;
-  }
-  delete converted.HomeTypesCategory;
+  converted.HomeType = draft.HomeType;
 
   // Location (LatLng object to separate latitude and longitude columns)
   delete converted.location;
@@ -81,7 +71,7 @@ export const prepareDraftForDB = (draft: RentalDraft) => {
     if (isNaN(converted.max_guests)) converted.max_guests = null;
   } else if (draft.maxGuests !== undefined) {
     converted.max_guests = draft.maxGuests;
-  } else if (converted.max_guests === undefined) {
+  } else if (converted.maxGuests === undefined) {
     converted.max_guests = null;
   }
   if (converted.max_guests === 0) converted.max_guests = null;
@@ -90,23 +80,16 @@ export const prepareDraftForDB = (draft: RentalDraft) => {
   // Instant Booking
   if (draft.instantBooking !== undefined) {
     converted.instant_booking = draft.instantBooking;
-  } else if (converted.instant_booking === undefined) {
+  } else if (converted.instantBooking === undefined) {
     converted.instant_booking = false;
   }
   delete converted.instantBooking;
 
-  // Ensure check_in_time and check_out_time are null if not provided in draft
-  delete converted.check_in_time;
-  delete converted.check_out_time;
+  // Set is_active to true by default for new properties
+  converted.is_active = true;
 
-  // Amenities (ensure it's an object or null, not undefined)
-  if (converted.amenities === undefined) {
-      converted.amenities = null;
-  }
-
-  // --- Handle fields directly from RentalDraft if they match Property (DB) schema ---
-  // Ensure 'id' is not sent for new inserts
-  if (converted.id === '' || converted.id === undefined) {
+  // If the ID is a client-generated draft ID, remove it so Supabase can generate a proper UUID
+  if (converted.id && typeof converted.id === 'string' && converted.id.startsWith('draft_')) {
     delete converted.id;
   }
 

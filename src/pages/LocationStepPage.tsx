@@ -480,9 +480,9 @@ const MapSkeleton = () => (
 const LocationStepPage: React.FC = () => {
   const history = useHistory();
   // Default to a central Malaysian location (e.g., Kuala Lumpur)
-  const [markerPosition, setMarkerPosition] = useState<LatLng>({ lat: 3.1390, lng: 101.6869 });
+  const [markerPosition, setMarkerPosition] = useState<LatLng>({ lat: 2.430917, lng: 103.836113 });
   const [searchQuery, setSearchQuery] = useState<string>("");
-  const [address, setAddress] = useState<string>("");
+  const [address, setAddress] = useState<string>(""); // CHANGED: Start with empty address
   const [suggestions, setSuggestions] = useState<GeoapifyFeature[]>([]);
   const [showSuggestions, setShowSuggestions] = useState<boolean>(false);
   const [isSearching, setIsSearching] = useState<boolean>(false);
@@ -490,6 +490,7 @@ const LocationStepPage: React.FC = () => {
   const [shouldZoom, setShouldZoom] = useState<boolean>(false);
   const [manualAddress, setManualAddress] = useState<string>("");
   const [manualMode, setManualMode] = useState<boolean>(false);
+  const [addressLocked, setAddressLocked] = useState<boolean>(false);
 
   // Toast states
   const [showToast, setShowToast] = useState<boolean>(false);
@@ -524,7 +525,7 @@ const LocationStepPage: React.FC = () => {
     }
   }, []);
 
-  // Load localStorage data on component mount
+  // MODIFIED: Load localStorage data on component mount - no default address fetching
   useEffect(() => {
     const loadDraftData = () => {
       try {
@@ -535,11 +536,12 @@ const LocationStepPage: React.FC = () => {
           console.log("Loaded rental draft:", draft);
 
           // If location data exists in draft, use it
-          if (draft.location) {
+          if (draft.location && draft.address) {
             setMarkerPosition(draft.location);
-            setAddress(draft.address || draft.searchQuery || '');
-            setSearchQuery(draft.searchQuery || draft.address || '');
-            setManualAddress(draft.address || draft.searchQuery || '');
+            setAddress(draft.address);
+            setManualAddress(draft.address);
+            setSearchQuery(''); // Don't populate search from draft
+            setAddressLocked(true);
             return;
           }
         }
@@ -548,30 +550,31 @@ const LocationStepPage: React.FC = () => {
         setProperty(null);
       }
 
-      fetchInitialLocation();
+      // CHANGED: Only set map position, don't fetch address automatically
+      setInitialMapPosition();
     };
 
-    const fetchInitialLocation = async () => {
+    const setInitialMapPosition = async () => {
       try {
-        // Try browser geolocation first for accuracy
+        // Try browser geolocation first for map positioning only
         const currentPosition = await GeoapifyGeocodingService.getCurrentPosition();
         if (currentPosition) {
           setMarkerPosition(currentPosition);
-          console.log('Using browser geolocation:', currentPosition);
+          console.log('Using browser geolocation for map position:', currentPosition);
           return;
         }
         
         // Fallback to default location if browser geolocation fails
-        const defaultLocation = { lat: 3.1390, lng: 101.6869 };
+        const defaultLocation = { lat: 2.430917, lng: 103.836113 }; // Mersing coordinates
         setMarkerPosition(defaultLocation);
-        console.log('Using default location:', defaultLocation);
+        console.log('Using default location for map position:', defaultLocation);
 
       } catch (error) {
         console.warn('Error getting initial location:', error);
         // Final fallback to default location
-        const defaultLocation = { lat: 3.1390, lng: 101.6869 };
+        const defaultLocation = { lat: 2.430917, lng: 103.836113 }; // Mersing coordinates
         setMarkerPosition(defaultLocation);
-        console.log('Using default location:', defaultLocation);
+        console.log('Using default location for map position:', defaultLocation);
       }
     };
 
@@ -602,30 +605,8 @@ const LocationStepPage: React.FC = () => {
     setProperty(updatedDraft);
   }, [markerPosition, address, searchQuery, manualAddress, manualMode]);
 
-  // Update address when marker position changes (reverse geocoding)
-  useEffect(() => {
-    if (!manualMode) {
-      const fetchAddress = async () => {
-        setIsReverseGeocoding(true);
-        try {
-          const addressText = await GeoapifyGeocodingService.reverseGeocode(
-            markerPosition.lat,
-            markerPosition.lng
-          );
-          setAddress(addressText);
-          setManualAddress(addressText);
-          setSearchQuery(addressText);
-        } catch (error: any) {
-          console.error("Error fetching address:", error);
-          setAddress("Address not found");
-          setSearchQuery("Address not found");
-        } finally {
-          setIsReverseGeocoding(false);
-        }
-      };
-      fetchAddress();
-    }
-  }, [markerPosition, manualMode]);
+  // REMOVED: Automatic reverse geocoding on marker position change
+  // The useEffect that automatically fetched address when markerPosition changed has been removed
 
   // Debounced search handler for Geoapify autocomplete
   const fetchSuggestions = useCallback(async (query: string) => {
@@ -656,6 +637,7 @@ const LocationStepPage: React.FC = () => {
     (e: CustomEvent) => {
       const value = e.detail.value! || "";
       setSearchQuery(value);
+      setAddressLocked(false);
       if (searchTimeoutRef.current) {
         clearTimeout(searchTimeoutRef.current);
       }
@@ -680,11 +662,37 @@ const LocationStepPage: React.FC = () => {
       setShowSuggestions(false);
       setSuggestions([]);
       setShouldZoom(true);
+      setAddressLocked(true);
     },
     []
   );
 
-  // Handle location change from map (drag or click)
+  // Function to update address when marker is dragged or map is clicked
+  const updateAddressFromMap = useCallback(async (location: LatLng) => {
+    if (manualMode) {
+      console.log("Manual mode on, skipping reverse geocode.");
+      return;
+    }
+
+    setIsReverseGeocoding(true);
+    try {
+      const fetchedAddress = await GeoapifyGeocodingService.reverseGeocode(location.lat, location.lng);
+      setAddress(fetchedAddress);
+      setManualAddress(fetchedAddress);
+      setSearchQuery(fetchedAddress);
+      setAddressLocked(true);
+      setToastMessage("Address updated from map.");
+      setShowToast(true);
+    } catch (error: any) {
+      console.error("Error on marker drag end:", error);
+      setToastMessage("Could not update address from map location.");
+      setShowToast(true);
+    } finally {
+      setIsReverseGeocoding(false);
+    }
+  }, [manualMode]);
+
+  // MODIFIED: Handle location change from map
   const handleLocationChange = useCallback(async (location: LatLng) => {
     console.log('Location changed to:', location);
 
@@ -705,55 +713,18 @@ const LocationStepPage: React.FC = () => {
     setMarkerPosition(location);
     setShouldZoom(false);
 
-    if (manualMode) {
-      console.log('Manual mode active, skipping reverse geocoding');
-      return;
-    }
-
-    setIsReverseGeocoding(true);
-    setAddress('Getting address...');
-
-    try {
-      console.log('Starting reverse geocoding for:', location);
-      const reverseGeocodedAddress = await GeoapifyGeocodingService.reverseGeocode(location.lat, location.lng);
-
-      if (!reverseGeocodedAddress) {
-        throw new Error('Empty address returned from reverse geocoding');
-      }
-
-      console.log('Reverse geocoding successful:', reverseGeocodedAddress);
-      setAddress(reverseGeocodedAddress);
-      setSearchQuery(reverseGeocodedAddress);
-      setManualAddress(reverseGeocodedAddress);
-
-    } catch (error: any) {
-      console.error("Reverse geocoding failed:", error);
-      const fallbackAddress = `${location.lat.toFixed(6)}, ${location.lng.toFixed(6)}`;
-      setAddress(fallbackAddress);
-      setSearchQuery(fallbackAddress);
-      setManualAddress(fallbackAddress);
-
-      let errorMessage = 'Unable to get address for this location.';
-      if (error instanceof Error) {
-        if (error.message.includes('timeout')) {
-          errorMessage = 'Address lookup timed out. Using coordinates instead.';
-        } else if (error.message.includes('network')) {
-          errorMessage = 'Network error getting address. Using coordinates instead.';
-        }
-      }
-      setToastMessage(errorMessage);
-      setShowToast(true);
-
-    } finally {
-      setIsReverseGeocoding(false);
-    }
-  }, [manualMode]);
+    // When the location changes on the map (either by clicking or dragging),
+    // we now trigger the address update.
+    updateAddressFromMap(location);
+    
+  }, [updateAddressFromMap]);
 
   // Clear suggestions when search query is cleared
   const handleSearchClear = useCallback(() => {
     setSearchQuery("");
     setSuggestions([]);
     setShowSuggestions(false);
+    setAddressLocked(false);
     if (searchTimeoutRef.current) {
       clearTimeout(searchTimeoutRef.current);
     }
@@ -763,6 +734,8 @@ const LocationStepPage: React.FC = () => {
   const toggleManualMode = useCallback(() => {
     setManualMode((m) => {
       const newMode = !m;
+      setAddressLocked(false);
+      
       if (newMode) {
         setManualAddress(address);
         setSearchQuery("");
@@ -781,6 +754,7 @@ const LocationStepPage: React.FC = () => {
               setShouldZoom(true);
               setAddress(firstResult.properties.formatted);
               setSearchQuery(firstResult.properties.formatted);
+              setAddressLocked(true);
             } else {
               console.warn("Could not geocode manual address:", manualAddress);
               setToastMessage("Could not find coordinates for the manual address. Please refine it.");
@@ -813,6 +787,14 @@ const LocationStepPage: React.FC = () => {
   }, []);
 
   const handleNextStep = () => {
+    // ADDED: Validation to ensure address is provided before proceeding
+    const finalAddress = manualMode ? manualAddress : address;
+    if (!finalAddress || finalAddress.trim() === "") {
+      setToastMessage("Please provide a property address before continuing.");
+      setShowToast(true);
+      return;
+    }
+
     saveCurrentStepToDraft();
     history.push('/amenities');
   };
@@ -824,12 +806,12 @@ const LocationStepPage: React.FC = () => {
     history.push('/propertyType');
   };
 
-  // Get the display address based on current mode
+  // MODIFIED: Get the display address - show placeholder when empty
   const getDisplayAddress = (): string => {
     if (manualMode) {
-      return manualAddress || "No manual address entered";
+      return manualAddress || "Enter your property address manually";
     }
-    return address || "Select location on map or search";
+    return address || "Search for your property location or click on the map";
   };
 
   return (
@@ -879,7 +861,7 @@ const LocationStepPage: React.FC = () => {
           <IonCard color="warning" className="ion-margin-bottom">
             <IonCardContent>
               <IonText color="dark">
-                <p><strong>No draft data found in localStorage.</strong> The test insert will use default values.</p>
+                <p><strong>No draft data found in localStorage.</strong> Please provide your property location.</p>
               </IonText>
             </IonCardContent>
           </IonCard>
@@ -894,7 +876,7 @@ const LocationStepPage: React.FC = () => {
             aria-label="Toggle manual address entry"
           />
         </IonItem>
-
+        
         {manualMode ? (
           <IonItem className="ion-margin-bottom">
             <IonInput
@@ -902,13 +884,13 @@ const LocationStepPage: React.FC = () => {
               labelPlacement="floating"
               value={manualAddress}
               onIonChange={(e) => setManualAddress(e.detail.value!)}
-              placeholder="Enter full address manually"
+              placeholder="Enter your complete property address"
             />
           </IonItem>
         ) : (
           <div style={{ position: "relative" }}>
             <IonSearchbar
-              placeholder="Search for your property location"
+              placeholder="Search for your property location (e.g., 123 Main Street, Kuala Lumpur)"
               onIonInput={handleSearchInput}
               onIonClear={handleSearchClear}
               showClearButton="focus"
@@ -994,7 +976,12 @@ const LocationStepPage: React.FC = () => {
                   <IonSpinner name="dots" /> Getting address...
                 </>
               ) : (
-                getDisplayAddress()
+                <span style={{ 
+                  color: (!address && !manualAddress) ? '#666' : 'inherit',
+                  fontStyle: (!address && !manualAddress) ? 'italic' : 'normal'
+                }}>
+                  {getDisplayAddress()}
+                </span>
               )}
             </p>
           </IonText>

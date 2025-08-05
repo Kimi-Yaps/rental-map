@@ -35,18 +35,18 @@ import {
   flashOutline, 
   accessibilityOutline 
 } from 'ionicons/icons';
-import { RentalAmenities, RentalDraft } from "../components/DbCrud";
+import { RentalAmenities, Property } from "../components/DbCrud";
 import PublishPropertyButton from '../pages/PublishPropertyButton';
 import supabase from '../../supabaseConfig';
 
 // Helper to get or initialize rental draft
-const getRentalDraft = (): RentalDraft => {
-  const saved = localStorage.getItem('rentalDraft');
+const getProperty = (): Property => {
+  const saved = localStorage.getItem('Property');
   if (saved) {
     try {
       return JSON.parse(saved);
     } catch (e) {
-      console.error("Failed to parse rentalDraft from localStorage, initializing new.", e);
+      console.error("Failed to parse Property from localStorage, initializing new.", e);
       return { 
         id: '', 
         building_name: null, 
@@ -56,7 +56,7 @@ const getRentalDraft = (): RentalDraft => {
         max_guests: null, 
         instant_booking: null, 
         is_active: null, 
-        amenities: {}, 
+        amenities: { parking: { spots: 1 } }, 
         created_at: new Date().toISOString(), 
         updated_at: null 
       };
@@ -71,7 +71,7 @@ const getRentalDraft = (): RentalDraft => {
     max_guests: null, 
     instant_booking: null, 
     is_active: null, 
-    amenities: {}, 
+    amenities: { parking: { spots: 1 } }, 
     created_at: new Date().toISOString(), 
     updated_at: null 
   };
@@ -85,8 +85,8 @@ const AmenitiesStepPage: React.FC = () => {
   const [showBackAlert, setShowBackAlert] = useState(false);
 
   useEffect(() => {
-    // Load amenities from rentalDraft in localStorage
-    const draft = getRentalDraft();
+    // Load amenities from Property in localStorage
+    const draft = getProperty();
     setAmenities(draft.amenities || {});
   }, []);
 
@@ -135,14 +135,14 @@ const AmenitiesStepPage: React.FC = () => {
   };
 
   const saveAmenitiesToDraft = async (updatedAmenities: RentalAmenities) => {
-    const draft = getRentalDraft();
-    const updatedDraft: RentalDraft = {
+    const draft = getProperty();
+    const updatedDraft: Property = {
       ...draft,
       amenities: updatedAmenities,
       updated_at: new Date().toISOString(),
     };
     
-    localStorage.setItem('rentalDraft', JSON.stringify(updatedDraft));
+    localStorage.setItem('Property', JSON.stringify(updatedDraft));
     
     // Also save to Supabase if draft has an ID
     if (updatedDraft.id) {
@@ -169,11 +169,11 @@ const AmenitiesStepPage: React.FC = () => {
   };
 
   const clearDraftAndStorage = async () => {
-    const draft = getRentalDraft();
+    const draft = getProperty();
     
     // Clear amenities in localStorage
     const updatedDraft = { ...draft, amenities: {} };
-    localStorage.setItem('rentalDraft', JSON.stringify(updatedDraft));
+    localStorage.setItem('Property', JSON.stringify(updatedDraft));
     setAmenities({}); // Also clear the local state
     
     // Clear amenities in Supabase if draft exists
