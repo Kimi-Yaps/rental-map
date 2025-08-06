@@ -57,7 +57,7 @@ To get a local copy up and running, follow these simple steps.
 
 3.  **Set up environment variables:**
 
-    Create a `.env.development` file in the root of the project and add your Supabase project credentials and your Geoapify API key:
+    Create a `.env.local` & `.env.development` file in the root of the project and add your Supabase project credentials and your Geoapify API key:
 
     ```env
     # Your Supabase project URL
