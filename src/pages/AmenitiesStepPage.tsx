@@ -211,7 +211,7 @@ const AmenitiesStepPage: React.FC = () => {
   const confirmBack = async () => {
     setShowBackAlert(false);
     await clearDraftAndStorage();
-    history.push('/RoomsStepPage'); // Updated to use correct route path
+    history.push('/LocationStepPage'); // Updated to use correct route path
   };
 
   const cancelBack = () => {

@@ -20,7 +20,7 @@ export interface RentalAmenities {
   [key: string]: any;
 }
 
-export interface Pricing {
+export interface pricing {
   id: string; // uuid in SQL, represented as string in TypeScript
   property_id: string; // uuid in SQL, foreign key to properties (id)
   price_type: string; // text in SQL (e.g., 'daily', 'monthly')
@@ -59,5 +59,5 @@ export interface Property {
   HomeType: string | null;
   // Optional: If you intend to fetch pricing details along with the property,
   // you can include an array of Pricing objects.
-  pricing?: Pricing[];
+  pricing?: pricing[];
 }

@@ -15,12 +15,18 @@ import { RentalAmenities } from '../components/DbCrud';
 
 interface RoomDetails {
   room_type: 'bedroom' | 'bathroom' | 'kitchen' | 'living_room' | 'dining_room' | 'other';
-  bed_types?: string[]; // Made an array of strings for multiple bed types
+  bed_types?: string[];
   number_of_beds?: number;
   number_of_bathrooms?: number;
   has_ensuite?: boolean;
   description?: string;
   [key: string]: any;
+}
+
+interface PricingDetails {
+  price_type: 'monthly_rent' | 'security_deposit' | 'utilities_deposit' | 'other';
+  amount: number;
+  currency: string;
 }
 
 // Define the interface for the draft property data, including all expected fields
@@ -35,8 +41,8 @@ interface DraftProperty {
   house_rules?: string;
   rooms?: RoomDetails[];
   amenities?: RentalAmenities;
-  };
-
+  pricing?: PricingDetails[];
+}
 
 import PublishPropertyButton from './PublishPropertyButton';
 
@@ -87,7 +93,7 @@ const FinalReviewPage: React.FC = () => {
             fontWeight: 'bold',
             marginRight: '10px'
           }}>
-            8
+            5
           </div>
           <IonText>
             <h2>Review Your Listing</h2>
@@ -128,7 +134,7 @@ const FinalReviewPage: React.FC = () => {
                         Pet Friendly ({[
                           property.amenities.pet_friendly.dogs_allowed ? 'Dogs' : '',
                           property.amenities.pet_friendly.cats_allowed ? 'Cats' : ''
-                        ].filter(Boolean).join(' & ')})
+                        ].filter(Boolean).join(' & ')}))
                       </li>
                     )}
                     {property.amenities.parking?.type && (
@@ -153,6 +159,18 @@ const FinalReviewPage: React.FC = () => {
                   ))}
                 </IonText>
               )}
+
+              {property.pricing && property.pricing.length > 0 && (
+                <IonText className="ion-margin-top">
+                  <h3>Pricing</h3>
+                  {property.pricing.map((price, index) => (
+                    <div key={index} style={{ marginBottom: '10px', borderBottom: '1px solid #eee', paddingBottom: '10px' }}>
+                      <p><strong>{price.price_type.replace(/_/g, ' ')}:</strong> {price.amount} {price.currency}</p>
+                    </div>
+                  ))}
+                </IonText>
+              )}
+
             </IonCardContent>
           </IonCard>
         ) : (
@@ -167,7 +185,7 @@ const FinalReviewPage: React.FC = () => {
 
         <div className="ion-margin-top">
           <PublishPropertyButton onPublishComplete={handlePublishComplete} />
-          <IonButton expand="block" fill="outline" className="ion-margin-top" routerLink="/amenities">
+          <IonButton expand="block" fill="outline" className="ion-margin-top" routerLink="/pricing">
             Go Back to Edit
           </IonButton>
         </div>

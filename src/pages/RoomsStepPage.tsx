@@ -164,7 +164,7 @@ const RoomsStepPage: React.FC = () => {
   const handleNext = () => {
     saveRoomsToDraft(rooms);
     // You'll need to define the next route, e.g., for pricing or photos
-    history.push('/finalReview');
+    history.push('/pricing');
   };
 
   // Handlers for the "Back" button with confirmation alert
@@ -193,7 +193,7 @@ const RoomsStepPage: React.FC = () => {
         console.error('Error clearing rooms in Supabase:', error);
       }
     }
-    history.push('/AmenitiesStepPage');
+    history.push('/amenities');
   };
 
   const cancelBack = () => {
