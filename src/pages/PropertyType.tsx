@@ -78,7 +78,7 @@ const PropertyType: React.FC = () => {
 
   const handleBack = () => {
     // Clear localStorage when going back
-    localStorage.removeItem('rentalDraft');
+    localStorage.removeItem('Property');
     setToastMessage('Draft cleared');
     setShowToast(true);
     

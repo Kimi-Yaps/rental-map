@@ -39,7 +39,7 @@ import homeSearched from './pages/HomeSearched';
 import AmenitiesStepPage from './pages/AmenitiesStepPage';
 import LocationStepPage from './pages/LocationStepPage';
 import FinalReviewPage from './pages/FinalReviewPage';
-
+import RoomsStepPage from './pages/RoomsStepPage'
 setupIonicReact();
 
 const App: React.FC = () => (
@@ -53,6 +53,7 @@ const App: React.FC = () => (
         <Route exact path="/homeSearched" component={homeSearched} />
         <Route exact path="/LocationStepPage" component={LocationStepPage} />
         <Route exact path="/amenities" component={AmenitiesStepPage} />
+        <Route exact path="/rooms" component={RoomsStepPage} />
         <Route exact path="/finalReview" component={FinalReviewPage} />
         <Redirect exact from="/" to="/home" />
       </IonRouterOutlet>

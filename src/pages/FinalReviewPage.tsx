@@ -11,6 +11,18 @@ import {
   IonCardContent
 } from '@ionic/react';
 
+import { RentalAmenities } from '../components/DbCrud';
+
+interface RoomDetails {
+  room_type: 'bedroom' | 'bathroom' | 'kitchen' | 'living_room' | 'dining_room' | 'other';
+  bed_types?: string[]; // Made an array of strings for multiple bed types
+  number_of_beds?: number;
+  number_of_bathrooms?: number;
+  has_ensuite?: boolean;
+  description?: string;
+  [key: string]: any;
+}
+
 // Define the interface for the draft property data, including all expected fields
 // from previous steps like the location page.
 interface DraftProperty {
@@ -21,25 +33,10 @@ interface DraftProperty {
   max_guests?: number;
   instant_booking?: boolean;
   house_rules?: string;
-  amenities?: {
-    wifi_included?: boolean;
-    air_conditioning?: boolean;
-    in_unit_laundry?: boolean;
-    dishwasher?: boolean;
-    balcony_patio?: boolean;
-    community_pool?: boolean;
-    fitness_center?: boolean;
-    pet_friendly?: {
-      dogs_allowed?: boolean;
-      cats_allowed?: boolean;
-      breed_restrictions?: string[];
-    };
-    parking?: {
-      type?: string;
-      spots?: number;
-    };
+  rooms?: RoomDetails[];
+  amenities?: RentalAmenities;
   };
-}
+
 
 import PublishPropertyButton from './PublishPropertyButton';
 
@@ -138,6 +135,22 @@ const FinalReviewPage: React.FC = () => {
                       <li>Parking: {property.amenities.parking.type} ({property.amenities.parking.spots ?? 'N/A'} spots)</li>
                     )}
                   </ul>
+                </IonText>
+              )}
+
+              {property.rooms && property.rooms.length > 0 && (
+                <IonText className="ion-margin-top">
+                  <h3>Rooms</h3>
+                  {property.rooms.map((room, index) => (
+                    <div key={index} style={{ marginBottom: '10px', borderBottom: '1px solid #eee', paddingBottom: '10px' }}>
+                      <p><strong>Room {index + 1}: {room.room_type}</strong></p>
+                      {room.description && <p>Description: {room.description}</p>}
+                      {room.number_of_beds && <p>Beds: {room.number_of_beds}</p>}
+                      {room.bed_types && <p>Bed Types: {room.bed_types.join(', ')}</p>}
+                      {room.has_ensuite && <p>Ensuite Bathroom</p>}
+                      {room.number_of_bathrooms && <p>Bathrooms: {room.number_of_bathrooms}</p>}
+                    </div>
+                  ))}
                 </IonText>
               )}
             </IonCardContent>

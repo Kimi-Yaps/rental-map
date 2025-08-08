@@ -200,7 +200,7 @@ const AmenitiesStepPage: React.FC = () => {
 
   const handleNext = () => {
     saveAmenitiesToDraft(amenities);
-    history.push('/finalReview');
+    history.push('/rooms');
   };
 
   const handleBack = () => {
@@ -211,8 +211,7 @@ const AmenitiesStepPage: React.FC = () => {
   const confirmBack = async () => {
     setShowBackAlert(false);
     await clearDraftAndStorage();
-    // Navigate back to location step
-    history.push('/LocationStepPage'); // Updated to use correct route path
+    history.push('/RoomsStepPage'); // Updated to use correct route path
   };
 
   const cancelBack = () => {
