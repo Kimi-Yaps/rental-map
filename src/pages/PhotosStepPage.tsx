@@ -16,10 +16,12 @@ import {
   IonText,
   IonIcon,
   IonToast,
-  IonInput,
   IonSpinner,
   IonImg,
-  IonAlert
+  IonAlert,
+  IonGrid,
+  IonRow,
+  IonCol
 } from '@ionic/react';
 import { camera, arrowBack, arrowForward, trashOutline, videocamOutline } from 'ionicons/icons';
 import supabase from '../../supabaseConfig';
@@ -254,75 +256,93 @@ const PhotosStepPage: React.FC = () => {
         </IonToolbar>
       </IonHeader>
       <IonContent fullscreen className="ion-padding">
-        <div style={{ display: 'flex', alignItems: 'center', marginBottom: '20px' }}>
-          <div style={{
-            width: '30px',
-            height: '30px',
-            borderRadius: '50%',
-            backgroundColor: '#007bff',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: 'white',
-            fontWeight: 'bold',
-            marginRight: '10px'
-          }}>
-            5
-          </div>
-          <IonText>
-            <h2>Property Photos & Videos</h2>
-          </IonText>
-        </div>
-        <IonText>
-          <p>Upload photos and videos of your property. Good media attracts more tenants.</p>
-        </IonText>
+        <IonGrid>
+          <IonRow className="ion-align-items-center ion-margin-bottom">
+            <IonCol size="auto">
+              <div style={{
+                width: '30px',
+                height: '30px',
+                borderRadius: '50%',
+                backgroundColor: '#007bff',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: 'white',
+                fontWeight: 'bold',
+                marginRight: '10px'
+              }}>
+                5
+              </div>
+            </IonCol>
+            <IonCol>
+              <IonText>
+                <h2>Property Photos & Videos</h2>
+              </IonText>
+            </IonCol>
+          </IonRow>
+          <IonRow>
+            <IonCol size="12">
+              <IonText>
+                <p>Upload photos and videos of your property. Good media attracts more tenants.</p>
+              </IonText>
+            </IonCol>
+          </IonRow>
 
-        <IonCard>
-          <IonCardContent>
-            <IonItem lines="none">
-              <input type="file" id="fileInput" hidden multiple onChange={handleFileChange} accept="image/*,video/*" />
-              <IonButton fill="outline" onClick={() => document.getElementById('fileInput')?.click()}>
-                <IonIcon icon={camera} slot="start" />
-                Select Media
+          <IonRow className="ion-justify-content-center">
+            <IonCol size-xs="12" size-md="8" size-lg="6">
+              <IonCard>
+                <IonCardContent>
+                  <IonItem lines="none">
+                    <input type="file" id="fileInput" hidden multiple onChange={handleFileChange} accept="image/*,video/*" />
+                    <IonButton expand="block" fill="outline" onClick={() => document.getElementById('fileInput')?.click()}>
+                      <IonIcon icon={camera} slot="start" />
+                      Select Media
+                    </IonButton>
+                  </IonItem>
+                  {isUploading && <IonSpinner name="crescent" />}
+                  <IonList>
+                    {[...photos, ...videos].map((mediaUrl, index) => (
+                      <IonItem key={index}>
+                        {isVideoUrl(mediaUrl) ? (
+                          <>
+                            <IonIcon icon={videocamOutline} slot="start" style={{ marginRight: '10px' }}/>
+                            <video src={mediaUrl} controls style={{ width: '100px', height: 'auto', marginRight: '10px' }} />
+                          </>
+                        ) : (
+                          <IonImg src={mediaUrl} style={{ width: '100px', height: 'auto', marginRight: '10px' }} />
+                        )}
+                        <IonLabel>{isVideoUrl(mediaUrl) ? `Video ${index + 1}` : `Photo ${index + 1}`}</IonLabel>
+                        <IonButton
+                          slot="end"
+                          color="danger"
+                          fill="clear"
+                          onClick={() => handleDeleteMedia(index, isVideoUrl(mediaUrl))}
+                        >
+                          <IonIcon icon={trashOutline} slot="icon-only" />
+                        </IonButton>
+                      </IonItem>
+                    ))}
+                  </IonList>
+                </IonCardContent>
+              </IonCard>
+            </IonCol>
+          </IonRow>
+
+          <IonRow className="ion-padding-vertical ion-justify-content-center">
+            <IonCol size-xs="12" size-md="6">
+              <IonButton expand="block" onClick={handleNext} className="ion-margin-bottom">
+                Next
+                <IonIcon slot="end" icon={arrowForward} />
               </IonButton>
-            </IonItem>
-            {isUploading && <IonSpinner name="crescent" />}
-            <IonList>
-              {[...photos, ...videos].map((mediaUrl, index) => (
-                <IonItem key={index}>
-                  {isVideoUrl(mediaUrl) ? (
-                    <>
-                      <IonIcon icon={videocamOutline} slot="start" style={{ marginRight: '10px' }}/>
-                      <video src={mediaUrl} controls style={{ width: '100px', height: 'auto', marginRight: '10px' }} />
-                    </>
-                  ) : (
-                    <IonImg src={mediaUrl} style={{ width: '100px', height: 'auto', marginRight: '10px' }} />
-                  )}
-                  <IonLabel>{isVideoUrl(mediaUrl) ? `Video ${index + 1}` : `Photo ${index + 1}`}</IonLabel>
-                  <IonButton
-                    slot="end"
-                    color="danger"
-                    fill="clear"
-                    onClick={() => handleDeleteMedia(index, isVideoUrl(mediaUrl))}
-                  >
-                    <IonIcon icon={trashOutline} slot="icon-only" />
-                  </IonButton>
-                </IonItem>
-              ))}
-            </IonList>
-          </IonCardContent>
-        </IonCard>
-
-        <div className="ion-padding-vertical">
-          <IonButton expand="block" onClick={handleNext} className="ion-margin-bottom">
-            Next
-            <IonIcon slot="end" icon={arrowForward} />
-          </IonButton>
-          <IonButton expand="block" fill="outline" onClick={handleBack}>
-            <IonIcon slot="start" icon={arrowBack} />
-            Back
-          </IonButton>
-        </div>
+            </IonCol>
+            <IonCol size-xs="12" size-md="6">
+              <IonButton expand="block" fill="outline" onClick={handleBack}>
+                <IonIcon slot="start" icon={arrowBack} />
+                Back
+              </IonButton>
+            </IonCol>
+          </IonRow>
+        </IonGrid>
 
         <IonAlert
           isOpen={showDeleteAlert !== null}

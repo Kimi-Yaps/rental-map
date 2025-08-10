@@ -208,137 +208,158 @@ const RoomsStepPage: React.FC = () => {
         </IonToolbar>
       </IonHeader>
       <IonContent fullscreen className="ion-padding">
-        {/* Step Indicator */}
-        <div style={{ display: 'flex', alignItems: 'center', marginBottom: '20px' }}>
-          <div style={{
-            width: '30px',
-            height: '30px',
-            borderRadius: '50%',
-            backgroundColor: '#007bff',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: 'white',
-            fontWeight: 'bold',
-            marginRight: '10px'
-          }}>
-            3
-          </div>
-          <IonText>
-            <h2>Room Details</h2>
-          </IonText>
-        </div>
-        <IonText>
-          <p>Please provide details for each room in your property.</p>
-        </IonText>
+        <IonGrid>
+          <IonRow className="ion-align-items-center ion-margin-bottom">
+            <IonCol size="auto">
+              <div style={{
+                width: '30px',
+                height: '30px',
+                borderRadius: '50%',
+                backgroundColor: '#007bff',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: 'white',
+                fontWeight: 'bold',
+                marginRight: '10px'
+              }}>
+                3
+              </div>
+            </IonCol>
+            <IonCol>
+              <IonText>
+                <h2>Room Details</h2>
+              </IonText>
+            </IonCol>
+          </IonRow>
+          <IonRow>
+            <IonCol size="12">
+              <IonText>
+                <p>Please provide details for each room in your property.</p>
+              </IonText>
+            </IonCol>
+          </IonRow>
 
-        <IonList lines="full" className="ion-no-padding">
-          {rooms.map((room, index) => (
-            <IonCard key={index} className="ion-margin-top ion-no-margin-horizontal">
-              <IonCardContent>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <IonItem lines="none" className="ion-no-padding">
-                    <IonIcon icon={bedOutline} slot="start" color="primary" />
-                    <IonLabel position="stacked">Room {index + 1}</IonLabel>
-                  </IonItem>
-                  <IonButton
-                    fill="clear"
-                    color="danger"
-                    onClick={() => handleRemoveRoom(index)}
-                    size="small"
-                  >
-                    <IonIcon icon={removeCircleOutline} slot="icon-only" />
-                  </IonButton>
-                </div>
-                <IonItem lines="none">
-                  <IonLabel position="stacked">Room Type</IonLabel>
-                  <IonSelect
-                    value={room.room_type}
-                    onIonChange={(e) => handleRoomChange(index, 'room_type', e.detail.value)}
-                  >
-                    <IonSelectOption value="bedroom">Bedroom</IonSelectOption>
-                    <IonSelectOption value="bathroom">Bathroom</IonSelectOption>
-                    <IonSelectOption value="kitchen">Kitchen</IonSelectOption>
-                    <IonSelectOption value="living_room">Living Room</IonSelectOption>
-                    <IonSelectOption value="dining_room">Dining Room</IonSelectOption>
-                    <IonSelectOption value="other">Other</IonSelectOption>
-                  </IonSelect>
-                </IonItem>
+          <IonRow className="ion-justify-content-center">
+            <IonCol size-xs="12" size-md="8" size-lg="6">
+              <IonList lines="full" className="ion-no-padding">
+                {rooms.map((room, index) => (
+                  <IonCard key={index} className="ion-margin-top ion-no-margin-horizontal">
+                    <IonCardContent>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <IonItem lines="none" className="ion-no-padding">
+                          <IonIcon icon={bedOutline} slot="start" color="primary" />
+                          <IonLabel position="stacked">Room {index + 1}</IonLabel>
+                        </IonItem>
+                        <IonButton
+                          fill="clear"
+                          color="danger"
+                          onClick={() => handleRemoveRoom(index)}
+                          size="small"
+                        >
+                          <IonIcon icon={removeCircleOutline} slot="icon-only" />
+                        </IonButton>
+                      </div>
+                      <IonItem lines="none">
+                        <IonLabel position="stacked">Room Type</IonLabel>
+                        <IonSelect
+                          value={room.room_type}
+                          onIonChange={(e) => handleRoomChange(index, 'room_type', e.detail.value)}
+                        >
+                          <IonSelectOption value="bedroom">Bedroom</IonSelectOption>
+                          <IonSelectOption value="bathroom">Bathroom</IonSelectOption>
+                          <IonSelectOption value="kitchen">Kitchen</IonSelectOption>
+                          <IonSelectOption value="living_room">Living Room</IonSelectOption>
+                          <IonSelectOption value="dining_room">Dining Room</IonSelectOption>
+                          <IonSelectOption value="other">Other</IonSelectOption>
+                        </IonSelect>
+                      </IonItem>
 
-                {/* Conditional fields based on room type */}
-                {room.room_type === 'bedroom' && (
-                  <>
-                    <IonItem>
-                      <IonLabel position="stacked">Number of Beds</IonLabel>
-                      <IonInput
-                        type="number"
-                        min="0"
-                        value={room.number_of_beds}
-                        onIonChange={(e) => handleRoomChange(index, 'number_of_beds', parseInt(e.detail.value!, 10) || 0)}
-                      />
-                    </IonItem>
-                    <IonItem>
-                      <IonLabel position="stacked">Bed Types (e.g., 'King', 'Queen')</IonLabel>
-                      <IonInput
-                        placeholder="Comma-separated bed types"
-                        value={room.bed_types?.join(', ') || ''}
-                        onIonChange={(e) => handleRoomChange(index, 'bed_types', e.detail.value ? e.detail.value.split(',').map(s => s.trim()) : [])}
-                      />
-                    </IonItem>
-                    <IonItem lines="none">
-                      <IonLabel>Has Ensuite Bathroom?</IonLabel>
-                      <IonToggle
-                        slot="end"
-                        checked={room.has_ensuite || false}
-                        onIonChange={(e) => handleRoomChange(index, 'has_ensuite', e.detail.checked)}
-                      />
-                    </IonItem>
-                  </>
-                )}
-                {room.room_type === 'bathroom' && (
-                  <IonItem>
-                    <IonLabel position="stacked">Number of Bathrooms</IonLabel>
-                    <IonInput
-                      type="number"
-                      min="0"
-                      value={room.number_of_bathrooms}
-                      onIonChange={(e) => handleRoomChange(index, 'number_of_bathrooms', parseInt(e.detail.value!, 10) || 0)}
-                    />
-                  </IonItem>
-                )}
-                <IonItem>
-                  <IonLabel position="stacked">Description (optional)</IonLabel>
-                  <IonInput
-                    placeholder="e.g., 'Master bedroom with a view.'"
-                    value={room.description}
-                    onIonChange={(e) => handleRoomChange(index, 'description', e.detail.value)}
-                  />
-                </IonItem>
-              </IonCardContent>
-            </IonCard>
-          ))}
-        </IonList>
+                      {/* Conditional fields based on room type */}
+                      {room.room_type === 'bedroom' && (
+                        <>
+                          <IonItem>
+                            <IonLabel position="stacked">Number of Beds</IonLabel>
+                            <IonInput
+                              type="number"
+                              min="0"
+                              value={room.number_of_beds}
+                              onIonChange={(e) => handleRoomChange(index, 'number_of_beds', parseInt(e.detail.value!, 10) || 0)}
+                            />
+                          </IonItem>
+                          <IonItem>
+                            <IonLabel position="stacked">Bed Types (e.g., 'King', 'Queen')</IonLabel>
+                            <IonInput
+                              placeholder="Comma-separated bed types"
+                              value={room.bed_types?.join(', ') || ''}
+                              onIonChange={(e) => handleRoomChange(index, 'bed_types', e.detail.value ? e.detail.value.split(',').map(s => s.trim()) : [])}
+                            />
+                          </IonItem>
+                          <IonItem lines="none">
+                            <IonLabel>Has Ensuite Bathroom?</IonLabel>
+                            <IonToggle
+                              slot="end"
+                              checked={room.has_ensuite || false}
+                              onIonChange={(e) => handleRoomChange(index, 'has_ensuite', e.detail.checked)}
+                            />
+                          </IonItem>
+                        </>
+                      )}
+                      {room.room_type === 'bathroom' && (
+                        <IonItem>
+                          <IonLabel position="stacked">Number of Bathrooms</IonLabel>
+                          <IonInput
+                            type="number"
+                            min="0"
+                            value={room.number_of_bathrooms}
+                            onIonChange={(e) => handleRoomChange(index, 'number_of_bathrooms', parseInt(e.detail.value!, 10) || 0)}
+                          />
+                        </IonItem>
+                      )}
+                      <IonItem>
+                        <IonLabel position="stacked">Description (optional)</IonLabel>
+                        <IonInput
+                          placeholder="e.g., 'Master bedroom with a view.'"
+                          value={room.description}
+                          onIonChange={(e) => handleRoomChange(index, 'description', e.detail.value)}
+                        />
+                      </IonItem>
+                    </IonCardContent>
+                  </IonCard>
+                ))}
+              </IonList>
+            </IonCol>
+          </IonRow>
 
-        <IonButton
-          expand="block"
-          fill="outline"
-          onClick={handleAddRoom}
-          className="ion-margin-top"
-        >
-          <IonIcon icon={add} slot="start" />
-          Add Room
-        </IonButton>
+          <IonRow className="ion-justify-content-center">
+            <IonCol size-xs="12" size-md="8" size-lg="6">
+              <IonButton
+                expand="block"
+                fill="outline"
+                onClick={handleAddRoom}
+                className="ion-margin-top"
+              >
+                <IonIcon icon={add} slot="start" />
+                Add Room
+              </IonButton>
+            </IonCol>
+          </IonRow>
 
-        <div className="ion-padding-vertical">
-          <IonButton expand="block" onClick={handleNext} className="ion-margin-bottom">
-            Next
-            <IonIcon slot="end" icon={arrowForwardOutline} />
-          </IonButton>
-          <IonButton expand="block" fill="outline" onClick={handleBack}>
-            <IonIcon slot="start" icon={chevronBackOutline} />
-            Back
-          </IonButton>
-        </div>
+          <IonRow className="ion-padding-vertical ion-justify-content-center">
+            <IonCol size-xs="12" size-md="6">
+              <IonButton expand="block" onClick={handleNext} className="ion-margin-bottom">
+                Next
+                <IonIcon slot="end" icon={arrowForwardOutline} />
+              </IonButton>
+            </IonCol>
+            <IonCol size-xs="12" size-md="6">
+              <IonButton expand="block" fill="outline" onClick={handleBack}>
+                <IonIcon slot="start" icon={chevronBackOutline} />
+                Back
+              </IonButton>
+            </IonCol>
+          </IonRow>
+        </IonGrid>
 
         {/* Back confirmation alert */}
         <IonAlert

@@ -27,45 +27,11 @@ import supabase from '../../supabaseConfig';
 import { mapOutline, settingsOutline } from 'ionicons/icons';
 import SearchbarWithSuggestions from '../components/SearchbarWithSuggestions';
 import './Main.css';
+import { RentalAmenities, Property } from '../components/DbCrud';
 
 // OpenStreetMap Nominatim API configuration
 const NOMINATIM_BASE_URL = 'https://nominatim.openstreetmap.org';
 const GEOCODING_DELAY = 1000;
-
-export interface RentalAmenities {
-  wifi_included?: boolean;
-  air_conditioning?: boolean;
-  in_unit_laundry?: boolean;
-  dishwasher?: boolean;
-  balcony_patio?: boolean;
-  pet_friendly?: {
-    dogs_allowed?: boolean;
-    cats_allowed?: boolean;
-    breed_restrictions?: string[];
-  };
-  parking?: {
-    type?: 'garage' | 'carport' | 'off_street' | 'street';
-    spots?: number;
-  };
-  community_pool?: boolean;
-  fitness_center?: boolean;
-  [key: string]: any; // Allows for additional, less structured properties
-}
-
-export interface Property {
-  id: string;
-  building_name: string | null;
-  address: string;
-  property_type: string | null;
-  house_rules: string | null;
-  max_guests: number | null;
-  instant_booking: boolean | null;
-  is_active: boolean | null;
-  amenities: RentalAmenities | null; // Changed from any | null to RentalAmenities | null
-  created_at: string;
-  updated_at: string | null;
-  HomeType: string | null;
-}
 
 // Enhanced Nominatim result interface
 interface NominatimResult {
@@ -468,195 +434,207 @@ const Home: React.FC = () => {
         </IonHeader>
 
         {/* Navigation Bar */}
-        <IonGrid>
-          <IonRow>
-            <IonCol size="2" className="navBar">Logo</IonCol>
-            <IonCol size="2" className="navBar">Hotel & Homes</IonCol>
-            <IonCol size="2" className="navBar">
-              <a href="/landlord" >list your Place</a>
+        <IonGrid className="ion-padding-horizontal ion-padding-vertical">
+          <IonRow className="ion-align-items-center">
+            <IonCol size-xs="12" size-sm="auto" className="navBar">
+              Logo
             </IonCol>
-            <IonCol size="2" className="navBar">
+            <IonCol size-xs="12" size-sm="auto" className="navBar">
+              Hotel & Homes
+            </IonCol>
+            <IonCol size-xs="12" size-sm="auto" className="navBar">
+              <IonButton onClick={() => history.push('/landlord')} fill="clear">
+                list your Place
+              </IonButton>
+            </IonCol>
+            <IonCol size-xs="12" size-sm="auto" className="navBar">
               <img id="profile" src="" alt="Profile" />
             </IonCol>
-            <IonCol size="2" className="navBar">
+            <IonCol size-xs="12" size-sm="auto" className="navBar">
               <span className="currency">RM</span>
             </IonCol>
           </IonRow>
         </IonGrid>
 
         {/* Search Section */}
-        <div style={{ padding: '20px', backgroundColor: '#f5f5f5' }}>
-          <IonCard>
-            <IonCardContent>
-              <div style={{ textAlign: 'center', marginBottom: '20px' }}>
-                <h2>Home & Apts</h2>
-              </div>
+        <IonGrid className="ion-padding">
+          <IonRow className="ion-justify-content-center">
+            <IonCol size-xs="12" size-md="8" size-lg="6">
+              <IonCard>
+                <IonCardContent>
+                  <div style={{ textAlign: 'center', marginBottom: '20px' }}>
+                    <h2>Home & Apts</h2>
+                  </div>
 
-              {/* Tab Segment */}
-              <IonSegment 
-                value={selectedTab} 
-                onIonChange={e => setSelectedTab(e.detail.value as string)}
-                style={{ marginBottom: '20px' }}
-              >
-                <IonSegmentButton value="home-apts">
-                  <IonLabel>Home & Apts</IonLabel>
-                </IonSegmentButton>
-                <IonSegmentButton value="day-use">
-                  <IonLabel>Day Use Stay</IonLabel>
-                </IonSegmentButton>
-              </IonSegment>
+                  {/* Tab Segment */}
+                  <IonSegment 
+                    value={selectedTab} 
+                    onIonChange={e => setSelectedTab(e.detail.value as string)}
+                    style={{ marginBottom: '20px' }}
+                  >
+                    <IonSegmentButton value="home-apts">
+                      <IonLabel>Home & Apts</IonLabel>
+                    </IonSegmentButton>
+                    <IonSegmentButton value="day-use">
+                      <IonLabel>Day Use Stay</IonLabel>
+                    </IonSegmentButton>
+                  </IonSegment>
 
-              {/* Enhanced Search Input */}
-              <SearchbarWithSuggestions
-                value={searchText}
-                setValue={setSearchText}
-                fetchSuggestions={fetchEnhancedSuggestions}
-                placeholder="Search your destination or property"
-                enableGeocoding={enableGeocoding}
-                maxSuggestions={8}
-                onSearch={handleSearch}
-              />
+                  {/* Enhanced Search Input */}
+                  <SearchbarWithSuggestions
+                    value={searchText}
+                    setValue={setSearchText}
+                    fetchSuggestions={fetchEnhancedSuggestions}
+                    placeholder="Search your destination or property"
+                    enableGeocoding={enableGeocoding}
+                    maxSuggestions={8}
+                    onSearch={handleSearch}
+                  />
 
-              {/* Date and Guest Inputs */}
-              <IonGrid>
-                <IonRow>
-                  <IonCol size="4">
-                    <IonItem>
-                      <IonLabel position="stacked">Check-in Date</IonLabel>
-                      <IonInput
-                        type="date"
-                        value={checkIn}
-                        onIonInput={e => setCheckIn(e.detail.value!)}
-                        min={new Date().toISOString().split('T')[0]}
-                      />
-                    </IonItem>
-                  </IonCol>
-                  <IonCol size="4">
-                    <IonItem>
-                      <IonLabel position="stacked">Check-out Date</IonLabel>
-                      <IonInput
-                        type="date"
-                        value={checkOut}
-                        onIonInput={e => setCheckOut(e.detail.value!)}
-                        min={checkIn || new Date().toISOString().split('T')[0]}
-                      />
-                    </IonItem>
-                  </IonCol>
-                  <IonCol size="4">
-                    <IonItem>
-                      <IonLabel position="stacked">Guests</IonLabel>
-                      <IonInput
-                        type="number"
-                        value={guests}
-                        placeholder="Adults"
-                        onIonInput={e => setGuests(e.detail.value!)}
-                        min="1"
-                        max="20"
-                      />
-                    </IonItem>
-                  </IonCol>
-                </IonRow>
-              </IonGrid>
+                  {/* Date and Guest Inputs */}
+                  <IonGrid>
+                    <IonRow>
+                      <IonCol size-xs="12" size-sm="4">
+                        <IonItem>
+                          <IonLabel position="stacked">Check-in Date</IonLabel>
+                          <IonInput
+                            type="date"
+                            value={checkIn}
+                            onIonInput={e => setCheckIn(e.detail.value!)}
+                            min={new Date().toISOString().split('T')[0]}
+                          />
+                        </IonItem>
+                      </IonCol>
+                      <IonCol size-xs="12" size-sm="4">
+                        <IonItem>
+                          <IonLabel position="stacked">Check-out Date</IonLabel>
+                          <IonInput
+                            type="date"
+                            value={checkOut}
+                            onIonInput={e => setCheckOut(e.detail.value!)}
+                            min={checkIn || new Date().toISOString().split('T')[0]}
+                          />
+                        </IonItem>
+                      </IonCol>
+                      <IonCol size-xs="12" size-sm="4">
+                        <IonItem>
+                          <IonLabel position="stacked">Guests</IonLabel>
+                          <IonInput
+                            type="number"
+                            value={guests}
+                            placeholder="Adults"
+                            onIonInput={e => setGuests(e.detail.value!)}
+                            min="1"
+                            max="20"
+                          />
+                        </IonItem>
+                      </IonCol>
+                    </IonRow>
+                  </IonGrid>
 
-              {/* Advanced Settings Toggle */}
-              <IonItem 
-                button 
-                onClick={() => setShowAdvancedSettings(!showAdvancedSettings)}
-                style={{ marginTop: '10px' }}
-              >
-                <IonIcon icon={settingsOutline} slot="start" />
-                <IonLabel>Advanced Search Settings</IonLabel>
-              </IonItem>
+                  {/* Advanced Settings Toggle */}
+                  <IonItem 
+                    button 
+                    onClick={() => setShowAdvancedSettings(!showAdvancedSettings)}
+                    style={{ marginTop: '10px' }}
+                  >
+                    <IonIcon icon={settingsOutline} slot="start" />
+                    <IonLabel>Advanced Search Settings</IonLabel>
+                  </IonItem>
 
-              {/* Advanced Settings Panel */}
-              {showAdvancedSettings && (
-                <IonCard style={{ margin: '10px 0', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.1)' }}>
-                  <IonCardContent>
-                    <IonItem>
-                      <IonIcon icon={mapOutline} slot="start" />
-                      <IonLabel>
-                        <h3>Enable OpenStreetMap Geocoding</h3>
-                        <p>Get enhanced location suggestions and address validation</p>
-                      </IonLabel>
-                      <IonToggle
-                        checked={enableGeocoding}
-                        onIonToggle={(e) => setEnableGeocoding(e.detail.checked)}
-                      />
-                    </IonItem>
-                    
-                    {recentSearches.length > 0 && (
-                      <div style={{ marginTop: '15px' }}>
-                        <IonLabel>
-                          <h4>Recent Searches:</h4>
-                        </IonLabel>
-                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px', marginTop: '8px' }}>
-                          {recentSearches.slice(0, 3).map((search, idx) => (
-                            <IonBadge 
-                              key={idx}
-                              color="medium"
-                              style={{ cursor: 'pointer' }}
-                              onClick={() => setSearchText(search)}
-                            >
-                              {search.length > 20 ? search.substring(0, 20) + '...' : search}
-                            </IonBadge>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </IonCardContent>
-                </IonCard>
-              )}
+                  {/* Advanced Settings Panel */}
+                  {showAdvancedSettings && (
+                    <IonCard style={{ margin: '10px 0', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.1)' }}>
+                      <IonCardContent>
+                        <IonItem>
+                          <IonIcon icon={mapOutline} slot="start" />
+                          <IonLabel>
+                            <h3>Enable OpenStreetMap Geocoding</h3>
+                            <p>Get enhanced location suggestions and address validation</p>
+                          </IonLabel>
+                          <IonToggle
+                            checked={enableGeocoding}
+                            onIonToggle={(e) => setEnableGeocoding(e.detail.checked)}
+                          />
+                        </IonItem>
+                        
+                        {recentSearches.length > 0 && (
+                          <div style={{ marginTop: '15px' }}>
+                            <IonLabel>
+                              <h4>Recent Searches:</h4>
+                            </IonLabel>
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px', marginTop: '8px' }}>
+                              {recentSearches.slice(0, 3).map((search, idx) => (
+                                <IonBadge 
+                                  key={idx}
+                                  color="medium"
+                                  style={{ cursor: 'pointer' }}
+                                  onClick={() => setSearchText(search)}
+                                >
+                                  {search.length > 20 ? search.substring(0, 20) + '...' : search}
+                                </IonBadge>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </IonCardContent>
+                    </IonCard>
+                  )}
 
-              {/* Search Button */}
-              <div style={{ width: '100%', display: 'flex', justifyContent: 'center', marginTop: '20px' }}>
-                <IonButton 
-                  onClick={() => handleSearch()}
-                  disabled={loading}
-                  style={{ maxWidth: '250px', width: '100%', maxHeight: '40px', margin: '8px', justifyContent: 'center', alignItems: 'center', display: 'flex' }}
-                  size="large"
-                >
-                  {loading ? (
-                    <>
-                      <IonSpinner name="crescent" style={{ marginRight: '8px' }} />
-                      Searching...
-                    </>
-                  ) : (
-                    <>
-                      Search Properties
-                      {enableGeocoding && (
-                        <IonIcon icon={mapOutline} style={{ marginLeft: '8px' }} />
+                  {/* Search Button */}
+                  <IonRow className="ion-justify-content-center ion-margin-top">
+                    <IonCol size-xs="12" size-sm="8" size-md="6">
+                      <IonButton 
+                        expand="block"
+                        onClick={() => handleSearch()}
+                        disabled={loading}
+                        size="large"
+                      >
+                        {loading ? (
+                          <>
+                            <IonSpinner name="crescent" style={{ marginRight: '8px' }} />
+                            Searching...
+                          </>
+                        ) : (
+                          <>
+                            Search Properties
+                            {enableGeocoding && (
+                              <IonIcon icon={mapOutline} style={{ marginLeft: '8px' }} />
+                            )}
+                          </>
+                        )}
+                      </IonButton>
+                    </IonCol>
+                  </IonRow>
+
+                  {/* Search Summary */}
+                  {(checkIn || checkOut || guests) && (
+                    <div style={{ 
+                      textAlign: 'center', 
+                      marginTop: '15px', 
+                      padding: '10px',
+                      backgroundColor: '#f0f0f0',
+                      borderRadius: '8px',
+                      fontSize: '14px',
+                      color: '666'
+                    }}>
+                      {checkIn && checkOut && (
+                        <span>{checkIn} to {checkOut}</span>
                       )}
-                    </>
+                      {guests && (
+                        <span>{checkIn || checkOut ? ' • ' : ''}{guests} guest{parseInt(guests) > 1 ? 's' : ''}</span>
+                      )}
+                    </div>
                   )}
-                </IonButton>
-              </div>
-
-              {/* Search Summary */}
-              {(checkIn || checkOut || guests) && (
-                <div style={{ 
-                  textAlign: 'center', 
-                  marginTop: '15px', 
-                  padding: '10px',
-                  backgroundColor: '#f0f0f0',
-                  borderRadius: '8px',
-                  fontSize: '14px',
-                  color: '#666'
-                }}>
-                  {checkIn && checkOut && (
-                    <span>{checkIn} to {checkOut}</span>
-                  )}
-                  {guests && (
-                    <span>{checkIn || checkOut ? ' • ' : ''}{guests} guest{parseInt(guests) > 1 ? 's' : ''}</span>
-                  )}
-                </div>
-              )}
-            </IonCardContent>
-          </IonCard>
-        </div>
+                </IonCardContent>
+              </IonCard>
+            </IonCol>
+          </IonRow>
+        </IonGrid>
 
         {/* Debug Info - Remove in production */}
         {tableColumns.length > 0 && (
-          <div style={{ padding: '20px', fontSize: '12px', color: '#666' }}>
+          <div style={{ padding: '20px', fontSize: '12px', color: '666' }}>
             <details>
               <summary>Available table columns (for debugging)</summary>
               <p>{tableColumns.join(', ')}</p>
@@ -667,7 +645,7 @@ const Home: React.FC = () => {
         {/* Recommended Section */}
         <div style={{ padding: '20px', textAlign: 'center' }}>
           <h3>Recommended</h3>
-          <p style={{ color: '#666', fontSize: '14px' }}>
+          <p style={{ color: '666', fontSize: '14px' }}>
             {enableGeocoding ? 
               'Enhanced search with OpenStreetMap integration active' : 
               'Database-only search mode'

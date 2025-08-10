@@ -53,10 +53,11 @@ export interface Property {
   instant_booking: boolean | null;
   is_active: boolean | null;
   amenities: RentalAmenities | null; // Using the existing amenities interface
-  rooms: RoomDetails; // Represents the 'jsonb' column for flexible room data
+  rooms: RoomDetails[]; // Represents the 'jsonb' column for flexible room data
   created_at: string; // Stored as an ISO string in the database
   updated_at: string | null; // Stored as an ISO string or null
   HomeType: string | null;
+  photos?: string[]; // Add photos field
   // Optional: If you intend to fetch pricing details along with the property,
   // you can include an array of Pricing objects.
   pricing?: pricing[];

@@ -21,6 +21,9 @@ import {
   IonAlert,
   IonSelect,
   IonSelectOption,
+  IonGrid,
+  IonRow,
+  IonCol
 } from '@ionic/react';
 import {
   addCircleOutline,
@@ -158,100 +161,122 @@ const PricingStepPage: React.FC = () => {
         </IonToolbar>
       </IonHeader>
       <IonContent fullscreen className="ion-padding">
-        <div style={{ display: 'flex', alignItems: 'center', marginBottom: '20px' }}>
-          <div style={{
-            width: '30px',
-            height: '30px',
-            borderRadius: '50%',
-            backgroundColor: '#007bff',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: 'white',
-            fontWeight: 'bold',
-            marginRight: '10px'
-          }}>
-            4
-          </div>
-          <IonText>
-            <h2>Pricing Details</h2>
-          </IonText>
-        </div>
-        <IonText>
-          <p>Please provide the pricing details for your property.</p>
-        </IonText>
+        <IonGrid>
+          <IonRow className="ion-align-items-center ion-margin-bottom">
+            <IonCol size="auto">
+              <div style={{
+                width: '30px',
+                height: '30px',
+                borderRadius: '50%',
+                backgroundColor: '#007bff',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: 'white',
+                fontWeight: 'bold',
+                marginRight: '10px'
+              }}>
+                4
+              </div>
+            </IonCol>
+            <IonCol>
+              <IonText>
+                <h2>Pricing Details</h2>
+              </IonText>
+            </IonCol>
+          </IonRow>
+          <IonRow>
+            <IonCol size="12">
+              <IonText>
+                <p>Please provide the pricing details for your property.</p>
+              </IonText>
+            </IonCol>
+          </IonRow>
 
-        <IonList lines="full" className="ion-no-padding">
-          {pricing.map((price, index) => (
-            <IonCard key={index} className="ion-margin-top ion-no-margin-horizontal">
-              <IonCardContent>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <IonItem lines="none" className="ion-no-padding">
-                    <IonIcon icon={cashOutline} slot="start" color="primary" />
-                    <IonLabel position="stacked">Price Item {index + 1}</IonLabel>
-                  </IonItem>
-                  <IonButton
-                    fill="clear"
-                    color="danger"
-                    onClick={() => handleRemovePrice(index)}
-                    size="small"
-                  >
-                    <IonIcon icon={removeCircleOutline} slot="icon-only" />
-                  </IonButton>
-                </div>
-                <IonItem lines="none">
-                  <IonLabel position="stacked">Price Type</IonLabel>
-                  <IonSelect
-                    value={price.price_type}
-                    onIonChange={(e) => handlePricingChange(index, 'price_type', e.detail.value)}
-                  >
-                    <IonSelectOption value="monthly_rent">Monthly Rent</IonSelectOption>
-                    <IonSelectOption value="security_deposit">Security Deposit</IonSelectOption>
-                    <IonSelectOption value="utilities_deposit">Utilities Deposit</IonSelectOption>
-                    <IonSelectOption value="other">Other</IonSelectOption>
-                  </IonSelect>
-                </IonItem>
-                <IonItem>
-                  <IonLabel position="stacked">Amount</IonLabel>
-                  <IonInput
-                    type="number"
-                    min="0"
-                    value={price.amount}
-                    onIonChange={(e) => handlePricingChange(index, 'amount', parseFloat(e.detail.value!) || 0)}
-                  />
-                </IonItem>
-                <IonItem>
-                  <IonLabel position="stacked">Currency</IonLabel>
-                  <IonInput
-                    value={price.currency}
-                    readonly
-                  />
-                </IonItem>
-              </IonCardContent>
-            </IonCard>
-          ))}
-        </IonList>
+          <IonRow className="ion-justify-content-center">
+            <IonCol size-xs="12" size-md="8" size-lg="6">
+              <IonList lines="full" className="ion-no-padding">
+                {pricing.map((price, index) => (
+                  <IonCard key={index} className="ion-margin-top ion-no-margin-horizontal">
+                    <IonCardContent>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <IonItem lines="none" className="ion-no-padding">
+                          <IonIcon icon={cashOutline} slot="start" color="primary" />
+                          <IonLabel position="stacked">Price Item {index + 1}</IonLabel>
+                        </IonItem>
+                        <IonButton
+                          fill="clear"
+                          color="danger"
+                          onClick={() => handleRemovePrice(index)}
+                          size="small"
+                        >
+                          <IonIcon icon={removeCircleOutline} slot="icon-only" />
+                        </IonButton>
+                      </div>
+                      <IonItem lines="none">
+                        <IonLabel position="stacked">Price Type</IonLabel>
+                        <IonSelect
+                          value={price.price_type}
+                          onIonChange={(e) => handlePricingChange(index, 'price_type', e.detail.value)}
+                        >
+                          <IonSelectOption value="monthly_rent">Monthly Rent</IonSelectOption>
+                          <IonSelectOption value="security_deposit">Security Deposit</IonSelectOption>
+                          <IonSelectOption value="utilities_deposit">Utilities Deposit</IonSelectOption>
+                          <IonSelectOption value="other">Other</IonSelectOption>
+                        </IonSelect>
+                      </IonItem>
+                      <IonItem>
+                        <IonLabel position="stacked">Amount</IonLabel>
+                        <IonInput
+                          type="number"
+                          min="0"
+                          value={price.amount}
+                          onIonChange={(e) => handlePricingChange(index, 'amount', parseFloat(e.detail.value!) || 0)}
+                        />
+                      </IonItem>
+                      <IonItem>
+                        <IonLabel position="stacked">Currency</IonLabel>
+                        <IonInput
+                          value={price.currency}
+                          readonly
+                        />
+                      </IonItem>
+                    </IonCardContent>
+                  </IonCard>
+                ))}
+              </IonList>
+            </IonCol>
+          </IonRow>
 
-        <IonButton
-          expand="block"
-          fill="outline"
-          onClick={handleAddPrice}
-          className="ion-margin-top"
-        >
-          <IonIcon icon={add} slot="start" />
-          Add Price
-        </IonButton>
+          <IonRow className="ion-justify-content-center">
+            <IonCol size-xs="12" size-md="8" size-lg="6">
+              <IonButton
+                expand="block"
+                fill="outline"
+                onClick={handleAddPrice}
+                className="ion-margin-top"
+              >
+                <IonIcon icon={add} slot="start" />
+                Add Price
+              </IonButton>
+            </IonCol>
+          </IonRow>
 
-        <div className="ion-padding-vertical">
-          <IonButton expand="block" onClick={handleNext} className="ion-margin-bottom">
-            Next
-            <IonIcon slot="end" icon={arrowForwardOutline} />
-          </IonButton>
-          <IonButton expand="block" fill="outline" onClick={handleBack}>
-            <IonIcon slot="start" icon={chevronBackOutline} />
-            Back
-          </IonButton>
-        </div>
+          <IonRow className="ion-padding-vertical ion-justify-content-center">
+            <IonCol size-xs="12" size-md="6">
+              <IonButton expand="block" onClick={handleNext} className="ion-margin-bottom">
+                Next
+                <IonIcon slot="end" icon={arrowForwardOutline} />
+              </IonButton>
+            </IonCol>
+            <IonCol size-xs="12" size-md="6">
+              <IonButton expand="block" fill="outline" onClick={handleBack}>
+                <IonIcon slot="start" icon={chevronBackOutline} />
+                Back
+              </IonButton>
+            </IonCol>
+          </IonRow>
+        </IonGrid>
 
         <IonAlert
           isOpen={showBackAlert}

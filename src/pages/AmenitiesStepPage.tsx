@@ -36,7 +36,7 @@ import {
   accessibilityOutline 
 } from 'ionicons/icons';
 import { RentalAmenities, Property } from "../components/DbCrud";
-import PublishPropertyButton from '../pages/PublishPropertyButton';
+import PublishPropertyButton from '../components/PublishPropertyButton';
 import supabase from '../../supabaseConfig';
 
 // Helper to get or initialize rental draft
@@ -90,15 +90,19 @@ const AmenitiesStepPage: React.FC = () => {
     setAmenities(draft.amenities || {});
   }, []);
 
-  const handleAmenityChange = (key: keyof RentalAmenities, value: boolean) => {
+  const handleAmenityChange = (key: keyof RentalAmenities | 'pet_friendly_dogs' | 'pet_friendly_cats', value: boolean) => {
     setAmenities(prevAmenities => {
       const newAmenities = { ...prevAmenities };
 
-      if (key === 'pet_friendly_dogs' || key === 'pet_friendly_cats') {
-        const subKey = key === 'pet_friendly_dogs' ? 'dogs_allowed' : 'cats_allowed';
+      if (key === 'pet_friendly_dogs') {
         newAmenities.pet_friendly = {
           ...newAmenities.pet_friendly,
-          [subKey]: value,
+          dogs_allowed: value,
+        };
+      } else if (key === 'pet_friendly_cats') {
+        newAmenities.pet_friendly = {
+          ...newAmenities.pet_friendly,
+          cats_allowed: value,
         };
       } else {
         (newAmenities as any)[key] = value;
@@ -399,14 +403,20 @@ const AmenitiesStepPage: React.FC = () => {
           </IonItem>
         </IonList>
 
-        <div className="ion-padding-vertical">
-          <IonButton expand="block" onClick={handleNext} className="ion-margin-bottom">
-            Next
-          </IonButton>
-          <IonButton expand="block" fill="outline" onClick={handleBack}>
-            Back
-          </IonButton>
-        </div>
+        <IonGrid className="ion-padding-vertical sticky-buttons-container">
+          <IonRow className="ion-align-items-center ion-justify-content-center">
+            <IonCol size-xs="12" size-md="6">
+              <IonButton expand="block" onClick={handleNext} className="ion-margin-bottom">
+                Next
+              </IonButton>
+            </IonCol>
+            <IonCol size-xs="12" size-md="6">
+              <IonButton expand="block" fill="outline" onClick={handleBack}>
+                Back
+              </IonButton>
+            </IonCol>
+          </IonRow>
+        </IonGrid>
 
         {/* Back confirmation alert */}
         <IonAlert

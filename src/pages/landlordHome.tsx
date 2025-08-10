@@ -1,5 +1,14 @@
 // LandLordHome.tsx
-import { IonPage, IonContent, IonHeader, IonButton } from '@ionic/react';
+import {
+  IonContent,
+  IonGrid,
+  IonHeader,
+  IonPage,
+  IonRow,
+  IonCol,
+  IonButton,
+
+} from '@ionic/react';
 
 const LandLordHome: React.FC = () => {
   
@@ -8,9 +17,23 @@ const LandLordHome: React.FC = () => {
       <IonHeader>
       </IonHeader>
       <IonContent className="ion-padding">
-        <h1>List your property on Our Platform</h1>
-        <IonButton href='/propertyType'>List your Property</IonButton>
-        <IonButton href='/'>Back</IonButton>
+        <IonGrid>
+          <IonRow className="ion-justify-content-center ion-text-center">
+            <IonCol size-xs="12" size-md="8" size-lg="6">
+              <h1>List your property on Our Platform</h1>
+            </IonCol>
+          </IonRow>
+          <IonRow className="ion-justify-content-center">
+            <IonCol size-xs="12" size-md="4" size-lg="3">
+              <IonButton expand="block" href='/propertyType'>List your Property</IonButton>
+            </IonCol>
+          </IonRow>
+          <IonRow className="ion-justify-content-center ion-margin-top">
+            <IonCol size-xs="12" size-md="4" size-lg="3">
+              <IonButton expand="block" fill="outline" href='/'>Back</IonButton>
+            </IonCol>
+          </IonRow>
+        </IonGrid>
       </IonContent>
     </IonPage>
   );

@@ -18,6 +18,9 @@ import {
   IonSpinner,
   IonSearchbar,
   IonToggle,
+  IonGrid,
+  IonRow,
+  IonCol,
 } from "@ionic/react";
 import { useHistory } from 'react-router-dom';
 import {
@@ -822,179 +825,209 @@ const LocationStepPage: React.FC = () => {
         </IonToolbar>
       </IonHeader>
       <IonContent fullscreen className="ion-padding">
-        <div style={{ display: 'flex', alignItems: 'center', marginBottom: '20px' }}>
-          <div style={{
-            width: '30px',
-            height: '30px',
-            borderRadius: '50%',
-            backgroundColor: '#007bff',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: 'white',
-            fontWeight: 'bold',
-            marginRight: '10px'
-          }}>
-            1
-          </div>
-          <IonText>
-            <h2>Location</h2>
-          </IonText>
-        </div>
-
-        {/* Display current draft data if available */}
-        {Property && (
-          <IonCard color="success" className="ion-margin-bottom">
-            <IonCardContent>
-              <IonText color="dark">
-                <h3>Draft Data Found</h3>
-                <p><strong>Property Type:</strong> {Property.property_type || 'Not specified'}</p>
-                <p><strong>Home Type:</strong> {Property.HomeType || 'Not specified'}</p>
-                <p><strong>Last Updated:</strong> {Property.updated_at ? new Date(Property.updated_at).toLocaleString() : 'Unknown'}</p>
-                <p><strong>Draft Address:</strong> {Property.address || 'Not specified'}</p>
-              </IonText>
-            </IonCardContent>
-          </IonCard>
-        )}
-
-        {!Property && (
-          <IonCard color="warning" className="ion-margin-bottom">
-            <IonCardContent>
-              <IonText color="dark">
-                <p><strong>No draft data found in localStorage.</strong> Please provide your property location.</p>
-              </IonText>
-            </IonCardContent>
-          </IonCard>
-        )}
-
-        {/* Manual Address Toggle */}
-        <IonItem lines="none" className="ion-margin-bottom">
-          <IonLabel>Enter Address Manually</IonLabel>
-          <IonToggle
-            checked={manualMode}
-            onIonChange={toggleManualMode}
-            aria-label="Toggle manual address entry"
-          />
-        </IonItem>
-        
-        {manualMode ? (
-          <IonItem className="ion-margin-bottom">
-            <IonInput
-              label="Property Address"
-              labelPlacement="floating"
-              value={manualAddress}
-              onIonChange={(e) => setManualAddress(e.detail.value!)}
-              placeholder="Enter your complete property address"
-            />
-          </IonItem>
-        ) : (
-          <div style={{ position: "relative" }}>
-            <IonSearchbar
-              placeholder="Search for your property location (e.g., 123 Main Street, Kuala Lumpur)"
-              onIonInput={handleSearchInput}
-              onIonClear={handleSearchClear}
-              showClearButton="focus"
-              value={searchQuery}
-            />
-
-            {/* Loading indicator for search */}
-            {isSearching && (
-              <div
-                style={{
-                  position: "absolute",
-                  right: "50px",
-                  top: "50%",
-                  transform: "translateY(-50%)",
-                  zIndex: 10,
-                }}
-              >
-                <IonSpinner
-                  name="crescent"
-                  style={{ width: "20px", height: "20px" }}
-                />
+        <IonGrid>
+          <IonRow className="ion-align-items-center ion-margin-bottom">
+            <IonCol size="auto">
+              <div style={{
+                width: '30px',
+                height: '30px',
+                borderRadius: '50%',
+                backgroundColor: '#007bff',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: 'white',
+                fontWeight: 'bold',
+                marginRight: '10px'
+              }}>
+                1
               </div>
-            )}
+            </IonCol>
+            <IonCol>
+              <IonText>
+                <h2>Location</h2>
+              </IonText>
+            </IonCol>
+          </IonRow>
 
-            {/* Suggestions Dropdown */}
-            {showSuggestions && suggestions.length > 0 && !manualMode && (
-              <IonCard
-                style={{
-                  position: "absolute",
-                  top: "100%",
-                  left: 0,
-                  right: 0,
-                  zIndex: 100,
-                  maxHeight: "200px",
-                  overflowY: "auto",
-                  boxShadow: "0 4px 8px rgba(0,0,0,0.1)",
-                  marginTop: "5px",
-                }}
-              >
-                <IonCardContent className="ion-no-padding">
-                  {suggestions.map((suggestion, index) => (
-                    <IonItem
-                      key={suggestion.properties.place_id || index}
-                      button
-                      onClick={() => handleSuggestionSelect(suggestion)}
-                      detail={false}
+          {/* Display current draft data if available */}
+          <IonRow className="ion-justify-content-center">
+            <IonCol size-xs="12" size-md="10" size-lg="8">
+              {Property && (
+                <IonCard color="success" className="ion-margin-bottom">
+                  <IonCardContent>
+                    <IonText color="dark">
+                      <h3>Draft Data Found</h3>
+                      <p><strong>Property Type:</strong> {Property.property_type || 'Not specified'}</p>
+                      <p><strong>Home Type:</strong> {Property.HomeType || 'Not specified'}</p>
+                      <p><strong>Last Updated:</strong> {Property.updated_at ? new Date(Property.updated_at).toLocaleString() : 'Unknown'}</p>
+                      <p><strong>Draft Address:</strong> {Property.address || 'Not specified'}</p>
+                    </IonText>
+                  </IonCardContent>
+                </IonCard>
+              )}
+
+              {!Property && (
+                <IonCard color="warning" className="ion-margin-bottom">
+                  <IonCardContent>
+                    <IonText color="dark">
+                      <p><strong>No draft data found in localStorage.</strong> Please provide your property location.</p>
+                    </IonText>
+                  </IonCardContent>
+                </IonCard>
+              )}
+            </IonCol>
+          </IonRow>
+
+          {/* Manual Address Toggle */}
+          <IonRow className="ion-justify-content-center">
+            <IonCol size-xs="12" size-md="10" size-lg="8">
+              <IonItem lines="none" className="ion-margin-bottom">
+                <IonLabel>Enter Address Manually</IonLabel>
+                <IonToggle
+                  checked={manualMode}
+                  onIonChange={toggleManualMode}
+                  aria-label="Toggle manual address entry"
+                />
+              </IonItem>
+            </IonCol>
+          </IonRow>
+          
+          <IonRow className="ion-justify-content-center">
+            <IonCol size-xs="12" size-md="10" size-lg="8">
+              {manualMode ? (
+                <IonItem className="ion-margin-bottom">
+                  <IonInput
+                    label="Property Address"
+                    labelPlacement="floating"
+                    value={manualAddress}
+                    onIonChange={(e) => setManualAddress(e.detail.value!)}
+                    placeholder="Enter your complete property address"
+                  />
+                </IonItem>
+              ) : (
+                <div style={{ position: "relative" }}>
+                  <IonSearchbar
+                    placeholder="Search for your property location (e.g., 123 Main Street, Kuala Lumpur)"
+                    onIonInput={handleSearchInput}
+                    onIonClear={handleSearchClear}
+                    showClearButton="focus"
+                    value={searchQuery}
+                  />
+
+                  {/* Loading indicator for search */}
+                  {isSearching && (
+                    <div
+                      style={{
+                        position: "absolute",
+                        right: "50px",
+                        top: "50%",
+                        transform: "translateY(-50%)",
+                        zIndex: 10,
+                      }}
                     >
-                      <IonIcon icon={locationOutline} slot="start" color="medium" />
-                      <IonLabel>
-                        <h2>{suggestion.properties.formatted}</h2>
-                        {suggestion.properties.confidence && (
-                          <p>Confidence: {Math.round(suggestion.properties.confidence * 100)}%</p>
-                        )}
-                      </IonLabel>
-                    </IonItem>
-                  ))}
+                      <IonSpinner
+                        name="crescent"
+                        style={{ width: "20px", height: "20px" }}
+                      />
+                    </div>
+                  )}
+
+                  {/* Suggestions Dropdown */}
+                  {showSuggestions && suggestions.length > 0 && !manualMode && (
+                    <IonCard
+                      style={{
+                        position: "absolute",
+                        top: "100%",
+                        left: 0,
+                        right: 0,
+                        zIndex: 100,
+                        maxHeight: "200px",
+                        overflowY: "auto",
+                        boxShadow: "0 4px 8px rgba(0,0,0,0.1)",
+                        marginTop: "5px",
+                      }}
+                    >
+                      <IonCardContent className="ion-no-padding">
+                        {suggestions.map((suggestion, index) => (
+                          <IonItem
+                            key={suggestion.properties.place_id || index}
+                            button
+                            onClick={() => handleSuggestionSelect(suggestion)}
+                            detail={false}
+                          >
+                            <IonIcon icon={locationOutline} slot="start" color="medium" />
+                            <IonLabel>
+                              <h2>{suggestion.properties.formatted}</h2>
+                              {suggestion.properties.confidence && (
+                                <p>Confidence: {Math.round(suggestion.properties.confidence * 100)}%</p>
+                              )}
+                            </IonLabel>
+                          </IonItem>
+                        ))}
+                      </IonCardContent>
+                    </IonCard>
+                  )}
+                </div>
+              )}
+            </IonCol>
+          </IonRow>
+
+          <IonRow className="ion-justify-content-center">
+            <IonCol size-xs="12" size-md="10" size-lg="8">
+              <IonCard className="ion-margin-top" style={{ height: "400px", width: "100%" }}>
+                <IonCardContent className="ion-no-padding" style={{ height: "100%" }}>
+                  <Suspense fallback={<MapSkeleton />}>
+                    <LazyMapComponent
+                      position={markerPosition}
+                      onLocationChange={handleLocationChange}
+                      config={mapConfig}
+                      shouldZoom={shouldZoom}
+                    />
+                  </Suspense>
                 </IonCardContent>
               </IonCard>
-            )}
-          </div>
-        )}
+            </IonCol>
+          </IonRow>
 
-        <IonCard className="ion-margin-top" style={{ height: "400px", width: "100%" }}>
-          <IonCardContent className="ion-no-padding" style={{ height: "100%" }}>
-            <Suspense fallback={<MapSkeleton />}>
-              <LazyMapComponent
-                position={markerPosition}
-                onLocationChange={handleLocationChange}
-                config={mapConfig}
-                shouldZoom={shouldZoom}
-              />
-            </Suspense>
-          </IonCardContent>
-        </IonCard>
+          <IonRow className="ion-justify-content-center">
+            <IonCol size-xs="12" size-md="10" size-lg="8">
+              <IonItem className="ion-margin-top">
+                <IonIcon icon={locationOutline} slot="start" />
+                <IonLabel position="stacked">Selected Location Address</IonLabel>
+                <IonText>
+                  <p className="ion-padding-top ion-padding-bottom">
+                    {isReverseGeocoding && !manualMode ? (
+                      <>
+                        <IonSpinner name="dots" /> Getting address...
+                      </>
+                    ) : (
+                      <span style={{ 
+                        color: (!address && !manualAddress) ? '#666' : 'inherit',
+                        fontStyle: (!address && !manualAddress) ? 'italic' : 'normal'
+                      }}>
+                        {getDisplayAddress()}
+                      </span>
+                    )}
+                  </p>
+                </IonText>
+              </IonItem>
+            </IonCol>
+          </IonRow>
 
-        <IonItem className="ion-margin-top">
-          <IonIcon icon={locationOutline} slot="start" />
-          <IonLabel position="stacked">Selected Location Address</IonLabel>
-          <IonText>
-            <p className="ion-padding-top ion-padding-bottom">
-              {isReverseGeocoding && !manualMode ? (
-                <>
-                  <IonSpinner name="dots" /> Getting address...
-                </>
-              ) : (
-                <span style={{ 
-                  color: (!address && !manualAddress) ? '#666' : 'inherit',
-                  fontStyle: (!address && !manualAddress) ? 'italic' : 'normal'
-                }}>
-                  {getDisplayAddress()}
-                </span>
-              )}
-            </p>
-          </IonText>
-        </IonItem>
-
-        <div className="ion-padding-top">
-          <IonButton expand="block" onClick={handleNextStep}>
-            Continue
-          </IonButton>
-          <IonButton expand="block" fill="outline" className="ion-margin-top" onClick={handleBack} color="danger">
-            Back and Clear Draft
-          </IonButton>
-        </div>
+          <IonRow className="ion-justify-content-center ion-padding-top">
+            <IonCol size-xs="12" size-md="6">
+              <IonButton expand="block" onClick={handleNextStep}>
+                Continue
+              </IonButton>
+            </IonCol>
+            <IonCol size-xs="12" size-md="6">
+              <IonButton expand="block" fill="outline" onClick={handleBack} color="danger">
+                Back and Clear Draft
+              </IonButton>
+            </IonCol>
+          </IonRow>
+        </IonGrid>
 
         <IonToast
           isOpen={showToast}

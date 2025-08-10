@@ -136,116 +136,132 @@ const PropertyType: React.FC = () => {
       </IonHeader>
       
       <IonContent className="ion-padding">
-        <div style={{ marginBottom: '20px', textAlign: 'center' }}>
-          <h2>What type of property are you listing?</h2>
-          <p style={{ color: '#666', fontSize: '14px' }}>
-            Choose the category that best describes your property (no default selection)
-          </p>
-        </div>
-
-        {/* Toast Messages */}
-        <IonToast
-          isOpen={showToast}
-          message={toastMessage}
-          duration={1500}
-          onDidDismiss={() => setShowToast(false)}
-          position="top"
-        />
-        
         <IonGrid>
-          {propertyOptions.map((option) => {
-            // Use a subtle, less bold outline only when selected
-            const isSelected = propertyType === option.type;
-            const outlineColor = `var(--ion-color-${option.color}-tint, #b3e5fc)`; // fallback to a light tint
-            return (
-              <IonRow key={option.type}>
-                <IonCol>
-                  <IonCard
-                    button
-                    onClick={() => handleSelect(option.type)}
-                    style={{
-                      boxShadow: isSelected ? `0 0 0 1.5px ${outlineColor}` : 'none',
-                      border: isSelected ? `1.5px solid ${outlineColor}` : '1px solid #e0e0e0',
-                      transform: isSelected ? 'scale(1.02)' : 'scale(1)',
-                      transition: 'all 0.2s ease'
-                    }}
-                  >
-                    <IonCardHeader>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                        <IonIcon
-                          icon={option.icon}
-                          size="large"
-                          color={isSelected ? option.color : 'medium'}
-                        />
-                        <div>
-                          <IonCardTitle
-                            color={isSelected ? option.color : undefined}
-                          >
-                            {option.title}
-                          </IonCardTitle>
-                        </div>
-                      </div>
-                    </IonCardHeader>
-                    <IonCardContent>
-                      <p style={{
-                        margin: 0,
-                        fontSize: '14px',
-                        color: isSelected ? 'inherit' : '#666'
-                      }}>
-                        {option.description}
-                      </p>
-                    </IonCardContent>
-                  </IonCard>
-                </IonCol>
-              </IonRow>
-            );
-          })}
-        </IonGrid>
-
-        {/* Selected Property Type Summary */}
-        {propertyType && (
-          <IonCard style={{ marginTop: '20px', backgroundColor: '#f0f8ff' }}>
-            <IonCardContent>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <IonIcon icon={propertyOptions.find(opt => opt.type === propertyType)?.icon} color="primary" />
-                <strong>Selected: {propertyType}-Type Property</strong>
-              </div>
-              <p style={{ margin: '8px 0 0 0', fontSize: '12px', color: '#666' }}>
-                Database value: {convertPropertyTypeForDB(propertyType)}
+          <IonRow className="ion-justify-content-center ion-text-center ion-margin-bottom">
+            <IonCol size-xs="12" size-md="8" size-lg="6">
+              <h2>What type of property are you listing?</h2>
+              <p style={{ color: '#666', fontSize: '14px' }}>
+                Choose the category that best describes your property (no default selection)
               </p>
-              <p style={{ margin: '8px 0 0 0', fontSize: '12px', color: '#666' }}>
-                {propertyType === 'Home' && 'Next: Choose specific home type'}
-                {propertyType === 'Hotel' && 'Next: Configure hotel rooms and amenities'}
-                {propertyType === 'Unique' && 'Next: Describe your unique property features'}
-              </p>
-            </IonCardContent>
-          </IonCard>
-        )}
-
-        {/* Action Buttons */}
-        <IonGrid style={{ marginTop: '30px' }}>
-          <IonRow>
-            <IonCol size="6">
-              <IonButton 
-                expand="block" 
-                fill="outline"
-                color="medium"
-                onClick={handleBack}
-              >
-                <IonIcon icon={arrowBackOutline} slot="start" />
-                Back
-              </IonButton>
             </IonCol>
-            <IonCol size="6">
-              <IonButton
-                expand="block"
-                color={propertyType ? "primary" : "medium"}
-                onClick={handleNext}
-                disabled={!propertyType}
-              >
-                Next
-                <IonIcon icon={arrowForwardOutline} slot="end" />
-              </IonButton>
+          </IonRow>
+
+          {/* Toast Messages */}
+          <IonToast
+            isOpen={showToast}
+            message={toastMessage}
+            duration={1500}
+            onDidDismiss={() => setShowToast(false)}
+            position="top"
+          />
+          
+          <IonRow className="ion-justify-content-center">
+            <IonCol size-xs="12" size-md="8" size-lg="6">
+              <IonGrid>
+                {propertyOptions.map((option) => {
+                  // Use a subtle, less bold outline only when selected
+                  const isSelected = propertyType === option.type;
+                  const outlineColor = `var(--ion-color-${option.color}-tint, #b3e5fc)`; // fallback to a light tint
+                  return (
+                    <IonRow key={option.type}>
+                      <IonCol>
+                        <IonCard
+                          button
+                          onClick={() => handleSelect(option.type)}
+                          style={{
+                            boxShadow: isSelected ? `0 0 0 1.5px ${outlineColor}` : 'none',
+                            border: isSelected ? `1.5px solid ${outlineColor}` : '1px solid #e0e0e0',
+                            transform: isSelected ? 'scale(1.02)' : 'scale(1)',
+                            transition: 'all 0.2s ease'
+                          }}
+                        >
+                          <IonCardHeader>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                              <IonIcon
+                                icon={option.icon}
+                                size="large"
+                                color={isSelected ? option.color : 'medium'}
+                              />
+                              <div>
+                                <IonCardTitle
+                                  color={isSelected ? option.color : undefined}
+                                >
+                                  {option.title}
+                                </IonCardTitle>
+                              </div>
+                            </div>
+                          </IonCardHeader>
+                          <IonCardContent>
+                            <p style={{
+                              margin: 0,
+                              fontSize: '14px',
+                              color: isSelected ? 'inherit' : '#666'
+                            }}>
+                              {option.description}
+                            </p>
+                          </IonCardContent>
+                        </IonCard>
+                      </IonCol>
+                    </IonRow>
+                  );
+                })}
+              </IonGrid>
+            </IonCol>
+          </IonRow>
+
+          {/* Selected Property Type Summary */}
+          {propertyType && (
+            <IonRow className="ion-justify-content-center ion-margin-top">
+              <IonCol size-xs="12" size-md="8" size-lg="6">
+                <IonCard style={{ backgroundColor: '#f0f8ff' }}>
+                  <IonCardContent>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <IonIcon icon={propertyOptions.find(opt => opt.type === propertyType)?.icon} color="primary" />
+                      <strong>Selected: {propertyType}-Type Property</strong>
+                    </div>
+                    <p style={{ margin: '8px 0 0 0', fontSize: '12px', color: '#666' }}>
+                      Database value: {convertPropertyTypeForDB(propertyType)}
+                    </p>
+                    <p style={{ margin: '8px 0 0 0', fontSize: '12px', color: '#666' }}>
+                      {propertyType === 'Home' && 'Next: Choose specific home type'}
+                      {propertyType === 'Hotel' && 'Next: Configure hotel rooms and amenities'}
+                      {propertyType === 'Unique' && 'Next: Describe your unique property features'}
+                    </p>
+                  </IonCardContent>
+                </IonCard>
+              </IonCol>
+            </IonRow>
+          )}
+
+          {/* Action Buttons */}
+          <IonRow className="ion-justify-content-center ion-margin-top">
+            <IonCol size-xs="12" size-md="8" size-lg="6">
+              <IonGrid>
+                <IonRow>
+                  <IonCol size-xs="12" size-sm="6">
+                    <IonButton 
+                      expand="block" 
+                      fill="outline"
+                      color="medium"
+                      onClick={handleBack}
+                    >
+                      <IonIcon icon={arrowBackOutline} slot="start" />
+                      Back
+                    </IonButton>
+                  </IonCol>
+                  <IonCol size-xs="12" size-sm="6">
+                    <IonButton
+                      expand="block"
+                      color={propertyType ? "primary" : "medium"}
+                      onClick={handleNext}
+                      disabled={!propertyType}
+                    >
+                      Next
+                      <IonIcon icon={arrowForwardOutline} slot="end" />
+                    </IonButton>
+                  </IonCol>
+                </IonRow>
+              </IonGrid>
             </IonCol>
           </IonRow>
         </IonGrid>
