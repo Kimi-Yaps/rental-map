@@ -21,40 +21,40 @@ import {
   IonAlert,
   IonGrid,
   IonRow,
-  IonCol
+  IonCol,
+  IonModal,
+  IonButtons
 } from '@ionic/react';
-import { camera, arrowBack, arrowForward, trashOutline, videocamOutline } from 'ionicons/icons';
+import { camera, trashOutline, videocamOutline, close } from 'ionicons/icons';
 import supabase from '../../supabaseConfig';
-import { RentalAmenities , RoomDetails ,pricing } from '../components/DbCrud';
-
-
+import { RentalAmenities, RoomDetails, pricing } from '../components/DbCrud';
+import NavigationButtons from '../components/NavigationButtons';
+import { v4 as uuidv4 } from 'uuid'; // Import uuid
 
 interface Property {
-    id: string;
-    building_name: string | null;
-    address: string;
-    property_type: string | null;
-    house_rules: string | null;
-    max_guests: number | null;
-    instant_booking: boolean | null;
-    is_active: boolean | null;
-    amenities: RentalAmenities | null;
-    rooms: RoomDetails[];
-    pricing?: pricing[];
-    videos: string[];
-    photos: string[];
-    created_at: string;
-    updated_at: string | null;
-    HomeType: string | null;
+  id: string;
+  building_name: string | null;
+  address: string;
+  property_type: string | null;
+  house_rules: string | null;
+  max_guests: number | null;
+  instant_booking: boolean | null;
+  is_active: boolean | null;
+  amenities: RentalAmenities | null;
+  rooms: RoomDetails[];
+  pricing?: pricing[];
+  videos: string[];
+  photos: string[];
+  created_at: string;
+  updated_at: string | null;
+  HomeType: string | null;
 }
 
-// Helper to get or initialize a rental draft from localStorage
 const getProperty = (): Property => {
   const saved = localStorage.getItem('Property');
   if (saved) {
     try {
       const parsed = JSON.parse(saved);
-      // Ensure the photos and videos fields are arrays
       if (!parsed.photos || !Array.isArray(parsed.photos)) {
         parsed.photos = [];
       }
@@ -77,16 +77,14 @@ const getProperty = (): Property => {
     is_active: null,
     amenities: {},
     rooms: [],
-    photos: [], // Initialize photos as an empty array
-    videos: [], // Initialize videos as an empty array
+    photos: [],
+    videos: [],
     created_at: new Date().toISOString(),
     updated_at: null,
     HomeType: null,
   };
 };
 
-// Define the Supabase storage bucket name here.
-// You must ensure this bucket exists and is correctly configured in your Supabase project.
 const STORAGE_BUCKET_NAME = 'imgvideo-bucket1';
 
 const PhotosStepPage: React.FC = () => {
@@ -97,6 +95,10 @@ const PhotosStepPage: React.FC = () => {
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const [showDeleteAlert, setShowDeleteAlert] = useState<{ index: number; isVideo: boolean } | null>(null);
+  const [showMediaModal, setShowMediaModal] = useState(false);
+  const [selectedMedia, setSelectedMedia] = useState<{ url: string; isVideo: boolean } | null>(null);
+  const [showDroppableModal, setShowDroppableModal] = useState(false);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const draft = getProperty();
@@ -128,19 +130,19 @@ const PhotosStepPage: React.FC = () => {
         if (error) {
           console.error('Error saving media to Supabase:', error);
         }
-      } catch (error) {
-        console.error('Error saving media to Supabase:', error);
+      } catch (error: any) {
+        console.error('Error saving media to Supabase:', error.message || error);
       }
     }
     setToastMessage('Media updated successfully!');
     setShowToast(true);
   };
 
-  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    if (!event.target.files) return;
+  const handleFileChange = async (filesToUpload: FileList | null) => {
+    if (!filesToUpload || filesToUpload.length === 0) return;
 
     setIsUploading(true);
-    const files = Array.from(event.target.files);
+    const files = Array.from(filesToUpload);
     const draft = getProperty();
     const propertyId = draft.id;
 
@@ -154,8 +156,8 @@ const PhotosStepPage: React.FC = () => {
     const uploadPromises = files.map(async (file) => {
       try {
         const fileExt = file.name.split('.').pop();
-        const fileName = `${propertyId}_${Date.now()}.${fileExt}`;
-        
+        const fileName = `${propertyId}_${uuidv4()}.${fileExt}`;
+
         const isVideo = file.type.startsWith('video/');
         const filePath = isVideo
           ? `Propertie/Propertie_Video/${fileName}`
@@ -175,7 +177,7 @@ const PhotosStepPage: React.FC = () => {
           .getPublicUrl(filePath);
 
         return { url: publicUrl, isVideo };
-      } catch (error) {
+      } catch (error: any) {
         console.error('Upload error:', error);
         setToastMessage(`Upload failed: ${error.message}`);
         return null;
@@ -186,7 +188,7 @@ const PhotosStepPage: React.FC = () => {
     const newPhotos = results
       .filter((result): result is { url: string; isVideo: boolean } => result !== null && !result.isVideo)
       .map(result => result.url);
-    
+
     const newVideos = results
       .filter((result): result is { url: string; isVideo: boolean } => result !== null && result.isVideo)
       .map(result => result.url);
@@ -216,13 +218,13 @@ const PhotosStepPage: React.FC = () => {
       let updatedVideos = [...videos];
 
       if (showDeleteAlert.isVideo) {
-        updatedVideos = videos.filter((_, index) => index !== showDeleteAlert.index);
+        updatedVideos.splice(showDeleteAlert.index, 1);
         setVideos(updatedVideos);
       } else {
-        updatedPhotos = photos.filter((_, index) => index !== showDeleteAlert.index);
+        updatedPhotos.splice(showDeleteAlert.index, 1);
         setPhotos(updatedPhotos);
       }
-      
+
       saveMediaToDraft(updatedPhotos, updatedVideos);
     }
     setShowDeleteAlert(null);
@@ -238,10 +240,9 @@ const PhotosStepPage: React.FC = () => {
   };
 
   const handleBack = () => {
-    history.push('/pricingStepPage');
+    history.push('/pricing');
   };
-  
-  // Helper function to check if a URL is a video based on its extension
+
   const isVideoUrl = (url: string) => {
     const videoExtensions = ['.mp4', '.mov', '.avi', '.mkv', '.webm'];
     const fileExtension = url.split('.').pop()?.toLowerCase();
@@ -251,7 +252,7 @@ const PhotosStepPage: React.FC = () => {
   return (
     <IonPage>
       <IonHeader>
-        <IonToolbar>
+        <IonToolbar color="primary">
           <IonTitle>Upload Media</IonTitle>
         </IonToolbar>
       </IonHeader>
@@ -263,11 +264,11 @@ const PhotosStepPage: React.FC = () => {
                 width: '30px',
                 height: '30px',
                 borderRadius: '50%',
-                backgroundColor: '#007bff',
+                backgroundColor: 'var(--ion-color-primary)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                color: 'white',
+                color: 'var(--ion-color-primary-contrast)',
                 fontWeight: 'bold',
                 marginRight: '10px'
               }}>
@@ -275,14 +276,14 @@ const PhotosStepPage: React.FC = () => {
               </div>
             </IonCol>
             <IonCol>
-              <IonText>
+              <IonText color="primary">
                 <h2>Property Photos & Videos</h2>
               </IonText>
             </IonCol>
           </IonRow>
           <IonRow>
             <IonCol size="12">
-              <IonText>
+              <IonText color="medium">
                 <p>Upload photos and videos of your property. Good media attracts more tenants.</p>
               </IonText>
             </IonCol>
@@ -293,8 +294,16 @@ const PhotosStepPage: React.FC = () => {
               <IonCard>
                 <IonCardContent>
                   <IonItem lines="none">
-                    <input type="file" id="fileInput" hidden multiple onChange={handleFileChange} accept="image/*,video/*" />
-                    <IonButton expand="block" fill="outline" onClick={() => document.getElementById('fileInput')?.click()}>
+                    <input
+                      type="file"
+                      id="fileInput"
+                      hidden
+                      multiple
+                      onChange={(e) => handleFileChange(e.target.files)}
+                      accept="image/*,video/*"
+                      ref={fileInputRef} // Added ref to the input
+                    />
+                    <IonButton expand="block" fill="outline" onClick={() => setShowDroppableModal(true)}>
                       <IonIcon icon={camera} slot="start" />
                       Select Media
                     </IonButton>
@@ -302,11 +311,14 @@ const PhotosStepPage: React.FC = () => {
                   {isUploading && <IonSpinner name="crescent" />}
                   <IonList>
                     {[...photos, ...videos].map((mediaUrl, index) => (
-                      <IonItem key={index}>
+                      <IonItem key={index} button onClick={() => {
+                        setSelectedMedia({ url: mediaUrl, isVideo: isVideoUrl(mediaUrl) });
+                        setShowMediaModal(true);
+                      }}>
                         {isVideoUrl(mediaUrl) ? (
                           <>
-                            <IonIcon icon={videocamOutline} slot="start" style={{ marginRight: '10px' }}/>
-                            <video src={mediaUrl} controls style={{ width: '100px', height: 'auto', marginRight: '10px' }} />
+                            <IonIcon icon={videocamOutline} slot="start" style={{ marginRight: '10px' }} />
+                            <video src={mediaUrl} style={{ width: '100px', height: 'auto', marginRight: '10px' }} />
                           </>
                         ) : (
                           <IonImg src={mediaUrl} style={{ width: '100px', height: 'auto', marginRight: '10px' }} />
@@ -316,7 +328,10 @@ const PhotosStepPage: React.FC = () => {
                           slot="end"
                           color="danger"
                           fill="clear"
-                          onClick={() => handleDeleteMedia(index, isVideoUrl(mediaUrl))}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteMedia(index, isVideoUrl(mediaUrl));
+                          }}
                         >
                           <IonIcon icon={trashOutline} slot="icon-only" />
                         </IonButton>
@@ -327,41 +342,7 @@ const PhotosStepPage: React.FC = () => {
               </IonCard>
             </IonCol>
           </IonRow>
-
-          <IonRow className="ion-padding-vertical ion-justify-content-center">
-            <IonCol size-xs="12" size-md="6">
-              <IonButton expand="block" onClick={handleNext} className="ion-margin-bottom">
-                Next
-                <IonIcon slot="end" icon={arrowForward} />
-              </IonButton>
-            </IonCol>
-            <IonCol size-xs="12" size-md="6">
-              <IonButton expand="block" fill="outline" onClick={handleBack}>
-                <IonIcon slot="start" icon={arrowBack} />
-                Back
-              </IonButton>
-            </IonCol>
-          </IonRow>
         </IonGrid>
-
-        <IonAlert
-          isOpen={showDeleteAlert !== null}
-          onDidDismiss={cancelDelete}
-          header={'Delete Media?'}
-          message={'Are you sure you want to delete this file?'}
-          buttons={[
-            {
-              text: 'Cancel',
-              role: 'cancel',
-              handler: cancelDelete,
-            },
-            {
-              text: 'Delete',
-              role: 'destructive',
-              handler: confirmDelete,
-            },
-          ]}
-        />
 
         <IonToast
           isOpen={showToast}
@@ -369,7 +350,105 @@ const PhotosStepPage: React.FC = () => {
           message={toastMessage}
           duration={3000}
         />
+
+        {/* Droppable Media Upload Modal */}
+        <IonModal isOpen={showDroppableModal} onDidDismiss={() => setShowDroppableModal(false)}>
+          <IonHeader>
+            <IonToolbar>
+              <IonTitle>Upload Media</IonTitle>
+              <IonButtons slot="end">
+                <IonButton onClick={() => setShowDroppableModal(false)}>
+                  <IonIcon icon={close} />
+                </IonButton>
+              </IonButtons>
+            </IonToolbar>
+          </IonHeader>
+          <IonContent className="ion-padding">
+            <div
+              style={{
+                border: '2px dashed var(--ion-color-medium)',
+                borderRadius: '8px',
+                padding: '20px',
+                textAlign: 'center',
+                height: '100%',
+                width: '100%',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'center',
+                alignItems: 'center',
+                color: 'var(--ion-color-medium)',
+                fontSize: '1.2em',
+                cursor: 'pointer',
+              }}
+              onDragOver={(e) => e.preventDefault()}
+              onDrop={(e) => {
+                e.preventDefault();
+                handleFileChange(e.dataTransfer.files);
+                setShowDroppableModal(false);
+              }}
+              onClick={() => fileInputRef.current?.click()} // Use the ref to trigger the file input
+            >
+              <p>Drag & Drop your photos/videos here, or click to browse</p>
+            </div>
+            {isUploading && <IonSpinner name="crescent" />}
+          </IonContent>
+        </IonModal>
+
+        <IonModal isOpen={showMediaModal} onDidDismiss={() => setShowMediaModal(false)}>
+          <IonHeader>
+            <IonToolbar>
+              <IonTitle>{selectedMedia?.isVideo ? 'Video Preview' : 'Image Preview'}</IonTitle>
+              <IonButtons slot="end">
+                <IonButton onClick={() => setShowMediaModal(false)}>
+                  <IonIcon icon={close} />
+                </IonButton>
+              </IonButtons>
+            </IonToolbar>
+          </IonHeader>
+          <IonContent className="ion-padding" style={{ borderRadius: '15px', overflow: 'hidden' }}>
+            {selectedMedia && (
+              <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
+                {selectedMedia.isVideo ? (
+                  <video src={selectedMedia.url} controls style={{ maxWidth: '100%', maxHeight: '80vh', borderRadius: '10px' }} />
+                ) : (
+                  <IonImg src={selectedMedia.url} style={{ maxWidth: '100%', maxHeight: '80vh', borderRadius: '10px' }} />
+                )}
+              </div>
+            )}
+          </IonContent>
+        </IonModal>
       </IonContent>
+      <NavigationButtons
+        onNext={handleNext}
+        onBack={handleBack}
+        backPath="/pricing"
+        nextPath="/finalReview"
+      />
+      <IonAlert
+        isOpen={showDeleteAlert !== null}
+        onDidDismiss={cancelDelete}
+        header={'Delete Media?'}
+        message={'Are you sure you want to delete this file?'}
+        buttons={[
+          {
+            text: 'Cancel',
+            role: 'cancel',
+            handler: cancelDelete,
+          },
+          {
+            text: 'Delete',
+            role: 'destructive',
+            handler: confirmDelete,
+          },
+        ]}
+      />
+
+      <IonToast
+        isOpen={showToast}
+        onDidDismiss={() => setShowToast(false)}
+        message={toastMessage}
+        duration={3000}
+      />
     </IonPage>
   );
 };

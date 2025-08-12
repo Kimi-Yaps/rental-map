@@ -6,8 +6,7 @@ export interface RentalAmenities {
   dishwasher?: boolean;
   balcony_patio?: boolean;
   pet_friendly?: {
-    dogs_allowed?: boolean;
-    cats_allowed?: boolean;
+    pets_allowed?: boolean;
   };
   parking?: {
     type?: 'garage' | 'carport' | 'off_street' | 'street';

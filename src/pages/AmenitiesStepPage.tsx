@@ -7,11 +7,8 @@ import {
   IonPage,
   IonTitle,
   IonToolbar,
-  IonButton,
   IonItem,
   IonLabel,
-  IonCheckbox,
-  IonList,
   IonCard,
   IonCardContent,
   IonText,
@@ -20,24 +17,23 @@ import {
   IonRow,
   IonCol,
   IonToast,
-  IonInput,
-  IonAlert,
+  IonButton,
 } from '@ionic/react';
-import { 
-  checkmarkCircleOutline, 
-  closeCircleOutline, 
-  wifiOutline, 
-  businessOutline, 
-  leafOutline, 
-  carOutline, 
-  sunnyOutline, 
-  fastFoodOutline, 
-  flashOutline, 
-  accessibilityOutline 
+import {
+  wifiOutline,
+  businessOutline,
+  leafOutline,
+  carOutline,
+  sunnyOutline,
+  fastFoodOutline,
+  flashOutline,
+  accessibilityOutline,
+  pawOutline
 } from 'ionicons/icons';
 import { RentalAmenities, Property } from "../components/DbCrud";
-import PublishPropertyButton from '../components/PublishPropertyButton';
 import supabase from '../../supabaseConfig';
+import Stepper from '../components/Stepper';
+import NavigationButtons from '../components/NavigationButtons';
 
 // Helper to get or initialize rental draft
 const getProperty = (): Property => {
@@ -48,65 +44,70 @@ const getProperty = (): Property => {
     } catch (e) {
       console.error("Failed to parse Property from localStorage, initializing new.", e);
       return { 
-        id: '', 
-        building_name: null, 
-        address: '', 
-        property_type: null, 
-        house_rules: null, 
-        max_guests: null, 
-        instant_booking: null, 
-        is_active: null, 
-        amenities: { parking: { spots: 1 } }, 
-        created_at: new Date().toISOString(), 
-        updated_at: null 
+        id: '',
+        building_name: null,
+        address: '',
+        property_type: null,
+        house_rules: null,
+        max_guests: null,
+        instant_booking: null,
+        is_active: null,
+        amenities: { parking: { spots: 1 } },
+        created_at: new Date().toISOString(),
+        updated_at: null
       };
     }
   }
   return { 
-    id: '', 
-    building_name: null, 
-    address: '', 
-    property_type: null, 
-    house_rules: null, 
-    max_guests: null, 
-    instant_booking: null, 
-    is_active: null, 
-    amenities: { parking: { spots: 1 } }, 
-    created_at: new Date().toISOString(), 
-    updated_at: null 
+    id: '',
+    building_name: null,
+    address: '',
+    property_type: null,
+    house_rules: null,
+    max_guests: null,
+    instant_booking: null,
+    is_active: null,
+    amenities: { parking: { spots: 1 } },
+    created_at: new Date().toISOString(),
+    updated_at: null
   };
 };
+
+const amenityOptions = [
+  { key: 'wifi_included', label: 'Wifi', icon: wifiOutline },
+  { key: 'air_conditioning', label: 'Air Conditioning', icon: businessOutline },
+  { key: 'in_unit_laundry', label: 'In-Unit Laundry', icon: leafOutline },
+  { key: 'dishwasher', label: 'Dishwasher', icon: fastFoodOutline },
+  { key: 'balcony_patio', label: 'Balcony/Patio', icon: sunnyOutline },
+  { key: 'community_pool', label: 'Community Pool', icon: flashOutline },
+  { key: 'fitness_center', label: 'Fitness Center', icon: businessOutline },
+  { key: 'pet_friendly', label: 'Pets Allowed', icon: pawOutline },
+];
 
 const AmenitiesStepPage: React.FC = () => {
   const history = useHistory();
   const [amenities, setAmenities] = useState<RentalAmenities>({});
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
-  const [showBackAlert, setShowBackAlert] = useState(false);
 
   useEffect(() => {
-    // Load amenities from Property in localStorage
     const draft = getProperty();
     setAmenities(draft.amenities || {});
   }, []);
 
-  const handleAmenityChange = (key: keyof RentalAmenities | 'pet_friendly_dogs' | 'pet_friendly_cats', value: boolean) => {
+  const handleAmenityChange = (key: keyof RentalAmenities) => {
     setAmenities(prevAmenities => {
       const newAmenities = { ...prevAmenities };
 
-      if (key === 'pet_friendly_dogs') {
+      if (key === 'pet_friendly') {
         newAmenities.pet_friendly = {
           ...newAmenities.pet_friendly,
-          dogs_allowed: value,
-        };
-      } else if (key === 'pet_friendly_cats') {
-        newAmenities.pet_friendly = {
-          ...newAmenities.pet_friendly,
-          cats_allowed: value,
+          pets_allowed: !newAmenities.pet_friendly?.pets_allowed,
         };
       } else {
-        (newAmenities as any)[key] = value;
+        (newAmenities as any)[key] = !(newAmenities as any)[key];
       }
+      saveAmenitiesToDraft(newAmenities);
       return newAmenities;
     });
   };
@@ -120,6 +121,7 @@ const AmenitiesStepPage: React.FC = () => {
           type: type
         }
       };
+      saveAmenitiesToDraft(newAmenities);
       return newAmenities;
     });
   };
@@ -148,58 +150,28 @@ const AmenitiesStepPage: React.FC = () => {
     
     localStorage.setItem('Property', JSON.stringify(updatedDraft));
     
-    // Also save to Supabase if draft has an ID
-    if (updatedDraft.id) {
-      try {
-        const { error } = await supabase
-          .from('rental_drafts')
-          .upsert([{
-            id: updatedDraft.id,
-            amenities_data: updatedAmenities,
-            updated_at: updatedDraft.updated_at,
-          }], { onConflict: 'id' });
+    // Supabase save logic removed as per user request
+    // if (updatedDraft.id) {
+    //   try {
+    //     const { error } = await supabase
+    //       .from('rental_drafts')
+    //       .upsert([{
+    //         id: updatedDraft.id,
+    //         amenities_data: updatedAmenities,
+    //         updated_at: updatedDraft.updated_at,
+    //       }], { onConflict: 'id' });
 
-        if (error) {
-          console.error('Error saving amenities to Supabase:', error);
-        }
-      } catch (error) {
-        console.error('Error saving amenities to Supabase:', error);
-      }
-    }
+    //     if (error) {
+    //       console.error('Error saving amenities to Supabase:', error);
+    //     }
+    //   } catch (error) {
+    //     console.error('Error saving amenities to Supabase:', error);
+    //   }
+    // }
     
     setToastMessage('Amenities saved to draft!');
     setShowToast(true);
     console.log('Amenities saved:', updatedDraft.amenities);
-  };
-
-  const clearDraftAndStorage = async () => {
-    const draft = getProperty();
-    
-    // Clear amenities in localStorage
-    const updatedDraft = { ...draft, amenities: {} };
-    localStorage.setItem('Property', JSON.stringify(updatedDraft));
-    setAmenities({}); // Also clear the local state
-    
-    // Clear amenities in Supabase if draft exists
-    if (draft.id) {
-      try {
-        const { error } = await supabase
-          .from('rental_drafts')
-          .update({ amenities_data: {} })
-          .eq('id', draft.id);
-        
-        if (error) {
-          console.error('Error clearing amenities in Supabase:', error);
-        } else {
-          console.log('Amenities cleared in Supabase');
-        }
-      } catch (error) {
-        console.error('Error clearing amenities in Supabase:', error);
-      }
-    }
-    
-    setToastMessage('Amenities cleared from draft and database');
-    setShowToast(true);
   };
 
   const handleNext = () => {
@@ -208,24 +180,21 @@ const AmenitiesStepPage: React.FC = () => {
   };
 
   const handleBack = () => {
-    // Show confirmation alert before going back and clearing draft
-    setShowBackAlert(true);
+    // No specific action needed here, as the NavigationButtons component handles the alert and navigation
   };
 
-  const confirmBack = async () => {
-    setShowBackAlert(false);
-    await clearDraftAndStorage();
-    history.push('/LocationStepPage'); // Updated to use correct route path
-  };
-
-  const cancelBack = () => {
-    setShowBackAlert(false);
+  const isAmenitySelected = (key: string): boolean => {
+    if (key === 'pet_friendly') {
+      return amenities.pet_friendly?.pets_allowed === true;
+    }
+    // For other boolean amenities
+    return (amenities as any)[key] === true;
   };
 
   return (
     <IonPage>
       <IonHeader>
-        <IonToolbar>
+        <IonToolbar color="primary">
           <IonTitle>Property Amenities</IonTitle>
         </IonToolbar>
       </IonHeader>
@@ -235,208 +204,78 @@ const AmenitiesStepPage: React.FC = () => {
             width: '30px',
             height: '30px',
             borderRadius: '50%',
-            backgroundColor: '#007bff', // Agoda blue for active step
+            backgroundColor: 'var(--ion-color-primary)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            color: 'white',
+            color: 'var(--ion-color-primary-contrast)',
             fontWeight: 'bold',
             marginRight: '10px'
           }}>
             2
           </div>
-          <IonText>
+          <IonText color="primary">
             <h2>Amenities</h2>
           </IonText>
         </div>
 
-        <IonText>
+        <IonText color="medium">
           <p>What amenities does your property offer?</p>
         </IonText>
 
-        <IonList lines="full" className="ion-no-padding">
-          <IonItem>
-            <IonIcon icon={wifiOutline} slot="start" color="primary" />
-            <IonLabel>Wifi Included</IonLabel>
-            <IonCheckbox
-              slot="end"
-              checked={amenities.wifi_included || false}
-              onIonChange={(e) => handleAmenityChange('wifi_included', e.detail.checked)}
-            />
-          </IonItem>
-
-          <IonItem>
-            <IonIcon icon={businessOutline} slot="start" color="primary" />
-            <IonLabel>Air Conditioning</IonLabel>
-            <IonCheckbox
-              slot="end"
-              checked={amenities.air_conditioning || false}
-              onIonChange={(e) => handleAmenityChange('air_conditioning', e.detail.checked)}
-            />
-          </IonItem>
-
-          <IonItem>
-            <IonIcon icon={leafOutline} slot="start" color="primary" />
-            <IonLabel>In-Unit Laundry</IonLabel>
-            <IonCheckbox
-              slot="end"
-              checked={amenities.in_unit_laundry || false}
-              onIonChange={(e) => handleAmenityChange('in_unit_laundry', e.detail.checked)}
-            />
-          </IonItem>
-
-          <IonItem>
-            <IonIcon icon={fastFoodOutline} slot="start" color="primary" />
-            <IonLabel>Dishwasher</IonLabel>
-            <IonCheckbox
-              slot="end"
-              checked={amenities.dishwasher || false}
-              onIonChange={(e) => handleAmenityChange('dishwasher', e.detail.checked)}
-            />
-          </IonItem>
-
-          <IonItem>
-            <IonIcon icon={sunnyOutline} slot="start" color="primary" />
-            <IonLabel>Balcony / Patio</IonLabel>
-            <IonCheckbox
-              slot="end"
-              checked={amenities.balcony_patio || false}
-              onIonChange={(e) => handleAmenityChange('balcony_patio', e.detail.checked)}
-            />
-          </IonItem>
-
-          <IonCard className="ion-margin-top ion-no-margin-horizontal">
-            <IonCardContent>
-              <IonItem lines="none" className="ion-no-padding">
-                <IonIcon icon={accessibilityOutline} slot="start" color="primary" />
-                <IonLabel>Pet Friendly</IonLabel>
-              </IonItem>
-              <IonGrid className="ion-padding-start">
-                <IonRow className="ion-align-items-center">
-                  <IonCol size="6">
-                    <IonItem lines="none" className="ion-no-padding">
-                      <IonLabel>Dogs Allowed</IonLabel>
-                      <IonCheckbox
-                        slot="end"
-                        checked={amenities.pet_friendly?.dogs_allowed || false}
-                        onIonChange={(e) => handleAmenityChange('pet_friendly_dogs' as keyof RentalAmenities, e.detail.checked)}
-                      />
-                    </IonItem>
-                  </IonCol>
-                  <IonCol size="6">
-                    <IonItem lines="none" className="ion-no-padding">
-                      <IonLabel>Cats Allowed</IonLabel>
-                      <IonCheckbox
-                        slot="end"
-                        checked={amenities.pet_friendly?.cats_allowed || false}
-                        onIonChange={(e) => handleAmenityChange('pet_friendly_cats' as keyof RentalAmenities, e.detail.checked)}
-                      />
-                    </IonItem>
-                  </IonCol>
-                </IonRow>
-              </IonGrid>
-            </IonCardContent>
-          </IonCard>
-
-          <IonCard className="ion-margin-top ion-no-margin-horizontal">
-            <IonCardContent>
-              <IonItem lines="none" className="ion-no-padding">
-                <IonIcon icon={carOutline} slot="start" color="primary" />
-                <IonLabel>Parking</IonLabel>
-              </IonItem>
-              <IonGrid className="ion-padding-start">
-                <IonRow className="ion-align-items-center ion-justify-content-start ion-wrap">
-                  {['garage', 'carport', 'off_street', 'street'].map(type => (
-                    <IonCol size="auto" key={type}>
-                      <IonButton
-                        fill={amenities.parking?.type === type ? 'solid' : 'outline'}
-                        onClick={() => handleParkingTypeChange(type as 'garage' | 'carport' | 'off_street' | 'street')}
-                        size="small"
-                        className="ion-margin-bottom ion-margin-end"
-                      >
-                        {type.replace(/_/g, ' ').split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
-                      </IonButton>
-                    </IonCol>
-                  ))}
-                </IonRow>
-                {/* Only show "Number of Spots" if a parking type is selected */}
-                {amenities.parking?.type && (
-                  <IonRow className="ion-align-items-center ion-margin-top">
-                    <IonCol size="auto">
-                      <IonLabel>Number of Spots:</IonLabel>
-                    </IonCol>
-                    <IonCol>
-                      <IonItem lines="none" className="ion-no-padding">
-                        <IonInput
-                          type="number"
-                          value={amenities.parking?.spots || 0}
-                          onIonChange={(e) => handleParkingSpotsChange(parseInt(e.detail.value!, 10) || 0)}
-                          min="0"
-                          max="100"
-                        />
-                      </IonItem>
-                    </IonCol>
-                  </IonRow>
-                )}
-              </IonGrid>
-            </IonCardContent>
-          </IonCard>
-
-          <IonItem>
-            <IonIcon icon={flashOutline} slot="start" color="primary" />
-            <IonLabel>Community Pool</IonLabel>
-            <IonCheckbox
-              slot="end"
-              checked={amenities.community_pool || false}
-              onIonChange={(e) => handleAmenityChange('community_pool', e.detail.checked)}
-            />
-          </IonItem>
-
-          <IonItem>
-            <IonIcon icon={businessOutline} slot="start" color="primary" />
-            <IonLabel>Fitness Center</IonLabel>
-            <IonCheckbox
-              slot="end"
-              checked={amenities.fitness_center || false}
-              onIonChange={(e) => handleAmenityChange('fitness_center', e.detail.checked)}
-            />
-          </IonItem>
-        </IonList>
-
-        <IonGrid className="ion-padding-vertical sticky-buttons-container">
-          <IonRow className="ion-align-items-center ion-justify-content-center">
-            <IonCol size-xs="12" size-md="6">
-              <IonButton expand="block" onClick={handleNext} className="ion-margin-bottom">
-                Next
-              </IonButton>
-            </IonCol>
-            <IonCol size-xs="12" size-md="6">
-              <IonButton expand="block" fill="outline" onClick={handleBack}>
-                Back
-              </IonButton>
-            </IonCol>
+        <IonGrid>
+          <IonRow>
+            {amenityOptions.map(option => (
+              <IonCol size="6" size-md="4" key={option.key}>
+                <IonCard
+                  button
+                  onClick={() => handleAmenityChange(option.key as any)}
+                  color={isAmenitySelected(option.key) ? 'primary' : 'light'}
+                >
+                  <IonCardContent className="ion-text-center amenity-card-content">
+                    <IonIcon icon={option.icon} style={{ fontSize: '2rem' }} />
+                    <IonLabel>{option.label}</IonLabel>
+                  </IonCardContent>
+                </IonCard>
+              </IonCol>
+            ))}
           </IonRow>
         </IonGrid>
 
-        {/* Back confirmation alert */}
-        <IonAlert
-          isOpen={showBackAlert}
-          onDidDismiss={cancelBack}
-          header="Go Back?"
-          message="Going back will clear your current draft data. Are you sure you want to continue?"
-          buttons={[
-            {
-              text: 'Cancel',
-              role: 'cancel',
-              handler: cancelBack
-            },
-            {
-              text: 'Yes, Go Back',
-              role: 'confirm',
-              handler: confirmBack
-            }
-          ]}
-        />
+        <IonCard className="ion-margin-top ion-no-margin-horizontal">
+          <IonCardContent>
+            <IonItem lines="none" className="ion-no-padding">
+              <IonIcon icon={carOutline} slot="start" color="primary" />
+              <IonLabel>Parking</IonLabel>
+            </IonItem>
+            <IonGrid className="ion-padding-start">
+              <IonRow className="ion-align-items-center ion-justify-content-start ion-wrap">
+                {['garage', 'carport', 'off_street', 'street'].map(type => (
+                  <IonCol size="auto" key={type}>
+                    <IonButton
+                      fill={amenities.parking?.type === type ? 'solid' : 'outline'}
+                      onClick={() => handleParkingTypeChange(type as 'garage' | 'carport' | 'off_street' | 'street')}
+                      size="small"
+                      className="ion-margin-bottom ion-margin-end"
+                    >
+                      {type.replace(/_/g, ' ').split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
+                    </IonButton>
+                  </IonCol>
+                ))}
+              </IonRow>
+              {amenities.parking?.type && (
+                <Stepper 
+                  label="Number of Spots:"
+                  value={amenities.parking?.spots || 0} 
+                  onIncrement={() => handleParkingSpotsChange((amenities.parking?.spots || 0) + 1)}
+                  onDecrement={() => handleParkingSpotsChange((amenities.parking?.spots || 0) - 1)}
+                  min={0}
+                  max={100}
+                />
+              )}
+            </IonGrid>
+          </IonCardContent>
+        </IonCard>
 
         <IonToast
           isOpen={showToast}
@@ -445,6 +284,12 @@ const AmenitiesStepPage: React.FC = () => {
           duration={2000}
         />
       </IonContent>
+      <NavigationButtons
+        onNext={handleNext}
+        onBack={handleBack}
+        backPath="/LocationStepPage"
+        nextPath="/rooms"
+      />
     </IonPage>
   );
 };

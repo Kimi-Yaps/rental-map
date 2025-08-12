@@ -35,12 +35,32 @@ import {
   arrowForwardOutline
 } from 'ionicons/icons';
 import supabase from '../../supabaseConfig';
+import Stepper from '../components/Stepper';
+import NavigationButtons from '../components/NavigationButtons';
+
+interface Property {
+    id: string;
+    building_name: string | null;
+    address: string;
+    property_type: string | null;
+    house_rules: string | null;
+    max_guests: number | null;
+    instant_booking: boolean | null;
+    is_active: boolean | null;
+    amenities: RentalAmenities | null;
+    rooms: RoomDetails[];
+    pricing?: pricing[];
+    videos?: string[];
+    photos?: string[];
+    created_at: string;
+    updated_at: string | null;
+    HomeType: string | null;
+}
 
 // Import the user's provided interfaces
 interface RoomDetails {
   room_type: 'bedroom' | 'bathroom' | 'kitchen' | 'living_room' | 'dining_room' | 'other';
-  bed_types?: string[]; // Made an array of strings for multiple bed types
-  number_of_beds?: number;
+  bed_counts?: { [key: string]: number }; // e.g., { 'King': 1, 'Single': 2 }
   number_of_bathrooms?: number;
   has_ensuite?: boolean;
   description?: string;
@@ -200,10 +220,30 @@ const RoomsStepPage: React.FC = () => {
     setShowBackAlert(false);
   };
 
+  const BED_TYPES = ['King', 'Queen', 'Double', 'Single', 'Bunk Bed'];
+
+  const handleBedCountChange = (roomIndex: number, bedType: string, delta: number) => {
+    const newRooms = [...rooms]; // Use the current state directly
+    if (newRooms[roomIndex]) {
+      const currentBedCounts = newRooms[roomIndex].bed_counts || {};
+      const currentCount = currentBedCounts[bedType] || 0;
+      const newCount = Math.max(0, currentCount + delta); // Ensure count doesn't go below 0
+
+      const updatedBedCounts = {
+        ...currentBedCounts,
+        [bedType]: newCount,
+      };
+
+      newRooms[roomIndex].bed_counts = updatedBedCounts;
+    }
+    setRooms(newRooms); // Update the state
+    saveRoomsToDraft(newRooms); // Save to draft after state is updated
+  };
+
   return (
     <IonPage>
       <IonHeader>
-        <IonToolbar>
+        <IonToolbar color="primary">
           <IonTitle>Property Rooms</IonTitle>
         </IonToolbar>
       </IonHeader>
@@ -215,11 +255,11 @@ const RoomsStepPage: React.FC = () => {
                 width: '30px',
                 height: '30px',
                 borderRadius: '50%',
-                backgroundColor: '#007bff',
+                backgroundColor: 'var(--ion-color-primary)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                color: 'white',
+                color: 'var(--ion-color-primary-contrast)',
                 fontWeight: 'bold',
                 marginRight: '10px'
               }}>
@@ -227,14 +267,14 @@ const RoomsStepPage: React.FC = () => {
               </div>
             </IonCol>
             <IonCol>
-              <IonText>
+              <IonText color="primary">
                 <h2>Room Details</h2>
               </IonText>
             </IonCol>
           </IonRow>
           <IonRow>
             <IonCol size="12">
-              <IonText>
+              <IonText color="medium">
                 <p>Please provide details for each room in your property.</p>
               </IonText>
             </IonCol>
@@ -278,23 +318,38 @@ const RoomsStepPage: React.FC = () => {
                       {/* Conditional fields based on room type */}
                       {room.room_type === 'bedroom' && (
                         <>
-                          <IonItem>
-                            <IonLabel position="stacked">Number of Beds</IonLabel>
-                            <IonInput
-                              type="number"
-                              min="0"
-                              value={room.number_of_beds}
-                              onIonChange={(e) => handleRoomChange(index, 'number_of_beds', parseInt(e.detail.value!, 10) || 0)}
-                            />
+                          <IonItem lines="none">
+                            <IonLabel position="stacked">Bed Types</IonLabel>
                           </IonItem>
-                          <IonItem>
-                            <IonLabel position="stacked">Bed Types (e.g., 'King', 'Queen')</IonLabel>
-                            <IonInput
-                              placeholder="Comma-separated bed types"
-                              value={room.bed_types?.join(', ') || ''}
-                              onIonChange={(e) => handleRoomChange(index, 'bed_types', e.detail.value ? e.detail.value.split(',').map(s => s.trim()) : [])}
-                            />
-                          </IonItem>
+                          <IonGrid className="ion-padding-horizontal">
+                            {BED_TYPES.map((bedType) => (
+                              <IonRow key={bedType} className="ion-align-items-center ion-margin-bottom">
+                                <IonCol size="6">
+                                  <IonLabel>{bedType}</IonLabel>
+                                </IonCol>
+                                <IonCol size="6" className="ion-text-end">
+                                  <IonButton
+                                    onClick={() => handleBedCountChange(index, bedType, -1)}
+                                    disabled={(room.bed_counts?.[bedType] || 0) <= 0}
+                                    fill="clear"
+                                    size="small"
+                                  >
+                                    <IonIcon icon={removeCircleOutline} />
+                                  </IonButton>
+                                  <IonText className="ion-padding-horizontal">
+                                    {room.bed_counts?.[bedType] || 0}
+                                  </IonText>
+                                  <IonButton
+                                    onClick={() => handleBedCountChange(index, bedType, 1)}
+                                    fill="clear"
+                                    size="small"
+                                  >
+                                    <IonIcon icon={addCircleOutline} />
+                                  </IonButton>
+                                </IonCol>
+                              </IonRow>
+                            ))}
+                          </IonGrid>
                           <IonItem lines="none">
                             <IonLabel>Has Ensuite Bathroom?</IonLabel>
                             <IonToggle
@@ -307,12 +362,12 @@ const RoomsStepPage: React.FC = () => {
                       )}
                       {room.room_type === 'bathroom' && (
                         <IonItem>
-                          <IonLabel position="stacked">Number of Bathrooms</IonLabel>
-                          <IonInput
-                            type="number"
-                            min="0"
-                            value={room.number_of_bathrooms}
-                            onIonChange={(e) => handleRoomChange(index, 'number_of_bathrooms', parseInt(e.detail.value!, 10) || 0)}
+                          <Stepper
+                            label="Number of Bathrooms"
+                            value={room.number_of_bathrooms || 0}
+                            onIncrement={() => handleRoomChange(index, 'number_of_bathrooms', (room.number_of_bathrooms || 0) + 1)}
+                            onDecrement={() => handleRoomChange(index, 'number_of_bathrooms', (room.number_of_bathrooms || 0) - 1)}
+                            min={0}
                           />
                         </IonItem>
                       )}
@@ -345,41 +400,7 @@ const RoomsStepPage: React.FC = () => {
             </IonCol>
           </IonRow>
 
-          <IonRow className="ion-padding-vertical ion-justify-content-center">
-            <IonCol size-xs="12" size-md="6">
-              <IonButton expand="block" onClick={handleNext} className="ion-margin-bottom">
-                Next
-                <IonIcon slot="end" icon={arrowForwardOutline} />
-              </IonButton>
-            </IonCol>
-            <IonCol size-xs="12" size-md="6">
-              <IonButton expand="block" fill="outline" onClick={handleBack}>
-                <IonIcon slot="start" icon={chevronBackOutline} />
-                Back
-              </IonButton>
-            </IonCol>
-          </IonRow>
-        </IonGrid>
-
-        {/* Back confirmation alert */}
-        <IonAlert
-          isOpen={showBackAlert}
-          onDidDismiss={cancelBack}
-          header="Go Back?"
-          message="Going back will clear your current room details. Are you sure you want to continue?"
-          buttons={[
-            {
-              text: 'Cancel',
-              role: 'cancel',
-              handler: cancelBack
-            },
-            {
-              text: 'Yes, Go Back',
-              role: 'confirm',
-              handler: confirmBack
-            }
-          ]}
-        />
+          </IonGrid>
 
         <IonToast
           isOpen={showToast}
@@ -388,8 +409,15 @@ const RoomsStepPage: React.FC = () => {
           duration={2000}
         />
       </IonContent>
+      <NavigationButtons
+        onNext={handleNext}
+        onBack={handleBack}
+        backPath="/amenities"
+        nextPath="/pricing"
+      />
     </IonPage>
   );
 };
 
 export default RoomsStepPage;
+        

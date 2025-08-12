@@ -1,4 +1,3 @@
-
 // src/pages/PricingStepPage.tsx
 import React, { useState, useEffect } from 'react';
 import { useHistory } from 'react-router-dom';
@@ -34,6 +33,8 @@ import {
   arrowForwardOutline
 } from 'ionicons/icons';
 import supabase from '../../supabaseConfig';
+import Stepper from '../components/Stepper';
+import NavigationButtons from '../components/NavigationButtons';
 
 // Interface for pricing details
 interface PricingDetails {
@@ -86,24 +87,7 @@ const PricingStepPage: React.FC = () => {
 
     localStorage.setItem('Property', JSON.stringify(updatedDraft));
 
-    if (updatedDraft.id) {
-      try {
-        const { error } = await supabase
-          .from('rental_drafts')
-          .upsert([{
-            id: updatedDraft.id,
-            pricing_data: updatedPricing,
-            updated_at: updatedDraft.updated_at,
-          }], { onConflict: 'id' });
-
-        if (error) {
-          console.error('Error saving pricing to Supabase:', error);
-        }
-      } catch (error) {
-        console.error('Error saving pricing to Supabase:', error);
-      }
-    }
-    setToastMessage('Pricing details saved!');
+    setToastMessage('Pricing details saved locally!');
     setShowToast(true);
   };
 
@@ -156,7 +140,7 @@ const PricingStepPage: React.FC = () => {
   return (
     <IonPage>
       <IonHeader>
-        <IonToolbar>
+        <IonToolbar color="primary">
           <IonTitle>Property Pricing</IonTitle>
         </IonToolbar>
       </IonHeader>
@@ -168,11 +152,11 @@ const PricingStepPage: React.FC = () => {
                 width: '30px',
                 height: '30px',
                 borderRadius: '50%',
-                backgroundColor: '#007bff',
+                backgroundColor: 'var(--ion-color-primary)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                color: 'white',
+                color: 'var(--ion-color-primary-contrast)',
                 fontWeight: 'bold',
                 marginRight: '10px'
               }}>
@@ -180,14 +164,14 @@ const PricingStepPage: React.FC = () => {
               </div>
             </IonCol>
             <IonCol>
-              <IonText>
+              <IonText color="primary">
                 <h2>Pricing Details</h2>
               </IonText>
             </IonCol>
           </IonRow>
           <IonRow>
             <IonCol size="12">
-              <IonText>
+              <IonText color="medium">
                 <p>Please provide the pricing details for your property.</p>
               </IonText>
             </IonCol>
@@ -227,12 +211,17 @@ const PricingStepPage: React.FC = () => {
                       </IonItem>
                       <IonItem>
                         <IonLabel position="stacked">Amount</IonLabel>
-                        <IonInput
-                          type="number"
-                          min="0"
-                          value={price.amount}
-                          onIonChange={(e) => handlePricingChange(index, 'amount', parseFloat(e.detail.value!) || 0)}
-                        />
+                        <div style={{ display: 'flex', alignItems: 'center', width: '100%' }}>
+                          <IonText style={{ marginRight: '8px', fontWeight: 'bold' }}>{price.currency}</IonText>
+                          <IonInput
+                            type="number"
+                            value={price.amount}
+                            onIonChange={(e) => handlePricingChange(index, 'amount', parseFloat(e.detail.value || '0'))}
+                            placeholder="0"
+                            min="0"
+                            style={{ flexGrow: 1 }}
+                          />
+                        </div>
                       </IonItem>
                       <IonItem>
                         <IonLabel position="stacked">Currency</IonLabel>
@@ -262,22 +251,14 @@ const PricingStepPage: React.FC = () => {
             </IonCol>
           </IonRow>
 
-          <IonRow className="ion-padding-vertical ion-justify-content-center">
-            <IonCol size-xs="12" size-md="6">
-              <IonButton expand="block" onClick={handleNext} className="ion-margin-bottom">
-                Next
-                <IonIcon slot="end" icon={arrowForwardOutline} />
-              </IonButton>
-            </IonCol>
-            <IonCol size-xs="12" size-md="6">
-              <IonButton expand="block" fill="outline" onClick={handleBack}>
-                <IonIcon slot="start" icon={chevronBackOutline} />
-                Back
-              </IonButton>
-            </IonCol>
-          </IonRow>
-        </IonGrid>
-
+          </IonGrid>
+      </IonContent>
+      <NavigationButtons
+        onNext={handleNext}
+        onBack={handleBack}
+        backPath="/rooms"
+        nextPath="/photos"
+      />
         <IonAlert
           isOpen={showBackAlert}
           onDidDismiss={cancelBack}
@@ -303,7 +284,6 @@ const PricingStepPage: React.FC = () => {
           message={toastMessage}
           duration={2000}
         />
-      </IonContent>
     </IonPage>
   );
 };

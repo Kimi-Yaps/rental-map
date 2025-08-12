@@ -7,7 +7,9 @@ import {
   IonRow,
   IonCol,
   IonButton,
-
+  IonToolbar,
+  IonTitle,
+  IonText
 } from '@ionic/react';
 
 const LandLordHome: React.FC = () => {
@@ -15,12 +17,17 @@ const LandLordHome: React.FC = () => {
   return (
     <IonPage>
       <IonHeader>
+        <IonToolbar color="primary">
+          <IonTitle>Landlord Home</IonTitle>
+        </IonToolbar>
       </IonHeader>
       <IonContent className="ion-padding">
         <IonGrid>
           <IonRow className="ion-justify-content-center ion-text-center">
             <IonCol size-xs="12" size-md="8" size-lg="6">
-              <h1>List your property on Our Platform</h1>
+              <IonText color="primary">
+                <h1>List your property on Our Platform</h1>
+              </IonText>
             </IonCol>
           </IonRow>
           <IonRow className="ion-justify-content-center">

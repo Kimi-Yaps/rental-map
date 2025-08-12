@@ -27,6 +27,7 @@ import {
   locationOutline,
   searchOutline,
 } from "ionicons/icons";
+import NavigationButtons from '../components/NavigationButtons';
 import supabase from '../../supabaseConfig';
 import { Property } from "../components/DbCrud";
 
@@ -462,7 +463,7 @@ const MapSkeleton = () => (
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        backgroundColor: "#f5f5f5",
+        backgroundColor: "var(--ion-color-light-shade)",
         borderRadius: "8px",
       }}
     >
@@ -806,7 +807,6 @@ const LocationStepPage: React.FC = () => {
     localStorage.removeItem('Property');
     setToastMessage('Draft cleared');
     setShowToast(true);
-    history.push('/propertyType');
   };
 
   // MODIFIED: Get the display address - show placeholder when empty
@@ -820,7 +820,7 @@ const LocationStepPage: React.FC = () => {
   return (
     <IonPage>
       <IonHeader>
-        <IonToolbar>
+        <IonToolbar color="primary">
           <IonTitle>Property Location</IonTitle>
         </IonToolbar>
       </IonHeader>
@@ -832,11 +832,11 @@ const LocationStepPage: React.FC = () => {
                 width: '30px',
                 height: '30px',
                 borderRadius: '50%',
-                backgroundColor: '#007bff',
+                backgroundColor: 'var(--ion-color-primary)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                color: 'white',
+                color: 'var(--ion-color-primary-contrast)',
                 fontWeight: 'bold',
                 marginRight: '10px'
               }}>
@@ -844,7 +844,7 @@ const LocationStepPage: React.FC = () => {
               </div>
             </IonCol>
             <IonCol>
-              <IonText>
+              <IonText color="primary">
                 <h2>Location</h2>
               </IonText>
             </IonCol>
@@ -853,24 +853,11 @@ const LocationStepPage: React.FC = () => {
           {/* Display current draft data if available */}
           <IonRow className="ion-justify-content-center">
             <IonCol size-xs="12" size-md="10" size-lg="8">
-              {Property && (
-                <IonCard color="success" className="ion-margin-bottom">
-                  <IonCardContent>
-                    <IonText color="dark">
-                      <h3>Draft Data Found</h3>
-                      <p><strong>Property Type:</strong> {Property.property_type || 'Not specified'}</p>
-                      <p><strong>Home Type:</strong> {Property.HomeType || 'Not specified'}</p>
-                      <p><strong>Last Updated:</strong> {Property.updated_at ? new Date(Property.updated_at).toLocaleString() : 'Unknown'}</p>
-                      <p><strong>Draft Address:</strong> {Property.address || 'Not specified'}</p>
-                    </IonText>
-                  </IonCardContent>
-                </IonCard>
-              )}
-
+              
               {!Property && (
                 <IonCard color="warning" className="ion-margin-bottom">
                   <IonCardContent>
-                    <IonText color="dark">
+                    <IonText color="var(--ion-color-warning-contrast)">
                       <p><strong>No draft data found in localStorage.</strong> Please provide your property location.</p>
                     </IonText>
                   </IonCardContent>
@@ -883,12 +870,16 @@ const LocationStepPage: React.FC = () => {
           <IonRow className="ion-justify-content-center">
             <IonCol size-xs="12" size-md="10" size-lg="8">
               <IonItem lines="none" className="ion-margin-bottom">
-                <IonLabel>Enter Address Manually</IonLabel>
-                <IonToggle
-                  checked={manualMode}
-                  onIonChange={toggleManualMode}
-                  aria-label="Toggle manual address entry"
-                />
+                <IonLabel>Manual Address Entry</IonLabel>
+                <IonButton
+                  onClick={toggleManualMode}
+                  fill={manualMode ? "solid" : "outline"}
+                  color={manualMode ? "primary" : "medium"}
+                  size="small"
+                  className="ion-margin-start"
+                >
+                  {manualMode ? "Disable Manual Entry" : "Enable Manual Entry"}
+                </IonButton>
               </IonItem>
             </IonCol>
           </IonRow>
@@ -1003,7 +994,7 @@ const LocationStepPage: React.FC = () => {
                       </>
                     ) : (
                       <span style={{ 
-                        color: (!address && !manualAddress) ? '#666' : 'inherit',
+                        color: (!address && !manualAddress) ? 'var(--ion-color-medium)' : 'inherit',
                         fontStyle: (!address && !manualAddress) ? 'italic' : 'normal'
                       }}>
                         {getDisplayAddress()}
@@ -1015,19 +1006,7 @@ const LocationStepPage: React.FC = () => {
             </IonCol>
           </IonRow>
 
-          <IonRow className="ion-justify-content-center ion-padding-top">
-            <IonCol size-xs="12" size-md="6">
-              <IonButton expand="block" onClick={handleNextStep}>
-                Continue
-              </IonButton>
-            </IonCol>
-            <IonCol size-xs="12" size-md="6">
-              <IonButton expand="block" fill="outline" onClick={handleBack} color="danger">
-                Back and Clear Draft
-              </IonButton>
-            </IonCol>
-          </IonRow>
-        </IonGrid>
+          </IonGrid>
 
         <IonToast
           isOpen={showToast}
@@ -1037,6 +1016,12 @@ const LocationStepPage: React.FC = () => {
           color="dark"
         />
       </IonContent>
+      <NavigationButtons
+        onNext={handleNextStep}
+        onBack={handleBack}
+        nextDisabled={!address || !manualAddress}
+        backPath="/propertyType"
+      />
     </IonPage>
   );
 };

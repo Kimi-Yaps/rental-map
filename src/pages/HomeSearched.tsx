@@ -18,6 +18,8 @@ import {
   IonList,
   IonIcon,
   IonChip,
+  IonToolbar,
+  IonTitle
 } from '@ionic/react';
 import { useState, useEffect, useCallback } from 'react';
 import { locationOutline, checkmarkCircle, warningOutline } from 'ionicons/icons';
@@ -299,6 +301,9 @@ const HomeSearched: React.FC = () => {
   return (
     <IonPage>
       <IonHeader>
+        <IonToolbar color="primary">
+          <IonTitle>Search Results</IonTitle>
+        </IonToolbar>
       </IonHeader>
       
       <IonContent className="ion-padding">
@@ -374,26 +379,26 @@ const HomeSearched: React.FC = () => {
                             </div>
 
                             {formatPrice(property.pricing) && (
-                              <p style={{ margin: '4px 0', fontSize: '16px', fontWeight: 'bold', color: '#2dd36f' }}>
+                              <p style={{ margin: '4px 0', fontSize: '16px', fontWeight: 'bold', color: 'var(--ion-color-success)' }}>
                                 {formatPrice(property.pricing)}
                               </p>
                             )}
                             
                             {property.max_guests && (
-                              <p style={{ margin: '4px 0', fontSize: '14px', color: '#666' }}>
+                              <p style={{ margin: '4px 0', fontSize: '14px', color: 'var(--ion-color-medium)' }}>
                                 <IonIcon icon={locationOutline} style={{ marginRight: '4px' }} />
                                 Max {property.max_guests} guests
                               </p>
                             )}
 
                             {property.instant_booking && (
-                              <p style={{ margin: '4px 0', fontSize: '14px', color: '#3880ff' }}>
+                              <p style={{ margin: '4px 0', fontSize: '14px', color: 'var(--ion-color-primary)' }}>
                                 ⚡ Instant Booking Available
                               </p>
                             )}
                             
                             {property.amenities && (
-                              <div style={{ marginTop: '8px', fontSize: '13px', color: '#555' }}>
+                              <div style={{ marginTop: '8px', fontSize: '13px', color: 'var(--ion-color-text)' }}>
                                 <p style={{ margin: '4px 0', fontWeight: 'bold' }}>Amenities:</p>
                                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
                                   {property.amenities.wifi_included && <IonChip size="small" color="light">Wi-Fi</IonChip>}
@@ -411,7 +416,7 @@ const HomeSearched: React.FC = () => {
                             )}
 
                             {property.rooms && property.rooms.length > 0 && (
-                              <div style={{ marginTop: '8px', fontSize: '13px', color: '#555' }}>
+                              <div style={{ marginTop: '8px', fontSize: '13px', color: 'var(--ion-color-text)' }}>
                                 <p style={{ margin: '4px 0', fontWeight: 'bold' }}>Rooms:</p>
                                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
                                   {property.rooms.map((room, index) => (
@@ -426,10 +431,10 @@ const HomeSearched: React.FC = () => {
 
                             {property.house_rules && (
                               <details style={{ marginTop: '8px' }}>
-                                <summary style={{ cursor: 'pointer', fontSize: '12px', color: '#666' }}>
+                                <summary style={{ cursor: 'pointer', fontSize: '12px', color: 'var(--ion-color-medium)' }}>
                                   House Rules
                                 </summary>
-                                <p style={{ fontSize: '12px', marginTop: '4px', padding: '8px', background: '#f5f5f5', borderRadius: '4px' }}>
+                                <p style={{ fontSize: '12px', marginTop: '4px', padding: '8px', background: 'var(--ion-color-light-shade)', borderRadius: '4px' }}>
                                   {property.house_rules}
                                 </p>
                               </details>
@@ -442,7 +447,7 @@ const HomeSearched: React.FC = () => {
 
                   {!loading && properties.length === 0 && !error && (
                     <div style={{ textAlign: 'center', padding: '20px' }}>
-                      <IonIcon icon={warningOutline} style={{ fontSize: '48px', color: '#ccc' }} />
+                      <IonIcon icon={warningOutline} style={{ fontSize: '48px', color: 'var(--ion-color-medium)' }} />
                       <p>No properties found{searchTerm ? ` for "${searchTerm}"` : ''}.</p>
                     </div>
                   )}

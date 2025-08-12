@@ -11,10 +11,12 @@ import {
   IonCardContent,
   IonGrid,
   IonRow,
-  IonCol
+  IonCol,
+  IonFooter
 } from '@ionic/react';
-
+import NavigationButtons from '../components/NavigationButtons';
 import { RentalAmenities, RoomDetails, pricing } from '../components/DbCrud';
+import { useHistory } from 'react-router-dom';
 
 // Define the interface for the draft property data, including all expected fields
 // from previous steps like the location page.
@@ -37,6 +39,7 @@ import PublishPropertyButton from './PublishPropertyButton';
 // The main application component.
 const FinalReviewPage: React.FC = () => {
   const [property, setProperty] = useState<DraftProperty | null>(null);
+  const history = useHistory();
 
   useEffect(() => {
     // This effect runs once when the component mounts to load the draft data from localStorage.
@@ -64,10 +67,14 @@ const FinalReviewPage: React.FC = () => {
     }
   };
 
+  const handleBack = () => {
+    history.push('/photos');
+  };
+
   return (
     <IonPage>
       <IonHeader>
-        <IonToolbar>
+        <IonToolbar color="primary">
           <IonTitle>Review & Publish Property</IonTitle>
         </IonToolbar>
       </IonHeader>
@@ -79,19 +86,19 @@ const FinalReviewPage: React.FC = () => {
                 width: '30px',
                 height: '30px',
                 borderRadius: '50%',
-                backgroundColor: '#007bff',
+                backgroundColor: 'var(--ion-color-primary)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                color: 'white',
+                color: 'var(--ion-color-primary-contrast)',
                 fontWeight: 'bold',
                 marginRight: '10px'
               }}>
-                5
+                6
               </div>
             </IonCol>
             <IonCol>
-              <IonText>
+              <IonText color="primary">
                 <h2>Review Your Listing</h2>
               </IonText>
             </IonCol>
@@ -99,7 +106,7 @@ const FinalReviewPage: React.FC = () => {
 
           <IonRow>
             <IonCol size="12">
-              <IonText>
+              <IonText color="medium">
                 <p>Please review all the details you've entered before publishing your property.</p>
               </IonText>
             </IonCol>
@@ -151,7 +158,7 @@ const FinalReviewPage: React.FC = () => {
                       <IonText className="ion-margin-top">
                         <h3>Rooms</h3>
                         {property.rooms.map((room, index) => (
-                          <div key={index} style={{ marginBottom: '10px', borderBottom: '1px solid #eee', paddingBottom: '10px' }}>
+                          <div key={index} style={{ marginBottom: '10px', borderBottom: '1px solid var(--ion-color-medium)', paddingBottom: '10px' }}>
                             <p><strong>Room {index + 1}: {room.room_type}</strong></p>
                             {room.description && <p>Description: {room.description}</p>}
                             {room.number_of_beds && <p>Beds: {room.number_of_beds}</p>}
@@ -167,7 +174,7 @@ const FinalReviewPage: React.FC = () => {
                       <IonText className="ion-margin-top">
                         <h3>Pricing</h3>
                         {property.pricing.map((price, index) => (
-                          <div key={index} style={{ marginBottom: '10px', borderBottom: '1px solid #eee', paddingBottom: '10px' }}>
+                          <div key={index} style={{ marginBottom: '10px', borderBottom: '1px solid var(--ion-color-medium)', paddingBottom: '10px' }}>
                             <p><strong>{price.price_type.replace(/_/g, ' ')}:</strong> {price.amount} {price.currency}</p>
                           </div>
                         ))}
@@ -183,7 +190,7 @@ const FinalReviewPage: React.FC = () => {
               <IonCol size="12">
                 <IonCard color="warning" className="ion-margin-top">
                   <IonCardContent>
-                    <IonText color="dark">
+                    <IonText color="var(--ion-color-warning-contrast)">
                       <p>No draft property data found. Please go back to previous steps to create a listing.</p>
                     </IonText>
                   </IonCardContent>
@@ -191,15 +198,16 @@ const FinalReviewPage: React.FC = () => {
               </IonCol>
             </IonRow>
           )}
-
-          <IonRow className="ion-margin-top sticky-buttons-container">
-            <IonCol size-xs="12" size-md="6">
-              <PublishPropertyButton onPublishComplete={handlePublishComplete} />
-            </IonCol>
-            <IonCol size-xs="12" size-md="6">
-              <IonButton expand="block" fill="outline" routerLink="/pricing">
-                Go Back to Edit
-              </IonButton>
+        </IonGrid>
+        <IonGrid className="ion-padding"> {/* Added padding for consistency */}
+          <IonRow className="ion-align-items-center ion-justify-content-between">
+            <IonCol size-xs="12" size-md="12"> {/* Changed size-xs to 12 to make it full width */}
+              <NavigationButtons
+                onBack={handleBack}
+                backPath="/photos"
+                showNextButton={false}
+                rightButton={<IonButton expand="block" size="medium" onClick={() => { /* handle publish click */ }}>Publish</IonButton>}
+              />
             </IonCol>
           </IonRow>
         </IonGrid>

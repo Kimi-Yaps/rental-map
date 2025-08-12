@@ -36,6 +36,7 @@ interface SearchbarWithSuggestionsProps {
   maxSuggestions?: number;
   enableGeocoding?: boolean;
   onSearch?: (term: string, suggestion?: EnhancedSuggestion) => void;
+  placeholderColor?: string; // New prop for placeholder color
 }
 
 // Main functional component for the enhanced searchbar with intelligent suggestions
@@ -244,8 +245,8 @@ const SearchbarWithSuggestions: React.FC<SearchbarWithSuggestionsProps> = ({
             overflow: 'hidden',
             backdropFilter: 'blur(16px) saturate(180%)',
             WebkitBackdropFilter: 'blur(16px) saturate(180%)',
-            backgroundColor: 'rgba(255, 255, 255, 0.85)',
-            border: '1px solid rgba(255, 255, 255, 0.18)'
+            backgroundColor: 'var(--ion-color-light-tint)',
+            border: '1px solid var(--ion-color-medium)'
           }}
         >
           <IonCard style={{ 
@@ -267,7 +268,7 @@ const SearchbarWithSuggestions: React.FC<SearchbarWithSuggestionsProps> = ({
                 <IonItem style={{ backgroundColor: 'transparent' }}>
                   <IonIcon icon={locationOutline} style={{ marginRight: '12px', opacity: 0.5 }} />
                   <IonLabel>
-                    <p style={{ color: '#666' }}>No suggestions found</p>
+                    <p style={{ color: 'var(--ion-color-medium)' }}>No suggestions found</p>
                   </IonLabel>
                 </IonItem>
               )}
@@ -281,7 +282,7 @@ const SearchbarWithSuggestions: React.FC<SearchbarWithSuggestionsProps> = ({
                       onClick={() => handleSuggestionSelect(suggestion)}
                       style={{
                         backgroundColor: focusedIndex === idx 
-                          ? 'rgba(0, 0, 0, 0.08)' 
+                          ? 'var(--ion-color-light-shade)' 
                           : 'transparent',
                         transition: 'background-color 0.2s ease',
                         borderRadius: focusedIndex === idx ? '8px' : '0',
@@ -299,7 +300,7 @@ const SearchbarWithSuggestions: React.FC<SearchbarWithSuggestionsProps> = ({
                               {suggestion.text}
                             </h3>
                             {suggestion.source && (
-                              <p style={{ fontSize: '11px', color: '#888', margin: 0 }}>
+                              <p style={{ fontSize: '11px', color: 'var(--ion-color-medium)', margin: 0 }}>
                                 From: {suggestion.source}
                               </p>
                             )}
