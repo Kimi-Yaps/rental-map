@@ -2,7 +2,6 @@
 import { 
   IonPage, 
   IonContent, 
-  IonHeader, 
   IonGrid, 
   IonRow, 
   IonButton, 
@@ -26,6 +25,7 @@ import { locationOutline, checkmarkCircle, warningOutline } from 'ionicons/icons
 import SearchbarWithSuggestions from '../components/SearchbarWithSuggestions';
 import { useLocation } from 'react-router-dom';
 import { createClient } from '@supabase/supabase-js';
+import ConditionalHeader from '../components/ConditionalHeader';
 
 // Supabase configuration
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
@@ -67,7 +67,7 @@ export interface Pricing {
 
 export interface RoomDetails {
   room_type: 'bedroom' | 'bathroom' | 'kitchen' | 'living_room' | 'dining_room' | 'other';
-  bed_types?: string;
+  bed_types?: string[];
   number_of_beds?: number;
   number_of_bathrooms?: number;
   has_ensuite?: boolean;

@@ -9,16 +9,27 @@ import {
   IonButton,
   IonToolbar,
   IonTitle,
-  IonText
+  IonText,
+  IonButtons // Added IonButtons import
 } from '@ionic/react';
+import { useState } from 'react'; // Import useState
+import LoginPage from '../components/LoginPage'; // Import LoginPage
 
 const LandLordHome: React.FC = () => {
-  
+  const [isLoggedIn, setIsLoggedIn] = useState(false); // New state for login status
+  const [showLoginModal, setShowLoginModal] = useState(false); // State to control login modal visibility
+
   return (
     <IonPage>
+      {/* Always render the main content */}
       <IonHeader>
         <IonToolbar color="primary">
           <IonTitle>Landlord Home</IonTitle>
+          <IonButtons slot="end"> {/* Added IonButtons */}
+            <IonButton onClick={() => setShowLoginModal(true)} fill="clear" color="light">
+              Login
+            </IonButton>
+          </IonButtons>
         </IonToolbar>
       </IonHeader>
       <IonContent className="ion-padding">
@@ -42,6 +53,13 @@ const LandLordHome: React.FC = () => {
           </IonRow>
         </IonGrid>
       </IonContent>
+
+      {/* Render LoginPage as an overlay */}
+      <LoginPage
+        isOpen={showLoginModal}
+        onClose={() => setShowLoginModal(false)}
+        userType="landlord"
+      />
     </IonPage>
   );
 };

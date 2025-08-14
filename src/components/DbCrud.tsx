@@ -31,7 +31,7 @@ export interface pricing {
 
 export interface RoomDetails {
   room_type: 'bedroom' | 'bathroom' | 'kitchen' | 'living_room' | 'dining_room' | 'other';
-  bed_types?: string; // e.g., ['King', 'Queen', 'Twin']
+  bed_types?: string[]; // e.g., ['King', 'Queen', 'Twin']
   number_of_beds?: number;
   number_of_bathrooms?: number; // For bathroom type rooms
   has_ensuite?: boolean; // For bedrooms with attached bathrooms

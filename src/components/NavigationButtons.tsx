@@ -56,7 +56,7 @@ const NavigationButtons: React.FC<NavigationButtonsProps> = ({
         <IonGrid>
           <IonRow className="ion-align-items-center ion-justify-content-between">
             <IonCol size-xs="6" size-md="6" className="ion-padding-end">
-              <IonButton expand="block" fill="outline" size="medium" onClick={handleBackClick}>
+              <IonButton expand="block" fill="outline" size="default" onClick={handleBackClick}>
                 Back
               </IonButton>
             </IonCol>

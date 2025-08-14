@@ -15,7 +15,8 @@ import {
   IonText,
   IonToolbar,
   IonTitle,
-  IonFooter
+  IonFooter,
+  isPlatform
 } from '@ionic/react';
 import { useHistory } from 'react-router-dom';
 import React, { useState, useEffect, useCallback } from 'react';
@@ -27,6 +28,7 @@ import {
   golfOutline
 } from 'ionicons/icons';
 import NavigationButtons from '../components/NavigationButtons';
+import ConditionalHeader from '../components/ConditionalHeader';
 
 // Home type conversion mappings
 const HOME_TYPE_MAPPING = {
@@ -116,11 +118,9 @@ const HomeBestFit: React.FC = () => { // Renamed component here
 
   return (
     <IonPage>
-      <IonHeader>
-        <IonToolbar color="primary">
-          <IonTitle>Select Home Type</IonTitle>
-        </IonToolbar>
-      </IonHeader>
+      <ConditionalHeader color="primary">
+            <IonTitle>Select Home Type</IonTitle>
+      </ConditionalHeader>
 
       <IonContent className="ion-padding">
         <IonGrid>

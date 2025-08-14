@@ -37,6 +37,24 @@ export interface PropertyAddress {
   [key: string]: any;
 }
 
+export interface RentalAmenities {
+  wifi_included?: boolean;
+  air_conditioning?: boolean;
+  in_unit_laundry?: boolean;
+  dishwasher?: boolean;
+  balcony_patio?: boolean;
+  community_pool?: boolean;
+  fitness_center?: boolean;
+  pet_friendly?: {
+    pets_allowed?: boolean;
+  };
+  parking?: {
+    type?: 'garage' | 'carport' | 'off_street' | 'street';
+    spots?: number;
+  };
+  [key: string]: any; // For other potential amenities
+}
+
 export interface Property {
   id?: string;
   address_id: string;
@@ -51,7 +69,7 @@ export interface Property {
   max_guests: number;
   bedrooms?: number;
   bathrooms?: number;
-  amenities?: string[];
+  amenities?: RentalAmenities;
   price_per_night: number;
   cleaning_fee?: number;
   security_deposit?: number;

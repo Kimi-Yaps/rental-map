@@ -30,10 +30,11 @@ import {
   accessibilityOutline,
   pawOutline
 } from 'ionicons/icons';
-import { RentalAmenities, Property } from "../components/DbCrud";
+import { Property, RentalAmenities } from "../supabaseClient";
 import supabase from '../../supabaseConfig';
 import Stepper from '../components/Stepper';
 import NavigationButtons from '../components/NavigationButtons';
+import ConditionalHeader from '../components/ConditionalHeader';
 
 // Helper to get or initialize rental draft
 const getProperty = (): Property => {
@@ -193,11 +194,9 @@ const AmenitiesStepPage: React.FC = () => {
 
   return (
     <IonPage>
-      <IonHeader>
-        <IonToolbar color="primary">
+      <ConditionalHeader color="primary">
           <IonTitle>Property Amenities</IonTitle>
-        </IonToolbar>
-      </IonHeader>
+      </ConditionalHeader>
       <IonContent fullscreen className="ion-padding">
         <div style={{ display: 'flex', alignItems: 'center', marginBottom: '20px' }}>
           <div style={{

@@ -3,7 +3,7 @@
 // This file contains the logic to convert the client-side rental draft
 // data into the format required by the Supabase database schema.
 
-import { Property } from "./DbCrud"; // Import shared types
+import { Property } from "../supabaseClient"; // Import shared types
 
 // Property type conversion mappings
 const PROPERTY_TYPE_MAPPING = {
@@ -50,37 +50,37 @@ export const prepareDraftForDB = (draft: Property) => {
   delete converted.location;
 
   // Building Name
-  if (draft.propertyName !== undefined) {
-    converted.building_name = draft.propertyName;
+  if (draft.property_name !== undefined) {
+    converted.building_name = draft.property_name;
   } else if (converted.building_name === undefined) {
       converted.building_name = null;
   }
   delete converted.propertyName;
 
   // House Rules
-  if (draft.houseRules !== undefined) {
-    converted.house_rules = draft.houseRules;
+  if (draft.house_rules !== undefined) {
+    converted.house_rules = draft.house_rules;
   } else if (converted.house_rules === undefined) {
     converted.house_rules = null;
   }
   delete converted.houseRules;
 
   // Max Guests
-  if (typeof draft.maxGuests === 'string') {
-    converted.max_guests = parseInt(draft.maxGuests, 10);
+  if (typeof draft.max_guests === 'string') {
+    converted.max_guests = parseInt(draft.max_guests, 10);
     if (isNaN(converted.max_guests)) converted.max_guests = null;
-  } else if (draft.maxGuests !== undefined) {
-    converted.max_guests = draft.maxGuests;
-  } else if (converted.maxGuests === undefined) {
+  } else if (draft.max_guests !== undefined) {
+    converted.max_guests = draft.max_guests;
+  } else if (converted.max_guests === undefined) {
     converted.max_guests = null;
   }
   if (converted.max_guests === 0) converted.max_guests = null;
   delete converted.maxGuests;
 
   // Instant Booking
-  if (draft.instantBooking !== undefined) {
-    converted.instant_booking = draft.instantBooking;
-  } else if (converted.instantBooking === undefined) {
+  if (draft.instant_booking !== undefined) {
+    converted.instant_booking = draft.instant_booking;
+  } else if (converted.instant_booking === undefined) {
     converted.instant_booking = false;
   }
   delete converted.instantBooking;

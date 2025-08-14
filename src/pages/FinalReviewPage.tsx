@@ -12,11 +12,13 @@ import {
   IonGrid,
   IonRow,
   IonCol,
-  IonFooter
+  IonFooter,
+  isPlatform
 } from '@ionic/react';
 import NavigationButtons from '../components/NavigationButtons';
 import { RentalAmenities, RoomDetails, pricing } from '../components/DbCrud';
 import { useHistory } from 'react-router-dom';
+import ConditionalHeader from '../components/ConditionalHeader';
 
 // Define the interface for the draft property data, including all expected fields
 // from previous steps like the location page.
@@ -73,11 +75,9 @@ const FinalReviewPage: React.FC = () => {
 
   return (
     <IonPage>
-      <IonHeader>
-        <IonToolbar color="primary">
-          <IonTitle>Review & Publish Property</IonTitle>
-        </IonToolbar>
-      </IonHeader>
+      <ConditionalHeader color="primary">
+            <IonTitle>Review & Publish Property</IonTitle>
+      </ConditionalHeader>
       <IonContent fullscreen className="ion-padding">
         <IonGrid>
           <IonRow className="ion-align-items-center ion-margin-bottom">
