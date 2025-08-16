@@ -51,7 +51,7 @@ const Home: React.FC = () => {
   const [checkIn, setCheckIn] = useState("");
   const [checkOut, setCheckOut] = useState("");
   const [guests, setGuests] = useState("1");
-  const [selectedTab, setSelectedTab] = useState("home-apts");
+  const [selectedTab, setSelectedTab] = useState("day-use");
 
   // Enhanced search state
   const [loading, setLoading] = useState(false);
@@ -469,6 +469,7 @@ const Home: React.FC = () => {
                       </div>
 
                       {/* Tab Segment */}
+                      {/* Tab Segment */}
                       <IonSegment
                         value={selectedTab}
                         onIonChange={(e) =>
@@ -476,14 +477,6 @@ const Home: React.FC = () => {
                         }
                         className="search-segment"
                       >
-                        <IonSegmentButton
-                          value="home-apts"
-                          color={
-                            selectedTab === "home-apts" ? "primary" : undefined
-                          }
-                        >
-                          <IonLabel>Home & Apts</IonLabel>
-                        </IonSegmentButton>
                         <IonSegmentButton
                           value="day-use"
                           color={
@@ -557,41 +550,7 @@ const Home: React.FC = () => {
                       </IonGrid>
 
                       {/* Search Button */}
-                      <IonRow className="ion-justify-content-center ion-margin-top">
-                        <IonCol size-xs="12" size-sm="8" size-md="6">
-                          <IonButton
-                            expand="block"
-                            onClick={() => handleSearch()}
-                            disabled={loading}
-                            size="large"
-                            color="primary"
-                            style={{
-                              borderRadius:
-                                "var(--custom-border-radius-medium)",
-                            }}
-                          >
-                            {loading ? (
-                              <>
-                                <IonSpinner
-                                  name="crescent"
-                                  style={{ marginRight: "8px" }}
-                                />
-                                Searching...
-                              </>
-                            ) : (
-                              <>
-                                Search Properties
-                                {enableGeocoding && (
-                                  <IonIcon
-                                    icon={mapOutline}
-                                    style={{ marginLeft: "8px" }}
-                                  />
-                                )}
-                              </>
-                            )}
-                          </IonButton>
-                        </IonCol>
-                      </IonRow>
+                      
 
                       {/* Search Summary */}
                       {(checkIn || checkOut || guests) && (

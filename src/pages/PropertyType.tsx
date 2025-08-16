@@ -14,7 +14,8 @@ import {
   IonToast,
   IonText,
   IonToolbar,
-  IonTitle
+  IonTitle,
+  IonFooter
 } from '@ionic/react';
 import React, { useState, useEffect } from 'react';
 import { useHistory } from 'react-router-dom';
@@ -87,7 +88,7 @@ const PropertyType: React.FC = () => {
     setShowToast(true);
     
     console.log("localStorage cleared - going back to /landlord");
-    history.push('/landlord');
+    history.replace('/landlord');
   };
 
   const handleNext = () => {
@@ -96,7 +97,7 @@ const PropertyType: React.FC = () => {
     // Navigate based on property type
     switch (propertyType) {
       case 'Home':
-        history.push('/homeBestFit');
+        history.replace('/homeBestFit');
         break;
       case 'Hotel':
         history.push('/HotelRoomTypes');
@@ -230,12 +231,16 @@ const PropertyType: React.FC = () => {
 
           </IonGrid>
       </IonContent>
-      <NavigationButtons
-        onBack={handleBack}
-        onNext={handleNext}
-        nextDisabled={!propertyType}
-        backPath="/landlord"
-      />
+      <IonFooter>
+        <IonToolbar>
+          <NavigationButtons
+            onBack={handleBack}
+            onNext={handleNext}
+            nextDisabled={!propertyType}
+            backPath="/landlord"
+          />
+        </IonToolbar>
+      </IonFooter>
     </IonPage>
   );
 };

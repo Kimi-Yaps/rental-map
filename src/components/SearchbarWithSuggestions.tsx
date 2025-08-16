@@ -8,9 +8,12 @@ import {
   IonIcon,
   IonSpinner,
   IonBadge,
-  IonList
+  IonList,
+  IonButton, // Added IonButton
+  isPlatform, // Added isPlatform
 } from '@ionic/react';
 import { useState, useRef, useEffect, useCallback } from 'react';
+import { useIonRouter } from '@ionic/react';
 import { locationOutline, homeOutline, businessOutline, mapOutline } from 'ionicons/icons';
 
 // These interfaces match the data structure from the parent component.
@@ -213,113 +216,146 @@ const SearchbarWithSuggestions: React.FC<SearchbarWithSuggestionsProps> = ({
     };
   }, []);
 
+  const router = useIonRouter(); // Initialize useIonRouter
+
+  const handleMobileSearchClick = () => {
+    // Navigate to the new page for search suggestions
+    router.push('/search-suggestions', 'forward');
+  };
+
   return (
     <div style={{ position: 'relative' }}>
-      {/* Enhanced search input field */}
-      <IonSearchbar
-        ref={searchbarRef}
-        value={value}
-        onIonInput={handleInput}
-        placeholder={placeholder}
-        style={{ 
-          marginBottom: showSuggestions ? '0' : '15px',
-          transition: 'margin-bottom 0.2s ease'
-        }}
-        showClearButton="focus"
-        debounce={0} // We handle debouncing manually
-      />
-      
-      {/* Enhanced suggestions dropdown with backdrop filter */}
-      {showSuggestions && (suggestions.length > 0 || loading) && (
-        <div 
-          ref={suggestionsRef}
-          style={{ 
-            position: 'absolute', 
-            top: '100%', 
-            left: 0, 
-            right: 0, 
-            zIndex: 1000, 
-            marginTop: '-15px',
-            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12)',
-            borderRadius: '16px',
-            overflow: 'hidden',
-            backdropFilter: 'blur(16px) saturate(180%)',
-            WebkitBackdropFilter: 'blur(16px) saturate(180%)',
-            backgroundColor: 'var(--ion-color-light-tint)',
-            border: '1px solid var(--ion-color-medium)'
+      {isPlatform('mobile') ? (
+        <IonButton
+          expand="block"
+          onClick={handleMobileSearchClick}
+          className="ion-margin-bottom"
+          color="light"
+          style={{
+            '--border-radius': 'var(--custom-border-radius-medium)',
+            '--box-shadow': 'none',
+            '--border-color': 'var(--ion-color-medium-tint)',
+            '--border-width': '1px',
+            '--background': 'var(--ion-color-light)',
+            color: 'var(--ion-color-medium)',
+            textAlign: 'left',
+            height: '48px',
+            paddingLeft: '16px',
+            paddingRight: '16px',
           }}
         >
-          <IonCard style={{ 
-            margin: 0, 
-            boxShadow: 'none',
-            backgroundColor: 'transparent'
-          }}>
-            <IonCardContent style={{ padding: '0' }}>
-              {loading && (
-                <IonItem style={{ backgroundColor: 'transparent' }}>
-                  <IonSpinner name="crescent" style={{ marginRight: '12px' }} />
-                  <IonLabel>
-                    <p>Searching{enableGeocoding ? ' database and OpenStreetMap' : ' database'}...</p>
-                  </IonLabel>
-                </IonItem>
-              )}
-              
-              {!loading && suggestions.length === 0 && value.length > 0 && (
-                <IonItem style={{ backgroundColor: 'transparent' }}>
-                  <IonIcon icon={locationOutline} style={{ marginRight: '12px', opacity: 0.5 }} />
-                  <IonLabel>
-                    <p style={{ color: 'var(--ion-color-medium)' }}>No suggestions found</p>
-                  </IonLabel>
-                </IonItem>
-              )}
-              
-              {!loading && suggestions.length > 0 && (
-                <IonList style={{ backgroundColor: 'transparent' }}>
-                  {suggestions.map((suggestion, idx) => (
-                    <IonItem 
-                      key={`${suggestion.type}-${idx}`}
-                      button 
-                      onClick={() => handleSuggestionSelect(suggestion)}
-                      style={{
-                        backgroundColor: focusedIndex === idx 
-                          ? 'var(--ion-color-light-shade)' 
-                          : 'transparent',
-                        transition: 'background-color 0.2s ease',
-                        borderRadius: focusedIndex === idx ? '8px' : '0',
-                        margin: focusedIndex === idx ? '2px 8px' : '0'
-                      }}
-                    >
-                      <IonIcon 
-                        icon={getSuggestionIcon(suggestion)} 
-                        style={{ marginRight: '12px', opacity: 0.7 }} 
-                      />
+          <IonIcon icon={locationOutline} slot="start" />
+          <IonLabel>{placeholder}</IonLabel>
+        </IonButton>
+      ) : (
+        <>
+          {/* Enhanced search input field */}
+          <IonSearchbar
+            ref={searchbarRef}
+            value={value}
+            onIonInput={handleInput}
+            placeholder={placeholder}
+            style={{ 
+              marginBottom: showSuggestions ? '0' : '15px',
+              transition: 'margin-bottom 0.2s ease'
+            }}
+            showClearButton="focus"
+            debounce={0} // We handle debouncing manually
+          />
+          
+          {/* Enhanced suggestions dropdown with backdrop filter */}
+          {showSuggestions && (suggestions.length > 0 || loading) && (
+            <div 
+              ref={suggestionsRef}
+              style={{ 
+                position: 'absolute', 
+                top: '100%', 
+                left: 0, 
+                right: 0, 
+                zIndex: 1000, 
+                marginTop: '-15px',
+                boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12)',
+                borderRadius: '16px',
+                overflow: 'hidden',
+                backdropFilter: 'blur(16px) saturate(180%)',
+                WebkitBackdropFilter: 'blur(16px) saturate(180%)',
+                backgroundColor: 'var(--ion-color-light-tint)',
+                border: '1px solid var(--ion-color-medium)'
+              }}
+            >
+              <IonCard style={{ 
+                margin: 0, 
+                boxShadow: 'none',
+                backgroundColor: 'transparent'
+              }}>
+                <IonCardContent style={{ padding: '0' }}>
+                  {loading && (
+                    <IonItem style={{ backgroundColor: 'transparent' }}>
+                      <IonSpinner name="crescent" style={{ marginRight: '12px' }} />
                       <IonLabel>
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                          <div style={{ flex: 1 }}>
-                            <h3 style={{ margin: 0, fontSize: '14px' }}>
-                              {suggestion.text}
-                            </h3>
-                            {suggestion.source && (
-                              <p style={{ fontSize: '11px', color: 'var(--ion-color-medium)', margin: 0 }}>
-                                From: {suggestion.source}
-                              </p>
-                            )}
-                          </div>
-                          <IonBadge 
-                            color={getSuggestionColor(suggestion)}
-                            style={{ marginLeft: '8px', fontSize: '10px' }}
-                          >
-                            {suggestion.type}
-                          </IonBadge>
-                        </div>
+                        <p>Searching{enableGeocoding ? ' database and OpenStreetMap' : ' database'}...</p>
                       </IonLabel>
                     </IonItem>
-                  ))}
-                </IonList>
-              )}
-            </IonCardContent>
-          </IonCard>
-        </div>
+                  )}
+                  
+                  {!loading && suggestions.length === 0 && value.length > 0 && (
+                    <IonItem style={{ backgroundColor: 'transparent' }}>
+                      <IonIcon icon={locationOutline} style={{ marginRight: '12px', opacity: 0.5 }} />
+                      <IonLabel>
+                        <p style={{ color: 'var(--ion-color-medium)' }}>No suggestions found</p>
+                      </IonLabel>
+                    </IonItem>
+                  )}
+                  
+                  {!loading && suggestions.length > 0 && (
+                    <IonList style={{ backgroundColor: 'transparent' }}>
+                      {suggestions.map((suggestion, idx) => (
+                        <IonItem 
+                          key={`${suggestion.type}-${idx}`}
+                          button 
+                          onClick={() => handleSuggestionSelect(suggestion)}
+                          style={{
+                            backgroundColor: focusedIndex === idx 
+                              ? 'var(--ion-color-light-shade)' 
+                              : 'transparent',
+                            transition: 'background-color 0.2s ease',
+                            borderRadius: focusedIndex === idx ? '8px' : '0',
+                            margin: focusedIndex === idx ? '2px 8px' : '0'
+                          }}
+                        >
+                          <IonIcon 
+                            icon={getSuggestionIcon(suggestion)} 
+                            style={{ marginRight: '12px', opacity: 0.7 }} 
+                          />
+                          <IonLabel>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                              <div style={{ flex: 1 }}>
+                                <h3 style={{ margin: 0, fontSize: '14px' }}>
+                                  {suggestion.text}
+                                </h3>
+                                {suggestion.source && (
+                                  <p style={{ fontSize: '11px', color: 'var(--ion-color-medium)', margin: 0 }}>
+                                    From: {suggestion.source}
+                                  </p>
+                                )}
+                              </div>
+                              <IonBadge 
+                                color={getSuggestionColor(suggestion)}
+                                style={{ marginLeft: '8px', fontSize: '10px' }}
+                              >
+                                {suggestion.type}
+                              </IonBadge>
+                            </div>
+                          </IonLabel>
+                        </IonItem>
+                      ))}
+                    </IonList>
+                  )}
+                </IonCardContent>
+              </IonCard>
+            </div>
+          )}
+        </>
       )}
     </div>
   );

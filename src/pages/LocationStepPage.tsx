@@ -85,11 +85,21 @@ const LazyMapComponent = React.lazy(() =>
       }) => {
         const map = useMapEvents({});
         React.useEffect(() => {
-          if (map && position && shouldZoom) {
-            map.flyTo([position.lat, position.lng], config.mapZoom, {
-              animate: true,
-              duration: 1.5,
-            });
+          if (map) {
+            // Add a small delay to invalidate size to ensure the map container is fully rendered
+            const timer = setTimeout(() => {
+              map.invalidateSize();
+              if (position && shouldZoom) {
+                map.flyTo([position.lat, position.lng], config.mapZoom, {
+                  animate: true,
+                  duration: 1.5,
+                });
+              }
+            }, 100); // 100ms delay
+
+            return () => {
+              clearTimeout(timer);
+            };
           }
         }, [position, map, shouldZoom]);
         return null;
@@ -490,7 +500,7 @@ const LocationStepPage: React.FC = () => {
     }
 
     saveCurrentStepToDraft();
-    history.push('/amenities');
+    history.replace('/amenities');
   };
 
   const handleBack = () => {

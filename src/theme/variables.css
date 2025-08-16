@@ -74,4 +74,6 @@ http://ionicframework.com/docs/theming/ */
   --custom-border-radius-large: 24px;
 }
 
-
+body {
+  font-size: 14px;
+}
