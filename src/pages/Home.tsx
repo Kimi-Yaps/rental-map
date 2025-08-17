@@ -45,7 +45,25 @@ interface EnhancedSuggestion {
   HomeType?: string | null;
 }
 
+import { useIonRouter, useIonPlatform } from "@ionic/react";
+import HomeDesktop from "./HomeDesktop";
+import HomeAndroid from "./HomeAndroid";
+import HomeiOS from "./HomeiOS";
+
 const Home: React.FC = () => {
+  const [isDesktop, setIsDesktop] = useState(window.innerWidth > 768); // Adjust breakpoint as needed
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsDesktop(window.innerWidth > 768); // Adjust breakpoint as needed
+    };
+
+    window.addEventListener("resize", handleResize);
+
+    return () => {
+      window.removeEventListener("resize", handleResize);
+    };
+  }, []);
   // Form state
   const [searchText, setSearchText] = useState("");
   const [checkIn, setCheckIn] = useState("");
@@ -407,192 +425,210 @@ const Home: React.FC = () => {
   }, []);
 
   return (
-    <IonPage id="main-content">
-      <>
-        {/* Always render the main content */}
-        
-        <ConditionalHeader color="primary">
-            <IonButtons slot="start">
-              <IonMenuButton />
-              <img src="/webLogo.svg" alt="Logo" className="header-logo" />
-            </IonButtons>
-            <IonItem
-              slot="end"
-              color="primary"
-              lines="none"
-              className="ion-no-padding"
-            >
-              <IonButton
-                onClick={() => history.push("/landlord")}
-                fill="clear"
-                color="light"
-              >
-                List Your Place
-              </IonButton>
-              {isLoggedIn && (
-                <img
-                  id="profile"
-                  src=""
-                  alt="Profile"
-                  className="header-profile-img"
-                />
-              )}
-              <span className="currency ion-margin-end">RM</span>
-              {/* Add a login button */}
-              <IonButton
-                onClick={() => setShowLoginModal(true)}
-                fill="clear"
-                color="light"
-              >
-                Login
-              </IonButton>
-            </IonItem>
-        </ConditionalHeader>
-
-        <IonContent fullscreen>
-          <div
-            style={{
-              background: "var(--ion-color-background)",
-              color: "var(--ion-color-text)",
-              minHeight: "100%",
-            }}
-          >
+    <>
+      {isDesktop ? (
+        <HomeDesktop
+          searchText={searchText}
+          setSearchText={setSearchText}
+          fetchEnhancedSuggestions={fetchEnhancedSuggestions}
+          handleSearch={handleSearch}
+          checkIn={checkIn}
+          setCheckIn={setCheckIn}
+          checkOut={checkOut}
+          setCheckOut={setCheckOut}
+          guests={guests}
+          setGuests={setGuests}
+          selectedTab={selectedTab}
+          setSelectedTab={setSelectedTab}
+          enableGeocoding={enableGeocoding}
+          isLoggedIn={isLoggedIn}
+          setShowLoginModal={setShowLoginModal}
+          history={history}
+          error={error}
+          showAlert={showAlert}
+          setShowAlert={setShowAlert}
+        />
+      ) : (
+        <IonPage id="main-content">
+          <>
+            {/* Always render the main content */}
             
+            <ConditionalHeader color="primary">
+                <IonButtons slot="start">
+                  <IonMenuButton />
+                  <img src="/webLogo.svg" alt="Logo" className="header-logo" />
+                </IonButtons>
+                <IonItem
+                  slot="end"
+                  color="primary"
+                  lines="none"
+                  className="ion-no-padding"
+                >
+                  <IonButton
+                    onClick={() => history.push("/landlord")}
+                    fill="clear"
+                    color="light"
+                  >
+                    List Your Place
+                  </IonButton>
+                  {isLoggedIn && (
+                    <img
+                      id="profile"
+                      src=""
+                      alt="Profile"
+                      className="header-profile-img"
+                    />
+                  )}
+                  <span className="currency ion-margin-end">RM</span>
+                  {/* Add a login button */}
+                  <IonButton
+                    onClick={() => setShowLoginModal(true)}
+                    fill="clear"
+                    color="light"
+                  >
+                    Login
+                  </IonButton>
+                </IonItem>
+            </ConditionalHeader>
 
-            {/* Search Section */}
-            <IonGrid className="ion-padding">
-              <IonRow className="ion-justify-content-center">
-                <IonCol size-xs="12" size-md="10" size-lg="8">
-                  <IonCard className="search-card">
-                    <IonCardContent>
-                      <div className="ion-text-center ion-margin-bottom ion-color-primary-shade">
-                        <h2>Find Your Next Stay</h2>
-                      </div>
+            <IonContent fullscreen>
+              <div
+                style={{
+                  background: "var(--ion-color-background)",
+                  color: "var(--ion-color-text)",
+                  minHeight: "100%",
+                }}
+              >
+                
 
-                      {/* Tab Segment */}
-                      {/* Tab Segment */}
-                      <IonSegment
-                        value={selectedTab}
-                        onIonChange={(e) =>
-                          setSelectedTab(e.detail.value as string)
-                        }
-                        className="search-segment"
-                      >
-                        <IonSegmentButton
-                          value="day-use"
-                          color={
-                            selectedTab === "day-use" ? "primary" : undefined
-                          }
-                        >
-                          <IonLabel>Day Use Stay</IonLabel>
-                        </IonSegmentButton>
-                      </IonSegment>
+                {/* Search Section */}
+                <IonGrid className="ion-padding">
+                  <IonRow className="ion-justify-content-center">
+                    <IonCol size-xs="12" size-md="10" size-lg="8">
+                      <IonCard className="search-card">
+                        <IonCardContent>
+                          <div className="ion-text-center ion-margin-bottom ion-color-primary-shade">
+                            <h2>Find Your Next Stay</h2>
+                          </div>
 
-                      {/* Enhanced Search Input */}
-                      <SearchbarWithSuggestions
-                        value={searchText}
-                        setValue={setSearchText}
-                        fetchSuggestions={fetchEnhancedSuggestions}
-                        placeholder="Search your destination or property"
-                        enableGeocoding={enableGeocoding}
-                        maxSuggestions={8}
-                        onSearch={handleSearch}
-                      />
-                      </IonCardContent>
+                          {/* Tab Segment */}
+                          {/* Tab Segment */}
+                          <IonSegment
+                            value={selectedTab}
+                            onIonChange={(e) =>
+                              setSelectedTab(e.detail.value as string)
+                            }
+                            className="search-segment"
+                          >
+                          </IonSegment>
 
-                      {/* Date and Guest Inputs */}
-                      <IonGrid>
-                        <IonRow className="date-guest-row">
-                            <IonCol>
-                              <IonItem className="date-guest-item">
-                                <IonButton>Pick Dates</IonButton>
-                              </IonItem>
-                            </IonCol>
+                          {/* Enhanced Search Input */}
+                          <SearchbarWithSuggestions
+                            value={searchText}
+                            setValue={setSearchText}
+                            fetchSuggestions={fetchEnhancedSuggestions}
+                            placeholder="Search your destination or property"
+                            enableGeocoding={enableGeocoding}
+                            maxSuggestions={4}
+                            onSearch={handleSearch}
+                          />
+                          </IonCardContent>
 
-                            <IonCol>
-                              <IonItem className="date-guest-item">
-                                <Stepper
-                                  label="Guests"
-                                  value={parseInt(guests)}
-                                  onIncrement={() => setGuests(String(parseInt(guests) + 1))}
-                                  onDecrement={() => setGuests(String(parseInt(guests) - 1))}
-                                  min={1}
-                                  max={20}
-                                />
-                              </IonItem>
-                            </IonCol>
-                          </IonRow>
-                      </IonGrid>
-                      
-                      {/* Search Button */}
-                      
+                          {/* Date and Guest Inputs */}
+                          <IonGrid>
+                            <IonRow className="date-guest-row">
+                                <IonCol>
+                                  <IonItem className="date-guest-item">
+                                    <IonButton>Pick Dates</IonButton>
+                                  </IonItem>
+                                </IonCol>
 
-                      {/* Search Summary */}
-                      
-                    {(checkIn || checkOut || guests) && (
-                        <div
-                          style={{
-                            textAlign: "center",
-                            marginTop: "15px",
-                            padding: "10px",
-                            backgroundColor: "var(--ion-color-secondary-tint)",
-                            borderRadius: "var(--custom-border-radius-small)",
-                            fontSize: "14px",
-                            color: "var(--ion-color-secondary-contrast)",
-                          }}
-                        >
-                          {checkIn && checkOut && (
-                            <span>
-                              {checkIn} to {checkOut}
-                            </span>
+                                <IonCol>
+                                  <IonItem className="date-guest-item">
+                                    <Stepper
+                                      label="Guests"
+                                      value={parseInt(guests)}
+                                      onIncrement={() => setGuests(String(parseInt(guests) + 1))}
+                                      onDecrement={() => setGuests(String(parseInt(guests) - 1))}
+                                      min={1}
+                                      max={20}
+                                    />
+                                  </IonItem>
+                                </IonCol>
+                              </IonRow>
+                          </IonGrid>
+                          
+                          {/* Search Button */}
+                          
+
+                          {/* Search Summary */}
+                          
+                        {(checkIn || checkOut || guests) && (
+                            <div
+                              style={{
+                                textAlign: "center",
+                                marginTop: "15px",
+                                padding: "10px",
+                                backgroundColor: "var(--ion-color-secondary-tint)",
+                                borderRadius: "var(--custom-border-radius-small)",
+                                fontSize: "14px",
+                                color: "var(--ion-color-secondary-contrast)",
+                              }}
+                            >
+                              {checkIn && checkOut && (
+                                <span>
+                                  {checkIn} to {checkOut}
+                                </span>
+                              )}
+                              {guests && (
+                                <span>
+                                  {checkIn || checkOut ? " • " : ""}
+                                  {guests} guest{parseInt(guests) > 1 ? "s" : ""}
+                                </span>
+                              )}
+                            </div>
                           )}
-                          {guests && (
-                            <span>
-                              {checkIn || checkOut ? " • " : ""}
-                              {guests} guest{parseInt(guests) > 1 ? "s" : ""}
-                            </span>
-                          )}
-                        </div>
-                      )}
-                  </IonCard>
-                </IonCol>
-              </IonRow>
-            </IonGrid>
+                      </IonCard>
+                    </IonCol>
+                  </IonRow>
+                </IonGrid>
 
-            {/* Recommended Section */}
-            <div style={{ padding: "20px", textAlign: "center" }}>
-              <h3 style={{ color: "var(--ion-color-primary)" }}>Recommended</h3>
-              <p style={{ color: "var(--ion-color-medium)", fontSize: "14px" }}>
-                {enableGeocoding
-                  ? "Enhanced search with Geoapify integration active"
-                  : "Database-only search mode"}
-              </p>
-            </div>
+                {/* Recommended Section */}
+                <div style={{ padding: "20px", textAlign: "center" }}>
+                  <h3 style={{ color: "var(--ion-color-primary)" }}>Recommended</h3>
+                  <p style={{ color: "var(--ion-color-medium)", fontSize: "14px" }}>
+                    {enableGeocoding
+                      ? "Enhanced search with Geoapify integration active"
+                      : "Database-only search mode"}
+                  </p>
+                </div>
 
-            {/* Error Alert */}
-            <IonAlert
-              isOpen={showAlert}
-              onDidDismiss={() => setShowAlert(false)}
-              header="Search Error"
-              message={error || "An unknown error occurred"}
-              buttons={[
-                {
-                  text: "OK",
-                  handler: () => setShowAlert(false),
-                },
-              ]}
-              cssClass="custom-alert"
-            />
-          </div>
-        </IonContent>
-      </>
-      {/* Render LoginPage as an overlay */}
-      <LoginPage
-        isOpen={showLoginModal}
-        onClose={() => setShowLoginModal(false)}
-        userType="normal"
-      />
-    </IonPage>
+                {/* Error Alert */}
+                <IonAlert
+                  isOpen={showAlert}
+                  onDidDismiss={() => setShowAlert(false)}
+                  header="Search Error"
+                  message={error || "An unknown error occurred"}
+                  buttons={[
+                    {
+                      text: "OK",
+                      handler: () => setShowAlert(false),
+                    },
+                  ]}
+                  cssClass="custom-alert"
+                />
+              </div>
+            </IonContent>
+          </>
+          {/* Render LoginPage as an overlay */}
+          <LoginPage
+            isOpen={showLoginModal}
+            onClose={() => setShowLoginModal(false)}
+            userType="normal"
+          />
+        </IonPage>
+      )}
+    </>
   );
 };
 
