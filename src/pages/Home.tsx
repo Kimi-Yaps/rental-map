@@ -50,6 +50,7 @@ const Home: React.FC = () => {
   const [searchText, setSearchText] = useState("");
   const [checkIn, setCheckIn] = useState("");
   const [checkOut, setCheckOut] = useState("");
+  
   const [guests, setGuests] = useState("1");
   const [selectedTab, setSelectedTab] = useState("day-use");
 
@@ -315,6 +316,8 @@ const Home: React.FC = () => {
       return;
     }
 
+    
+
     // Validate dates if provided
     if (checkIn && checkOut) {
       const checkInDate = new Date(checkIn);
@@ -354,8 +357,6 @@ const Home: React.FC = () => {
 
       console.log("Navigating to search results with:", {
         searchText: searchTerm,
-        checkIn,
-        checkOut,
         guests,
         selectedTab,
         enableGeocoding,
@@ -497,63 +498,38 @@ const Home: React.FC = () => {
                         maxSuggestions={8}
                         onSearch={handleSearch}
                       />
+                      </IonCardContent>
 
                       {/* Date and Guest Inputs */}
                       <IonGrid>
-                        <IonRow>
-                          <IonCol size-xs="12" size-sm="4">
-                            <IonItem className="date-guest-item">
-                              <IonLabel position="stacked">
-                                Check-in Date
-                              </IonLabel>
-                              <IonInput
-                                type="date"
-                                value={checkIn}
-                                onIonInput={(e) => setCheckIn(e.detail.value!)}
-                                min={new Date().toISOString().split("T")[0]}
-                              />
-                            </IonItem>
-                          </IonCol>
-                          <IonCol size-xs="12" size-sm="4">
-                            <IonItem className="date-guest-item">
-                              <IonLabel position="stacked">
-                                Check-out Date
-                              </IonLabel>
-                              <IonInput
-                                type="date"
-                                value={checkOut}
-                                onIonInput={(e) => setCheckOut(e.detail.value!)}
-                                min={
-                                  checkIn ||
-                                  new Date().toISOString().split("T")[0]
-                                }
-                              />
-                            </IonItem>
-                          </IonCol>
-                          <IonCol size-xs="12" size-sm="4">
-                            <IonItem className="date-guest-item">
-                              <Stepper
-                                label="Guests"
-                                value={parseInt(guests)}
-                                onIncrement={() =>
-                                  setGuests(String(parseInt(guests) + 1))
-                                }
-                                onDecrement={() =>
-                                  setGuests(String(parseInt(guests) - 1))
-                                }
-                                min={1}
-                                max={20}
-                              />
-                            </IonItem>
-                          </IonCol>
-                        </IonRow>
-                      </IonGrid>
+                        <IonRow className="date-guest-row">
+                            <IonCol>
+                              <IonItem className="date-guest-item">
+                                <IonButton>Pick Dates</IonButton>
+                              </IonItem>
+                            </IonCol>
 
+                            <IonCol>
+                              <IonItem className="date-guest-item">
+                                <Stepper
+                                  label="Guests"
+                                  value={parseInt(guests)}
+                                  onIncrement={() => setGuests(String(parseInt(guests) + 1))}
+                                  onDecrement={() => setGuests(String(parseInt(guests) - 1))}
+                                  min={1}
+                                  max={20}
+                                />
+                              </IonItem>
+                            </IonCol>
+                          </IonRow>
+                      </IonGrid>
+                      
                       {/* Search Button */}
                       
 
                       {/* Search Summary */}
-                      {(checkIn || checkOut || guests) && (
+                      
+                    {(checkIn || checkOut || guests) && (
                         <div
                           style={{
                             textAlign: "center",
@@ -578,7 +554,6 @@ const Home: React.FC = () => {
                           )}
                         </div>
                       )}
-                    </IonCardContent>
                   </IonCard>
                 </IonCol>
               </IonRow>

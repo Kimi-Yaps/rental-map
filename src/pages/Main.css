@@ -131,10 +131,45 @@
   margin-top: 10px; /* Smaller top margin */
 }
 
-/* New styles for date-guest-row */
-.date-guest-row {
-  --ion-grid-column-padding: 2px; /* Even smaller gap between columns */
+.date-guest-item {
+  --min-height: 0;          /* remove default min height */
+  height: auto;             /* grow with content */
+  --border-width: 0;
+  border: none;
+  box-shadow: none;
+  --background: transparent;
+  padding: 0;               /* no extra padding */
 }
+
+
+.date-guest-row {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr); /* two equal columns */
+  gap: 8px;
+  align-items: center;
+}
+
+
+.date-guest-item ion-button,
+.date-guest-item stepper {
+  width: 100%;
+  height: 100%;      /* match the IonItem height */
+  max-width: 90px;
+  font-size: 0.8rem;
+}
+
+.date-guest-item {
+  padding: 4px 8px; /* smaller padding inside the item */
+  height: 40px; /* adjust height */
+  font-size: 0.9rem; /* smaller text */
+}
+
+.date-guest-item ion-button {
+  height: 30px; /* smaller button height */
+  --padding-start: 4px; /* reduce left padding */
+  --padding-end: px;   /* reduce right padding */
+}
+
 
 /* New styles for IonSegmentButton font size and color */
 ion-segment-button {
@@ -154,4 +189,24 @@ ion-segment-button {
 
 .has-bottom-toolbar {
   --padding-bottom: 56px; /* Adjust this value based on the actual height of your IonTabBar */
+}
+
+/* Add top and bottom padding for safe space without env() */
+ion-content {
+  padding-top: 8em;    /* adjust for header/status bar */
+  padding-bottom: 2em; /* adjust for footer/home bar */
+  padding-left: 1em;   /* optional side padding */
+  padding-right: 1em;  /* optional side padding */
+  box-sizing: border-box;
+}
+
+/* Ensure header/footer spacing */
+ion-header, ion-footer {
+  padding-top: 1em;   /* extra spacing if needed */
+  padding-bottom: 1em;
+}
+
+/* Optional: make the main layout flexible */
+ion-app, ion-page, ion-content {
+  height: 100%;
 }
