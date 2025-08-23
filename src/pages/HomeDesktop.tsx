@@ -35,6 +35,7 @@ import Stepper from "../components/Stepper";
 import LoginPage from "../components/LoginPage";
 import { GeoapifyGeocodingService } from "../services/GeoapifyService";
 import ConditionalHeader from "../components/ConditionalHeader";
+import MoneyButton from "../components/MoneyButton";
 
 interface EnhancedSuggestion {
   text: string;
@@ -239,6 +240,13 @@ const HomeDesktop: React.FC<HomeDesktopProps> = ({
                   : "Database-only search mode"}
               </p>
             </div>
+
+            {/* The MoneyButton should be placed within a layout container like IonGrid/IonRow/IonCol to be rendered correctly. */}
+            <IonGrid>
+              <IonRow className="ion-justify-content-center ion-padding">
+                <MoneyButton />
+              </IonRow>
+            </IonGrid>
 
             <IonAlert
               isOpen={showAlert}

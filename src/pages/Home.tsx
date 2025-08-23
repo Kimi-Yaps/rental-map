@@ -35,7 +35,7 @@ import Stepper from "../components/Stepper";
 import LoginPage from "../components/LoginPage";
 import { GeoapifyGeocodingService } from "../services/GeoapifyService";
 import ConditionalHeader from "../components/ConditionalHeader";
-
+import MoneyButton from "../components/MoneyButton";
 // Enhanced suggestion interface - MUST match SearchbarWithSuggestions component
 interface EnhancedSuggestion {
   text: string;
@@ -593,6 +593,12 @@ const Home: React.FC = () => {
                   </IonRow>
                 </IonGrid>
 
+                {/* The MoneyButton should be placed within a layout container like IonGrid/IonRow/IonCol to be rendered correctly. */}
+                <IonGrid>
+                  <IonRow className="ion-justify-content-center ion-padding">
+                    <MoneyButton/>
+                  </IonRow>
+                </IonGrid>
                 {/* Recommended Section */}
                 <div style={{ padding: "20px", textAlign: "center" }}>
                   <h3 style={{ color: "var(--ion-color-primary)" }}>Recommended</h3>

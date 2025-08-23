@@ -40,6 +40,7 @@ const Home = React.lazy(() => import('./pages/Home'));
 const HomeBestFit = React.lazy(() => import('./pages/HomeBestFIt'));
 const homeSearched = React.lazy(() => import('./pages/HomeSearched'));
 const LandLordHome = React.lazy(() => import('./pages/landlordHome'));
+const PaymentInsert = React.lazy(() => import('./pages/PaymentInsert'));
 const LocationStepPage = React.lazy(() => import('./pages/LocationStepPage'));
 const PhotosStepPage = React.lazy(() => import('./pages/PhotosStepPage'));
 const PricingStepPage = React.lazy(() => import('./pages/PricingStepPage'));
@@ -64,6 +65,7 @@ const App: React.FC = () => (
           <Route exact path="/pricing" component={PricingStepPage} />
           <Route exact path="/photos" component={PhotosStepPage} />
           <Route exact path="/finalReview" component={FinalReviewPage} />
+          <Route exact path="/paymentInsert" component={PaymentInsert} />
           <Redirect exact from="/" to="/home" />
         </IonRouterOutlet>
       </Suspense>
