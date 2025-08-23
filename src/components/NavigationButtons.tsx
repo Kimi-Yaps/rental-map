@@ -47,7 +47,7 @@ const NavigationButtons: React.FC<NavigationButtonsProps> = ({
   };
 
   const handleNextClick = () => {
-    onNext(); // Call the provided onNext handler
+    onNext && onNext(); // Call the provided onNext handler safely
   };
 
   return (
@@ -62,7 +62,7 @@ const NavigationButtons: React.FC<NavigationButtonsProps> = ({
             </IonCol>
             {showNextButton && (
               <IonCol size-xs="6" size-md="6" className="ion-padding-start">
-                <IonButton expand="block" onClick={handleNextClick} disabled={nextDisabled}>
+                <IonButton expand="block" fill="clear" color="primary" onClick={handleNextClick} disabled={nextDisabled}>
                   Next
                 </IonButton>
               </IonCol>

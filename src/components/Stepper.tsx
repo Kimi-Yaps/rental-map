@@ -14,7 +14,7 @@ interface StepperProps {
 const Stepper: React.FC<StepperProps> = ({ value, onIncrement, onDecrement, min, max, label }) => {
   return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 0' }}>
-      <IonLabel>{label}</IonLabel>
+      <IonLabel style={{ whiteSpace: 'nowrap' }}>{label}</IonLabel>
       <div style={{ display: 'flex', alignItems: 'center' }}>
         <IonButton onClick={onDecrement} disabled={min !== undefined && value <= min} fill="clear">
           <IonIcon icon={remove} />

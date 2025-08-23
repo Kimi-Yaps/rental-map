@@ -34,7 +34,7 @@ import {
   chevronBackOutline,
   arrowForwardOutline
 } from 'ionicons/icons';
-import supabase from '../../supabaseConfig';
+import supabase from '../supabaseConfig';
 import Stepper from '../components/Stepper';
 import NavigationButtons from '../components/NavigationButtons';
 

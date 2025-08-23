@@ -1,10 +1,8 @@
 import {
   IonPage,
   IonContent,
-  IonHeader,
   IonGrid,
   IonRow,
-  IonButton,
   IonCol,
   IonCard,
   IonCardContent,
@@ -15,16 +13,13 @@ import {
   IonText,
   IonToolbar,
   IonTitle,
-  IonFooter,
-  isPlatform
+  IonFooter
 } from '@ionic/react';
-import { useHistory } from 'react-router-dom';
+import { useIonRouter } from '@ionic/react';
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   homeOutline,
   businessOutline,
-  arrowBackOutline,
-  arrowForwardOutline,
   golfOutline
 } from 'ionicons/icons';
 import NavigationButtons from '../components/NavigationButtons';
@@ -46,7 +41,7 @@ const HomeBestFit: React.FC = () => { // Renamed component here
   const [homeType, setHomeType] = useState<string | null>(null);
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
-  const history = useHistory();
+  const ionRouter = useIonRouter();
 
   useEffect(() => {
     const saved = localStorage.getItem('Property');
@@ -83,14 +78,14 @@ const HomeBestFit: React.FC = () => { // Renamed component here
   const handleBack = () => {
     // Don't clear localStorage when going back - just go to previous step
     console.log("Going back to /propertyType");
-    history.push('/propertyType');
+    ionRouter.push('/propertyType', 'back');
   };
 
   const handleNext = useCallback(() => {
     if (!homeType) return;
     console.log("Moving to next step in property location Step Page");
-    history.push('/LocationStepPage');
-  }, [history, homeType]);
+    ionRouter.push('/locationStepPage', 'forward');
+  }, [ionRouter, homeType]);
 
   const homeTypeOptions = [
     {

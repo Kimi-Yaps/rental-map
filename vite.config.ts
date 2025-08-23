@@ -21,5 +21,19 @@ export default defineConfig({
     globals: true,
     environment: 'jsdom',
     setupFiles: './src/setupTests.ts',
-  }
+  },
+  build: {
+    chunkSizeWarningLimit: 1600,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'react-vendor': ['react', 'react-dom'],
+          'ionic-vendor': ['@ionic/react', '@ionic/react-router'],
+          'leaflet-vendor': ['leaflet', 'react-leaflet'],
+          'supabase-vendor': ['@supabase/supabase-js'],
+          'router-vendor': ['react-router', 'react-router-dom'],
+        },
+      },
+    },
+  },
 })

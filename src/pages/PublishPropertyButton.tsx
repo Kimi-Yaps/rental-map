@@ -2,7 +2,7 @@
 import React, { useState, useCallback } from 'react';
 import { IonButton, IonIcon, IonSpinner, IonToast } from '@ionic/react';
 import { cloudUploadOutline } from 'ionicons/icons';
-import supabase from '../../supabaseConfig';
+import supabase from '../supabaseConfig';
 import { Property } from '../components/DbCrud'; // Import RentalDraft from the shared types file
 import { prepareDraftForDB } from '../components/DataConvertion'; // Import the conversion function from its new utility file
 

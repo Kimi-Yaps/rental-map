@@ -17,7 +17,7 @@ import {
 } from '@ionic/react';
 import NavigationButtons from '../components/NavigationButtons';
 import { RentalAmenities, RoomDetails, pricing } from '../components/DbCrud';
-import { useHistory } from 'react-router-dom';
+import { useIonRouter } from '@ionic/react';
 import ConditionalHeader from '../components/ConditionalHeader';
 
 // Define the interface for the draft property data, including all expected fields
@@ -41,7 +41,7 @@ import PublishPropertyButton from './PublishPropertyButton';
 // The main application component.
 const FinalReviewPage: React.FC = () => {
   const [property, setProperty] = useState<DraftProperty | null>(null);
-  const history = useHistory();
+  const ionRouter = useIonRouter();
 
   useEffect(() => {
     // This effect runs once when the component mounts to load the draft data from localStorage.
@@ -70,7 +70,7 @@ const FinalReviewPage: React.FC = () => {
   };
 
   const handleBack = () => {
-    history.push('/photos');
+    ionRouter.push('/photos', 'back');
   };
 
   return (

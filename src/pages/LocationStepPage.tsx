@@ -22,13 +22,13 @@ import {
   IonRow,
   IonCol,
 } from "@ionic/react";
-import { useHistory } from 'react-router-dom';
+import { useIonRouter } from '@ionic/react';
 import {
   locationOutline,
   searchOutline,
 } from "ionicons/icons";
 import NavigationButtons from '../components/NavigationButtons';
-import supabase from '../../supabaseConfig';
+import supabase from '../supabaseConfig';
 import { Property } from "../components/DbCrud";
 
 import { GeoapifyGeocodingService, LatLng, GeoapifyFeature } from '../services/GeoapifyService';
@@ -85,11 +85,21 @@ const LazyMapComponent = React.lazy(() =>
       }) => {
         const map = useMapEvents({});
         React.useEffect(() => {
-          if (map && position && shouldZoom) {
-            map.flyTo([position.lat, position.lng], config.mapZoom, {
-              animate: true,
-              duration: 1.5,
-            });
+          if (map) {
+            // Add a small delay to invalidate size to ensure the map container is fully rendered
+            const timer = setTimeout(() => {
+              map.invalidateSize();
+              if (position && shouldZoom) {
+                map.flyTo([position.lat, position.lng], config.mapZoom, {
+                  animate: true,
+                  duration: 1.5,
+                });
+              }
+            }, 100); // 100ms delay
+
+            return () => {
+              clearTimeout(timer);
+            };
           }
         }, [position, map, shouldZoom]);
         return null;
@@ -172,7 +182,7 @@ const MapSkeleton = () => (
 
 // --- Main Component ---
 const LocationStepPage: React.FC = () => {
-  const history = useHistory();
+  const ionRouter = useIonRouter();
   // Default to a central Malaysian location (e.g., Kuala Lumpur)
   const [markerPosition, setMarkerPosition] = useState<LatLng>({ lat: 2.430917, lng: 103.836113 });
   const [searchQuery, setSearchQuery] = useState<string>("");
@@ -490,13 +500,11 @@ const LocationStepPage: React.FC = () => {
     }
 
     saveCurrentStepToDraft();
-    history.push('/amenities');
+    ionRouter.push('/amenities', 'forward');
   };
 
   const handleBack = () => {
-    localStorage.removeItem('Property');
-    setToastMessage('Draft cleared');
-    setShowToast(true);
+    // No specific action needed here, as the NavigationButtons component handles the alert and navigation
   };
 
   // MODIFIED: Get the display address - show placeholder when empty
@@ -707,6 +715,9 @@ const LocationStepPage: React.FC = () => {
         />
       </IonContent>
       <NavigationButtons
+        expand="block" 
+        fill="clear"
+        color="primary"
         onNext={handleNextStep}
         onBack={handleBack}
         nextDisabled={!address || !manualAddress}

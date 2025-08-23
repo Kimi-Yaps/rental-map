@@ -4,7 +4,6 @@ import {
   IonHeader,
   IonGrid,
   IonRow,
-  IonButton,
   IonCol,
   IonCard,
   IonCardContent,
@@ -14,18 +13,19 @@ import {
   IonToast,
   IonText,
   IonToolbar,
-  IonTitle
+  IonTitle,
+  IonFooter,
+  IonSpinner // Import IonSpinner
 } from '@ionic/react';
 import React, { useState, useEffect } from 'react';
 import { useHistory } from 'react-router-dom';
 import { 
   homeOutline, 
   businessOutline, 
-  diamondOutline, 
-  arrowBackOutline,
-  arrowForwardOutline
+  diamondOutline
 } from 'ionicons/icons';
 import NavigationButtons from '../components/NavigationButtons';
+import supabase from '../supabaseConfig'; // Import supabase
 
 // Property type conversion mappings
 const PROPERTY_TYPE_MAPPING = {
@@ -43,21 +43,80 @@ const PropertyType: React.FC = () => {
   const [propertyType, setPropertyType] = useState<string | null>(null);
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
+  const [loading, setLoading] = useState(true); // Add loading state
   const history = useHistory();
 
   useEffect(() => {
-    const saved = localStorage.getItem('Property');
-    if (saved) {
+    const checkUserRole = async () => {
+      setLoading(true);
       try {
-        const draft = JSON.parse(saved);
-        if (draft.property_type) {
-          setPropertyType(draft.property_type);
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) {
+          setToastMessage('You must be logged in to access this page.');
+          setShowToast(true);
+          history.replace('/login'); // Redirect to login if not logged in
+          return;
         }
-      } catch {
-        localStorage.removeItem('Property');
+
+        const { data: profiles, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', session.user.id);
+
+        if (error) {
+          console.error('Error fetching profile:', error.message);
+          setToastMessage('Error fetching user profile.');
+          setShowToast(true);
+          history.replace('/home'); // Redirect on profile fetch error
+          return;
+        }
+
+        if (!profiles || profiles.length === 0) {
+          console.error('No profile found for this user.');
+          setToastMessage('Your profile could not be found. Please try logging in again.');
+          setShowToast(true);
+          // Log out the user to force a new login, which should create the profile.
+          await supabase.auth.signOut();
+          history.replace('/login');
+          return;
+        }
+
+        if (profiles.length > 1) {
+          console.warn('Multiple profiles found for this user. Using the first one.');
+        }
+
+        const profile = profiles[0];
+
+        if (profile && profile.user_type === 'property_owner') {
+          // User is a landlord, proceed with loading property type
+          const saved = localStorage.getItem('Property');
+          if (saved) {
+            try {
+              const draft = JSON.parse(saved);
+              if (draft.property_type) {
+                setPropertyType(draft.property_type);
+              }
+            } catch {
+              localStorage.removeItem('Property');
+            }
+          }
+        } else {
+          setToastMessage('Access Denied: Only landlords can list properties.');
+          setShowToast(true);
+          history.replace('/home'); // Redirect if not a landlord
+        }
+      } catch (error) { // Remove 'any' type
+        console.error('Authentication or profile check failed:', (error as Error).message);
+        setToastMessage('An error occurred during authentication.');
+        setShowToast(true);
+        history.replace('/login');
+      } finally {
+        setLoading(false);
       }
-    }
-  }, []);
+    };
+
+    checkUserRole();
+  }, [history]);
 
   const handleSelect = (type: string) => {
     setPropertyType(type);
@@ -87,7 +146,7 @@ const PropertyType: React.FC = () => {
     setShowToast(true);
     
     console.log("localStorage cleared - going back to /landlord");
-    history.push('/landlord');
+    history.replace('/landlord');
   };
 
   const handleNext = () => {
@@ -96,7 +155,7 @@ const PropertyType: React.FC = () => {
     // Navigate based on property type
     switch (propertyType) {
       case 'Home':
-        history.push('/homeBestFit');
+        history.replace('/homeBestFit');
         break;
       case 'Hotel':
         history.push('/HotelRoomTypes');
@@ -133,6 +192,17 @@ const PropertyType: React.FC = () => {
       color: 'secondary'
     }
   ];
+
+  if (loading) {
+    return (
+      <IonPage>
+        <IonContent className="ion-padding ion-text-center">
+          <IonSpinner name="crescent" />
+          <p>Loading...</p>
+        </IonContent>
+      </IonPage>
+    );
+  }
 
   return (
     <IonPage>
@@ -174,9 +244,14 @@ const PropertyType: React.FC = () => {
                       <IonCol>
                         <IonCard
                           button
-                          onClick={() => handleSelect(option.type)}
-                          color={isSelected ? option.color : undefined}
-                        >
+                      onClick={() => handleSelect(option.type)}
+                      color={isSelected ? option.color : undefined}
+                      style={{
+                        transform: isSelected ? 'scale(1.02)' : 'scale(1)',
+                        transition: 'all 0.2s ease',
+                        color: isSelected ? 'white' : undefined
+                      }}
+                    >
                           <IonCardHeader>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                               <IonIcon
@@ -230,12 +305,16 @@ const PropertyType: React.FC = () => {
 
           </IonGrid>
       </IonContent>
-      <NavigationButtons
-        onBack={handleBack}
-        onNext={handleNext}
-        nextDisabled={!propertyType}
-        backPath="/landlord"
-      />
+      <IonFooter>
+        <IonToolbar>
+          <NavigationButtons
+            onBack={handleBack}
+            onNext={handleNext}
+            nextDisabled={!propertyType}
+            backPath="/landlord"
+          />
+        </IonToolbar>
+      </IonFooter>
     </IonPage>
   );
 };

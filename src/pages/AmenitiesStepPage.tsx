@@ -1,6 +1,6 @@
 // src/pages/AmenitiesStepPage.tsx
 import React, { useState, useEffect } from 'react';
-import { useHistory } from 'react-router-dom';
+import { useIonRouter } from '@ionic/react';
 import {
   IonContent,
   IonHeader,
@@ -31,7 +31,7 @@ import {
   pawOutline
 } from 'ionicons/icons';
 import { Property, RentalAmenities } from "../supabaseClient";
-import supabase from '../../supabaseConfig';
+import supabase from '../supabaseConfig';
 import Stepper from '../components/Stepper';
 import NavigationButtons from '../components/NavigationButtons';
 import ConditionalHeader from '../components/ConditionalHeader';
@@ -86,7 +86,7 @@ const amenityOptions = [
 ];
 
 const AmenitiesStepPage: React.FC = () => {
-  const history = useHistory();
+  const ionRouter = useIonRouter();
   const [amenities, setAmenities] = useState<RentalAmenities>({});
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
@@ -177,7 +177,7 @@ const AmenitiesStepPage: React.FC = () => {
 
   const handleNext = () => {
     saveAmenitiesToDraft(amenities);
-    history.push('/rooms');
+    ionRouter.push('/rooms', 'forward');
   };
 
   const handleBack = () => {
@@ -287,7 +287,6 @@ const AmenitiesStepPage: React.FC = () => {
         onNext={handleNext}
         onBack={handleBack}
         backPath="/LocationStepPage"
-        nextPath="/rooms"
       />
     </IonPage>
   );

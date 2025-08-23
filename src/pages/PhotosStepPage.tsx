@@ -1,6 +1,6 @@
 // src/pages/PhotosStepPage.tsx
 import React, { useState, useEffect } from 'react';
-import { useHistory } from 'react-router-dom';
+import { useIonRouter } from '@ionic/react';
 import {
   IonContent,
   IonHeader,
@@ -26,7 +26,7 @@ import {
   IonButtons
 } from '@ionic/react';
 import { camera, trashOutline, videocamOutline, close } from 'ionicons/icons';
-import supabase from '../../supabaseConfig';
+import supabase from '../supabaseConfig';
 import { RentalAmenities, RoomDetails, pricing } from '../components/DbCrud';
 import NavigationButtons from '../components/NavigationButtons';
 import { v4 as uuidv4 } from 'uuid'; // Import uuid
@@ -88,7 +88,7 @@ const getProperty = (): Property => {
 const STORAGE_BUCKET_NAME = 'imgvideo-bucket1';
 
 const PhotosStepPage: React.FC = () => {
-  const history = useHistory();
+  const ionRouter = useIonRouter();
   const [photos, setPhotos] = useState<string[]>([]);
   const [videos, setVideos] = useState<string[]>([]);
   const [isUploading, setIsUploading] = useState(false);
@@ -236,11 +236,11 @@ const PhotosStepPage: React.FC = () => {
 
   const handleNext = () => {
     saveMediaToDraft(photos, videos);
-    history.push('/finalReview');
+    ionRouter.push('/finalReview', 'forward');
   };
 
   const handleBack = () => {
-    history.push('/pricing');
+    ionRouter.push('/pricing', 'back');
   };
 
   const isVideoUrl = (url: string) => {

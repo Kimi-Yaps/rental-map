@@ -306,7 +306,7 @@ const HomeSearched: React.FC = () => {
         </IonToolbar>
       </IonHeader>
       
-      <IonContent className="ion-padding">
+      <IonContent className="ion-padding" onIonRefresh={handleRefresh}>
         <IonGrid>
           <IonRow className="ion-justify-content-center">
             <IonCol size-xs="12" size-md="8" size-lg="6">

@@ -1,4 +1,4 @@
-import { IonHeader, IonToolbar, isPlatform } from '@ionic/react';
+import { IonToolbar, isPlatform } from '@ionic/react';
 import React from 'react';
 
 interface ConditionalHeaderProps {
@@ -12,11 +12,9 @@ const ConditionalHeader: React.FC<ConditionalHeaderProps> = ({ children, color }
   }
 
   return (
-    <IonHeader>
       <IonToolbar color={color}>
         {children}
       </IonToolbar>
-    </IonHeader>
   );
 };
 

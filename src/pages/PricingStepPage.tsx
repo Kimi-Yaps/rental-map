@@ -1,6 +1,6 @@
 // src/pages/PricingStepPage.tsx
 import React, { useState, useEffect } from 'react';
-import { useHistory } from 'react-router-dom';
+import { useIonRouter } from '@ionic/react';
 import {
   IonContent,
   IonHeader,
@@ -32,7 +32,7 @@ import {
   chevronBackOutline,
   arrowForwardOutline
 } from 'ionicons/icons';
-import supabase from '../../supabaseConfig';
+import supabase from '../supabaseConfig';
 import Stepper from '../components/Stepper';
 import NavigationButtons from '../components/NavigationButtons';
 
@@ -66,7 +66,7 @@ const getProperty = (): any => {
 };
 
 const PricingStepPage: React.FC = () => {
-  const history = useHistory();
+  const ionRouter = useIonRouter();
   const [pricing, setPricing] = useState<PricingDetails[]>([]);
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
@@ -121,7 +121,7 @@ const PricingStepPage: React.FC = () => {
 
   const handleNext = () => {
     savePricingToDraft(pricing);
-    history.push('/photos');
+    ionRouter.push('/photos', 'forward');
   };
 
   const handleBack = () => {
@@ -130,7 +130,7 @@ const PricingStepPage: React.FC = () => {
 
   const confirmBack = async () => {
     setShowBackAlert(false);
-    history.push('/rooms');
+    ionRouter.push('/rooms', 'back');
   };
 
   const cancelBack = () => {

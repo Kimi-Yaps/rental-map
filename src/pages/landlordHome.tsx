@@ -1,4 +1,4 @@
-// LandLordHome.tsx
+import React from 'react';
 import {
   IonContent,
   IonGrid,
@@ -12,23 +12,18 @@ import {
   IonText,
   IonButtons // Added IonButtons import
 } from '@ionic/react';
-import { useState } from 'react'; // Import useState
-import LoginPage from '../components/LoginPage'; // Import LoginPage
+import { useIonRouter } from '@ionic/react'; // Import useIonRouter
 
 const LandLordHome: React.FC = () => {
-  const [isLoggedIn, setIsLoggedIn] = useState(false); // New state for login status
-  const [showLoginModal, setShowLoginModal] = useState(false); // State to control login modal visibility
+  const ionRouter = useIonRouter();
 
   return (
     <IonPage>
       {/* Always render the main content */}
-      <IonHeader>
+       <IonHeader>
         <IonToolbar color="primary">
           <IonTitle>Landlord Home</IonTitle>
-          <IonButtons slot="end"> {/* Added IonButtons */}
-            <IonButton onClick={() => setShowLoginModal(true)} fill="clear" color="light">
-              Login
-            </IonButton>
+          <IonButtons slot="end">
           </IonButtons>
         </IonToolbar>
       </IonHeader>
@@ -43,23 +38,33 @@ const LandLordHome: React.FC = () => {
           </IonRow>
           <IonRow className="ion-justify-content-center">
             <IonCol size-xs="12" size-md="4" size-lg="3">
-              <IonButton expand="block" href='/propertyType'>List your Property</IonButton>
+              <IonButton
+                expand="block"
+                fill="solid"
+                color="primary"
+                onClick={() => ionRouter.push("/propertyType", "forward")}
+              >
+                List your Property
+              </IonButton>
             </IonCol>
           </IonRow>
           <IonRow className="ion-justify-content-center ion-margin-top">
             <IonCol size-xs="12" size-md="4" size-lg="3">
-              <IonButton expand="block" fill="outline" href='/'>Back</IonButton>
+              <IonButton 
+                expand="block" 
+                fill="outline" 
+                onClick={() => ionRouter.push("/", "back")}
+              >
+                Back
+              </IonButton>
             </IonCol>
           </IonRow>
         </IonGrid>
+      
       </IonContent>
 
-      {/* Render LoginPage as an overlay */}
-      <LoginPage
-        isOpen={showLoginModal}
-        onClose={() => setShowLoginModal(false)}
-        userType="landlord"
-      />
+      {/* LoginPage is a full page component, not a modal */}
+      {/* It should be routed to directly, not rendered as a child component with modal props */}
     </IonPage>
   );
 };
