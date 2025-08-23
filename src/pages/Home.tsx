@@ -20,7 +20,7 @@ import { useLocation } from "react-router-dom";
 import "./Main.css";
 import Stepper from "../components/Stepper";
 import ConditionalHeader from "../components/ConditionalHeader";
-import { searchOutline } from "ionicons/icons";
+import { searchOutline, personCircleOutline } from "ionicons/icons";
 import MoneyButton from "../components/MoneyButton";
 
 // Define the structure of an enhanced suggestion
@@ -95,22 +95,33 @@ const Home: React.FC = () => {
 
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [profileAvatar, setProfileAvatar] = useState<string | null>(null);
+  const [userDisplayName, setUserDisplayName] = useState<string | null>(null);
+
   // Check auth session on mount and on auth state change
   useEffect(() => {
     const checkSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session && session.user) {
         setIsLoggedIn(true);
-        // Optionally fetch profile avatar
+        // Fetch profile avatar and full_name
         const { data: profile } = await supabase
           .from('profiles')
-          .select('avatar_url')
+          .select('avatar_url, full_name')
           .eq('id', session.user.id)
           .maybeSingle();
+        
         setProfileAvatar(profile?.avatar_url || null);
+
+        if (profile?.full_name) {
+          const names = profile.full_name.split(' ').filter((n: string) => n.length > 0);
+          setUserDisplayName(names.slice(0, 2).join(' '));
+        } else {
+          setUserDisplayName(null);
+        }
       } else {
         setIsLoggedIn(false);
         setProfileAvatar(null);
+        setUserDisplayName(null);
       }
     };
     checkSession();
@@ -278,9 +289,9 @@ const Home: React.FC = () => {
                       style={{ width: 32, height: 32, borderRadius: '50%' }}
                     />
                   ) : (
-                    <IonIcon icon="person-circle-outline" style={{ fontSize: 28 }} />
+                    <IonIcon icon={personCircleOutline} style={{ fontSize: 28 }} />
                   )}
-                  Profile
+                  {userDisplayName && <IonLabel>{userDisplayName}</IonLabel>}
                 </IonButton>
               </>
             ) : (
@@ -314,9 +325,9 @@ const Home: React.FC = () => {
                         expand="block"
                         fill="clear"
                         color="medium"
-                        onClick={() =>
-                          ionRouter.push("/searchSuggestions", "forward")
-                        }
+                        onClick={() => {
+                          ionRouter.push("/homeSearched", "forward");
+                        }}
                         className="ion-margin-bottom"
                         style={{
                           height: "48px",
@@ -324,28 +335,31 @@ const Home: React.FC = () => {
                           "--border-radius":
                             "var(--custom-border-radius-small)",
                           display: "flex",
-                          justifyContent: "flex-start",
+                          justifyContent: "center",
                           alignItems: "center",
                           paddingLeft: "16px",
                           paddingRight: "16px",
-                          textAlign: "left",
+                          textAlign: "center",
+                          width: '100%'
                         }}
-                        // Conditionally disable the button if search is not ready
-                        disabled={!isSearchReady}
                       >
-                        <IonIcon
-                          icon={searchOutline}
-                          slot="start"
-                          style={{ marginRight: "8px" }}
-                        />
-                        <IonLabel
-                          style={{
-                            flexGrow: 1,
-                            color: "var(--ion-color-medium)",
-                          }}
-                        >
-                          Where are you going?
-                        </IonLabel>
+                        <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%' }}>
+                          <IonIcon
+                            icon={searchOutline}
+                            style={{ marginRight: "8px" }}
+                          />
+                          <IonLabel
+                            style={{
+                              color: "var(--ion-color-medium)",
+                              margin: 0,
+                              cursor: 'pointer',
+                              userSelect: 'none',
+                              fontWeight: 500,
+                            }}
+                          >
+                            Where are you going?
+                          </IonLabel>
+                        </span>
                       </IonButton>
 
                       {/* Date and Guest Inputs */}
