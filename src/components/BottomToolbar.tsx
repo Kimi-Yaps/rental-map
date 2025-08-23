@@ -1,46 +1,26 @@
-import React from 'react';
-import { IonTabs, IonTabBar, IonTabButton, IonIcon, IonLabel, IonRouterOutlet } from '@ionic/react';
-import { personOutline, chatbubbleOutline, compassOutline, briefcaseOutline } from 'ionicons/icons';
-import { Route, Redirect } from 'react-router';
 
-// Placeholder components for each tab
-const ProfileTab: React.FC = () => <div>Profile Content</div>;
-const MessagesTab: React.FC = () => <div>Messages Content</div>;
-const ExploreTab: React.FC = () => <div>Explore Content</div>;
-const TripsTab: React.FC = () => <div>Trips Content</div>;
+import Profile from '../pages/Profile';
+import { useIonRouter } from '@ionic/react';
+
 
 const BottomToolbar: React.FC = () => {
+  const ionRouter = useIonRouter();
   return (
     <IonTabs>
       <IonRouterOutlet>
-        {/* Define routes for each tab content */}
-        <Route path="/profile" component={ProfileTab} exact={true} />
-        <Route path="/messages" component={MessagesTab} exact={true} />
-        <Route path="/explore" component={ExploreTab} exact={true} />
-        <Route path="/trips" component={TripsTab} exact={true} />
-        {/* Redirect to a default tab if no specific tab route is matched */}
+        <Route path="/profile" component={Profile} exact={true} />
+        {/* ...other tab routes remain unchanged... */}
         <Route path="/" render={() => <Redirect to="/explore" />} exact={true} />
       </IonRouterOutlet>
 
       <IonTabBar slot="bottom">
-        <IonTabButton tab="profile" href="/profile">
-          <IonIcon icon={personOutline} />
-          <IonLabel>Profile</IonLabel>
-        </IonTabButton>
-
-        <IonTabButton tab="messages" href="/messages">
-          <IonIcon icon={chatbubbleOutline} />
-          <IonLabel>Messages</IonLabel>
-        </IonTabButton>
-
         <IonTabButton tab="explore" href="/explore">
           <IonIcon icon={compassOutline} />
           <IonLabel>Explore</IonLabel>
         </IonTabButton>
-
-        <IonTabButton tab="trips" href="/trips">
-          <IonIcon icon={briefcaseOutline} />
-          <IonLabel>Trips</IonLabel>
+        <IonTabButton tab="profile" href="/profile">
+          <IonIcon icon={personOutline} />
+          <IonLabel>Profile</IonLabel>
         </IonTabButton>
       </IonTabBar>
     </IonTabs>

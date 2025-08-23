@@ -1,4 +1,5 @@
 import supabase from './supabaseConfig';
+export { supabase };
 
 // --- Types matching your actual database schema ---
 export interface User {

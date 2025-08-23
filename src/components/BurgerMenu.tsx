@@ -1,4 +1,5 @@
 import React from 'react';
+import { isPlatform } from '@ionic/react';
 import {
   IonMenu,
   IonHeader,
@@ -65,16 +66,13 @@ const BurgerMenu: React.FC<BurgerMenuProps> = ({ selectedPage, setSelectedPage }
         <IonList>
           {/* Map over the menuItems array to render each item */}
           {menuItems.map((item, index) => (
-            // IonMenuToggle automatically closes the menu when the item is clicked
             <IonMenuToggle key={index} autoHide={false}>
               <IonItem
                 button
-                // The onClick handler sets the selected page and explicitly closes the menu
                 onClick={() => {
                   setSelectedPage(item.url);
-                  menuController.close(); 
+                  menuController.close();
                 }}
-                // Highlight the active page with a primary color
                 color={selectedPage === item.url ? 'primary' : ''}
               >
                 <IonIcon slot="start" icon={item.icon} />
@@ -82,6 +80,15 @@ const BurgerMenu: React.FC<BurgerMenuProps> = ({ selectedPage, setSelectedPage }
               </IonItem>
             </IonMenuToggle>
           ))}
+          {/* Web only: Add Login button at the bottom of the menu */}
+          {!isPlatform('mobile') && (
+            <IonMenuToggle autoHide={false}>
+              <IonItem button onClick={() => { window.location.href = '/login'; menuController.close(); }} color="secondary">
+                <IonIcon slot="start" icon={person} />
+                <IonLabel>Login / Sign Up</IonLabel>
+              </IonItem>
+            </IonMenuToggle>
+          )}
         </IonList>
       </IonContent>
     </IonMenu>

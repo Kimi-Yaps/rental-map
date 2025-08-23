@@ -157,7 +157,6 @@ body {
   margin-top: 10px; /* Smaller top margin */
 }
 
-<<<<<<< HEAD
 
 
 
@@ -187,6 +186,8 @@ body {
   .date-guest-row {
     flex-direction: column;
   }
+}
+
 
 /* New styles for IonSegmentButton font size and color */
 ion-segment-button {
@@ -208,7 +209,6 @@ ion-segment-button {
   --padding-bottom: 56px; /* Adjust this value based on the actual height of your IonTabBar */
 }
 
-<<<<<<< HEAD
 /* Adjust ion-content padding for calendar view */
 ion-content {
   --padding-top: 0;
@@ -529,24 +529,4 @@ ion-content {
     --padding-start: 3rem;
     --padding-end: 3rem;
   }
-=======
-/* Add top and bottom padding for safe space without env() */
-ion-content {
-  padding-top: 8em;    /* adjust for header/status bar */
-  padding-bottom: 2em; /* adjust for footer/home bar */
-  padding-left: 1em;   /* optional side padding */
-  padding-right: 1em;  /* optional side padding */
-  box-sizing: border-box;
-}
-
-/* Ensure header/footer spacing */
-ion-header, ion-footer {
-  padding-top: 1em;   /* extra spacing if needed */
-  padding-bottom: 1em;
-}
-
-/* Optional: make the main layout flexible */
-ion-app, ion-page, ion-content {
-  height: 100%;
->>>>>>> bfc76f60158b7a5a00cde81f937362fe6956e0d2
 }
