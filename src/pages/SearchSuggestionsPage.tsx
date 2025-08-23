@@ -59,7 +59,9 @@ const SearchSuggestionsPage: React.FC = () => {
   }, [recentSearches]);
 
   const fetchEnhancedSuggestions = useCallback(
+
     async (term: string = ''): Promise<EnhancedSuggestion[]> => { // Provide a default empty string for 'term'
+
       if (!term || term.length < 2) {
         return [];
       }
@@ -274,6 +276,7 @@ const SearchSuggestionsPage: React.FC = () => {
     // Stringify the suggestion object to pass it as a query parameter
     const encodedSuggestion = encodeURIComponent(JSON.stringify(suggestion));
     history.replace(`/home?searchText=${encodeURIComponent(suggestion.text)}&suggestion=${encodedSuggestion}`);
+
   };
 
   const getSuggestionIcon = (suggestion: EnhancedSuggestion) => {

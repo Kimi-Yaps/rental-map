@@ -49,7 +49,9 @@ const LoadingPage: React.FC = () => {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
+
         background: 'rgba(255, 255, 255, 0.8)',
+
       }}
     >
       <div
@@ -58,8 +60,10 @@ const LoadingPage: React.FC = () => {
           textAlign: 'center',
         }}
       >
+
         <IonSpinner name="lines-sharp" color="dark" style={{ fontSize: '50px' }} />
         <IonText color="dark">
+
           <p>Loading...</p>
         </IonText>
       </div>
