@@ -1,16 +1,18 @@
 import React from "react";
-import { IonButton } from "@ionic/react";
-import { useHistory } from "react-router-dom";
+import { IonButton, useIonRouter } from "@ionic/react";
 
 const MoneyButton: React.FC = () => {
-  const history = useHistory();
-  // function bila button ditekan
-  const handleClick = () => {
-    history.push('/paymentInsert');
-  };
+  const router = useIonRouter();
 
   return (
-    <IonButton onClick={handleClick}>Payment</IonButton>
+    <IonButton
+      expand="block"
+      onClick={() => {
+        router.push("/payment", "forward", "replace");
+      }}
+    >
+      Payment
+    </IonButton>
   );
 };
 

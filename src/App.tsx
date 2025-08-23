@@ -57,6 +57,7 @@ const PhotosStepPage = React.lazy(() => import('./pages/PhotosStepPage'));
 const PricingStepPage = React.lazy(() => import('./pages/PricingStepPage'));
 const PropertyType = React.lazy(() => import('./pages/PropertyType'));
 const RoomsStepPage = React.lazy(() => import('./pages/RoomsStepPage'));
+const PaymentInsert = React.lazy(() => import('./pages/PaymentInsert'));
 
 // Enhanced setup with better performance
 setupIonicReact({
@@ -93,6 +94,9 @@ const App: React.FC = () => (
           <Route exact path="/">
             <Redirect to="/home" />
           </Route>
+
+          {/* payment Gateway */}
+          <Route exact path="/payment" component={PaymentInsert} />
 
           {/* Main routes */}
           <Route exact path="/home" component={Home} />

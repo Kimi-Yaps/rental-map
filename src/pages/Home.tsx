@@ -21,11 +21,8 @@ import "./Main.css";
 import Stepper from "../components/Stepper";
 import ConditionalHeader from "../components/ConditionalHeader";
 import { searchOutline } from "ionicons/icons";
-import { supabase } from "../supabaseClient";
-import SearchbarWithSuggestions from "../components/SearchbarWithSuggestions";
 import MoneyButton from "../components/MoneyButton";
 import LoginPage from "../components/LoginPage";
-import HomeDesktop from "./HomeDesktop";
 
 // Define the structure of an enhanced suggestion
 export interface EnhancedSuggestion {
@@ -549,30 +546,7 @@ const Home: React.FC = () => {
   );
 
   return (
-    <>
-      {isDesktop ? (
-        <HomeDesktop
-          searchText={searchText}
-          setSearchText={setSearchText}
-          fetchEnhancedSuggestions={fetchEnhancedSuggestions}
-          handleSearch={handleSearch}
-          checkIn={checkIn}
-          setCheckIn={setCheckIn}
-          checkOut={checkOut}
-          setCheckOut={setCheckOut}
-          guests={guests}
-          setGuests={setGuests}
-          selectedTab={selectedTab}
-          setSelectedTab={setSelectedTab}
-          enableGeocoding={enableGeocoding}
-          isLoggedIn={isLoggedIn}
-          setShowLoginModal={setShowLoginModal}
-          history={ionRouter}
-          error={error}
-          showAlert={showAlert}
-          setShowAlert={setShowAlert}
-        />
-      ) : (
+     
         <IonPage id="main-content">
           <>
             {/* Always render the main content */}
@@ -768,10 +742,10 @@ const Home: React.FC = () => {
             onClose={() => setShowLoginModal(false)}
             userType="normal"
           />
+          <MoneyButton/>
         </IonPage>
       )}
-    </>
-  );
-};
+
+
 
 export default Home;
