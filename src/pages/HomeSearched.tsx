@@ -18,14 +18,15 @@ import {
   IonIcon,
   IonChip,
   IonToolbar,
-  IonTitle
+  IonTitle,
+  IonHeader
 } from '@ionic/react';
 import { useState, useEffect, useCallback } from 'react';
 import { locationOutline, checkmarkCircle, warningOutline } from 'ionicons/icons';
 import SearchbarWithSuggestions from '../components/SearchbarWithSuggestions';
 import { useLocation } from 'react-router-dom';
 import { createClient } from '@supabase/supabase-js';
-import ConditionalHeader from '../components/ConditionalHeader';
+import { Property as DbProperty, pricing as DbPricing, RoomDetails as DbRoomDetails, RentalAmenities as DbRentalAmenities } from '../components/DbCrud';
 
 // Supabase configuration
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
@@ -35,64 +36,12 @@ if (!supabaseUrl || !supabaseAnonKey) {
 }
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
-// Interface for Rental Amenities
-export interface RentalAmenities {
-  wifi_included?: boolean;
-  air_conditioning?: boolean;
-  in_unit_laundry?: boolean;
-  dishwasher?: boolean;
-  balcony_patio?: boolean;
-  pet_friendly?: {
-    dogs_allowed?: boolean;
-    cats_allowed?: boolean;
-  };
-  parking?: {
-    type?: 'garage' | 'carport' | 'off_street' | 'street';
-    spots?: number;
-  };
-  community_pool?: boolean;
-  fitness_center?: boolean;
-  [key: string]: any;
-}
 
-export interface Pricing {
-  id: string;
-  property_id: string;
-  price_type: string;
-  amount: number;
-  currency: string;
-  created_at: string;
-  updated_at: string | null;
-}
-
-export interface RoomDetails {
-  room_type: 'bedroom' | 'bathroom' | 'kitchen' | 'living_room' | 'dining_room' | 'other';
-  bed_types?: string[];
-  number_of_beds?: number;
-  number_of_bathrooms?: number;
-  has_ensuite?: boolean;
-  description?: string;
-  [key: string]: any;
-}
-
-// Interface for Property
-export interface Property {
-  id: string;
-  building_name: string | null;
-  address: string;
-  property_type: string | null;
-  house_rules: string | null;
-  max_guests: number | null;
-  instant_booking: boolean | null;
-  is_active: boolean | null;
-  amenities: RentalAmenities | null;
-  rooms: RoomDetails[];
-  created_at: string;
-  updated_at: string | null;
-  HomeType: string | null;
-  photos?: string[];
-  pricing?: Pricing[];
-}
+// Use types from DbCrud
+type RentalAmenities = DbRentalAmenities;
+type Pricing = DbPricing;
+type RoomDetails = DbRoomDetails;
+type Property = DbProperty;
 
 // Enhanced suggestion interface
 interface EnhancedSuggestion {
@@ -117,14 +66,16 @@ const HomeSearched: React.FC = () => {
   // Build display address string from property data
   const buildAddressString = (property: Property): string => {
     const parts = [
-      property.building_name,
+      property.title,
       property.address,
+      property.city,
+      property.state,
+      property.postal_code
     ].filter(Boolean);
-    
     return parts.join(', ');
   };
 
-  // Fetch properties from Supabase
+  // Fetch properties from Supabase (no join, just properties table)
   const fetchProperties = async (term?: string) => {
     try {
       setLoading(true);
@@ -132,16 +83,14 @@ const HomeSearched: React.FC = () => {
 
       let query = supabase
         .from('properties')
-        .select(`
-          *,
-          pricing (*)
-        `)
-        .eq('is_active', true);
+        .select('*');
+      // Only show available properties
+      query = query.eq('is_available', true);
 
       // Add search filter if term provided
       if (term && term.trim()) {
         const safeTerm = term.replace(/"/g, '""'); // Escape double quotes for PostgREST
-        query = query.or(`address.ilike."%${safeTerm}%",building_name.ilike."%${safeTerm}%",property_type.ilike."%${safeTerm}%",HomeType.ilike."%${safeTerm}%"`);
+        query = query.or(`address.ilike."%${safeTerm}%",title.ilike."%${safeTerm}%",city.ilike."%${safeTerm}%",state.ilike."%${safeTerm}%",property_type.ilike."%${safeTerm}%"`);
       }
 
       const { data: propertiesData, error } = await query;
@@ -278,20 +227,12 @@ const HomeSearched: React.FC = () => {
     setSearchTerm(term);
   }, []);
 
-  // Format price display
-  const formatPrice = (pricing?: Pricing[]) => {
-    if (!pricing || pricing.length === 0) return null;
-    
-    const dailyPrice = pricing.find(p => p.price_type === 'daily');
-    const monthlyPrice = pricing.find(p => p.price_type === 'monthly');
-    
-    if (dailyPrice) {
-      return `${dailyPrice.currency} ${dailyPrice.amount}/day`;
-    } else if (monthlyPrice) {
-      return `${monthlyPrice.currency} ${monthlyPrice.amount}/month`;
+  // Format price display (use monthly_rent from property)
+  const formatPrice = (property: Property) => {
+    if (property.monthly_rent) {
+      return `MYR ${property.monthly_rent}/month`;
     }
-    
-    return `${pricing[0].currency} ${pricing[0].amount}`;
+    return null;
   };
 
   useEffect(() => {
@@ -302,7 +243,6 @@ const HomeSearched: React.FC = () => {
     <IonPage>
       <IonHeader>
         <IonToolbar color="primary">
-          <IonTitle>Search Results</IonTitle>
         </IonToolbar>
       </IonHeader>
       
@@ -357,72 +297,55 @@ const HomeSearched: React.FC = () => {
                               <h2 style={{ margin: 0, marginRight: '8px' }}>
                                 {buildAddressString(property) || `Property ${property.id}`}
                               </h2>
-                              {property.is_active && (
+                              {property.is_available && (
                                 <IonChip color="success">
                                   <IonIcon icon={checkmarkCircle} />
-                                  <IonLabel>Active</IonLabel>
+                                  <IonLabel>Available</IonLabel>
                                 </IonChip>
                               )}
                             </div>
-                            
                             <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
                               {property.property_type && (
                                 <IonChip color="medium">
                                   <IonLabel>{property.property_type}</IonLabel>
                                 </IonChip>
                               )}
-                              {property.HomeType && (
-                                <IonChip color="tertiary">
-                                  <IonLabel>{property.HomeType}</IonLabel>
-                                </IonChip>
-                              )}
+                              <IonChip color="tertiary">
+                                <IonLabel>{property.size_sqft} sqft</IonLabel>
+                              </IonChip>
+                              <IonChip color="tertiary">
+                                <IonLabel>{property.bathrooms} bath</IonLabel>
+                              </IonChip>
                             </div>
 
-                            {formatPrice(property.pricing) && (
+                            {formatPrice(property) && (
                               <p style={{ margin: '4px 0', fontSize: '16px', fontWeight: 'bold', color: 'var(--ion-color-success)' }}>
-                                {formatPrice(property.pricing)}
+                                {formatPrice(property)}
                               </p>
                             )}
                             
-                            {property.max_guests && (
-                              <p style={{ margin: '4px 0', fontSize: '14px', color: 'var(--ion-color-medium)' }}>
-                                <IonIcon icon={locationOutline} style={{ marginRight: '4px' }} />
-                                Max {property.max_guests} guests
-                              </p>
-                            )}
-
-                            {property.instant_booking && (
-                              <p style={{ margin: '4px 0', fontSize: '14px', color: 'var(--ion-color-primary)' }}>
-                                ⚡ Instant Booking Available
-                              </p>
-                            )}
+                            {/* No max_guests or instant_booking in schema */}
                             
-                            {property.amenities && (
+                            {property.amenities && typeof property.amenities === 'object' && (
                               <div style={{ marginTop: '8px', fontSize: '13px', color: 'var(--ion-color-text)' }}>
                                 <p style={{ margin: '4px 0', fontWeight: 'bold' }}>Amenities:</p>
                                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
-                                  {property.amenities.wifi_included && <IonChip size="small" color="light">Wi-Fi</IonChip>}
-                                  {property.amenities.air_conditioning && <IonChip size="small" color="light">A/C</IonChip>}
-                                  {property.amenities.in_unit_laundry && <IonChip size="small" color="light">Laundry</IonChip>}
-                                  {property.amenities.dishwasher && <IonChip size="small" color="light">Dishwasher</IonChip>}
-                                  {property.amenities.balcony_patio && <IonChip size="small" color="light">Balcony</IonChip>}
-                                  {property.amenities.community_pool && <IonChip size="small" color="light">Pool</IonChip>}
-                                  {property.amenities.fitness_center && <IonChip size="small" color="light">Gym</IonChip>}
-                                  {property.amenities.pet_friendly?.dogs_allowed && <IonChip size="small" color="light">Dog Friendly</IonChip>}
-                                  {property.amenities.pet_friendly?.cats_allowed && <IonChip size="small" color="light">Cat Friendly</IonChip>}
-                                  {property.amenities.parking && <IonChip size="small" color="light">Parking</IonChip>}
+                                  {Object.entries(property.amenities).map(([key, value]) =>
+                                    value ? (
+                                      <IonChip color="light" key={key}>{key.replace(/_/g, ' ')}</IonChip>
+                                    ) : null
+                                  )}
                                 </div>
                               </div>
                             )}
 
-                            {property.rooms && property.rooms.length > 0 && (
+                            {property.bedrooms && typeof property.bedrooms === 'object' && (
                               <div style={{ marginTop: '8px', fontSize: '13px', color: 'var(--ion-color-text)' }}>
-                                <p style={{ margin: '4px 0', fontWeight: 'bold' }}>Rooms:</p>
+                                <p style={{ margin: '4px 0', fontWeight: 'bold' }}>Bedrooms:</p>
                                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
-                                  {property.rooms.map((room, index) => (
-                                    <IonChip key={index} size="small" color="secondary">
-                                      {room.room_type.replace('_', ' ')}
-                                      {room.number_of_beds && ` (${room.number_of_beds} beds)`}
+                                  {Object.entries(property.bedrooms).map(([key, value], idx) => (
+                                    <IonChip color="secondary" key={idx}>
+                                      {key.replace(/_/g, ' ')}: {typeof value === 'object' ? JSON.stringify(value) : value}
                                     </IonChip>
                                   ))}
                                 </div>
