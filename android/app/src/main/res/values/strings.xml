@@ -4,4 +4,5 @@
     <string name="title_activity_main">rental-map</string>
     <string name="package_name">rental.map</string>
     <string name="custom_url_scheme">rental.map</string>
+    <string name="WEB_APPLICATION_CLIENT_ID">658912433985-cdositugverkfgh2hdk4rgt6c3ptocvu.apps.googleusercontent.com</string>
 </resources>

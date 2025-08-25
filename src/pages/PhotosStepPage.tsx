@@ -29,7 +29,8 @@ import { camera, trashOutline, videocamOutline, close } from 'ionicons/icons';
 import supabase from '../supabaseConfig';
 import { RentalAmenities, RoomDetails, pricing } from '../components/DbCrud';
 import NavigationButtons from '../components/NavigationButtons';
-import { v4 as uuidv4 } from 'uuid'; // Import uuid
+import { v4 as uuidv4 } from 'uuid';
+import { savePropertyDraft } from '../services/DraftService';
 
 interface Property {
   id: string;
@@ -52,36 +53,44 @@ interface Property {
 
 const getProperty = (): Property => {
   const saved = localStorage.getItem('Property');
+  let parsed: Partial<Property> = {}; // Use Partial to allow missing fields initially
+
   if (saved) {
     try {
-      const parsed = JSON.parse(saved);
-      if (!parsed.photos || !Array.isArray(parsed.photos)) {
-        parsed.photos = [];
-      }
-      if (!parsed.videos || !Array.isArray(parsed.videos)) {
-        parsed.videos = [];
-      }
-      return parsed;
+      parsed = JSON.parse(saved);
     } catch (e) {
       console.error("Failed to parse Property from localStorage, initializing new.", e);
+      // If parsing fails, treat as if no saved data exists
+      parsed = {};
     }
   }
+
+  // Ensure photos and videos are arrays
+  if (!parsed.photos || !Array.isArray(parsed.photos)) {
+    parsed.photos = [];
+  }
+  if (!parsed.videos || !Array.isArray(parsed.videos)) {
+    parsed.videos = [];
+  }
+
+  // Merge with default structure, preserving existing values
   return {
-    id: '',
-    building_name: null,
-    address: '',
-    property_type: null,
-    house_rules: null,
-    max_guests: null,
-    instant_booking: null,
-    is_active: null,
-    amenities: {},
-    rooms: [],
-    photos: [],
-    videos: [],
-    created_at: new Date().toISOString(),
-    updated_at: null,
-    HomeType: null,
+    id: parsed.id || '', // Ensure ID is always present
+    building_name: parsed.building_name ?? null,
+    address: parsed.address ?? '',
+    property_type: parsed.property_type ?? null, // Preserve existing or default to null
+    house_rules: parsed.house_rules ?? null,
+    max_guests: parsed.max_guests ?? null,
+    instant_booking: parsed.instant_booking ?? null,
+    is_active: parsed.is_active ?? null,
+    amenities: parsed.amenities ?? {},
+    rooms: parsed.rooms ?? [],
+    pricing: parsed.pricing, // Preserve existing pricing
+    videos: parsed.videos,
+    photos: parsed.photos,
+    created_at: parsed.created_at || new Date().toISOString(),
+    updated_at: parsed.updated_at ?? null,
+    HomeType: parsed.HomeType ?? null, // Preserve existing or default to null
   };
 };
 
@@ -107,35 +116,29 @@ const PhotosStepPage: React.FC = () => {
   }, []);
 
   const saveMediaToDraft = async (updatedPhotos: string[], updatedVideos: string[]) => {
-    const draft = getProperty();
-    const updatedDraft: Property = {
-      ...draft,
-      photos: updatedPhotos,
-      videos: updatedVideos,
-      updated_at: new Date().toISOString(),
-    };
-    localStorage.setItem('Property', JSON.stringify(updatedDraft));
+    try {
+      const draft = getProperty();
+      const updatedDraft: Property = {
+        ...draft,
+        photos: updatedPhotos,
+        videos: updatedVideos,
+      };
 
-    if (updatedDraft.id) {
-      try {
-        const { error } = await supabase
-          .from('rental_drafts')
-          .upsert([{
-            id: updatedDraft.id,
-            photos: updatedPhotos,
-            videos: updatedVideos,
-            updated_at: updatedDraft.updated_at,
-          }], { onConflict: 'id' });
+      // Use the DraftService to save
+      await savePropertyDraft({
+        ...updatedDraft,
+        id: draft.id,
+        photos: updatedPhotos,
+        videos: updatedVideos,
+      });
 
-        if (error) {
-          console.error('Error saving media to Supabase:', error);
-        }
-      } catch (error: any) {
-        console.error('Error saving media to Supabase:', error.message || error);
-      }
+      setToastMessage('Media updated successfully!');
+      setShowToast(true);
+    } catch (error) {
+      console.error('Error saving media to draft:', error);
+      setToastMessage('Error saving media. Please try again.');
+      setShowToast(true);
     }
-    setToastMessage('Media updated successfully!');
-    setShowToast(true);
   };
 
   const handleFileChange = async (filesToUpload: FileList | null) => {
@@ -177,9 +180,10 @@ const PhotosStepPage: React.FC = () => {
           .getPublicUrl(filePath);
 
         return { url: publicUrl, isVideo };
-      } catch (error: any) {
+      } catch (error) {
         console.error('Upload error:', error);
-        setToastMessage(`Upload failed: ${error.message}`);
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+        setToastMessage(`Upload failed: ${errorMessage}`);
         return null;
       }
     });
@@ -214,8 +218,8 @@ const PhotosStepPage: React.FC = () => {
 
   const confirmDelete = async () => {
     if (showDeleteAlert !== null) {
-      let updatedPhotos = [...photos];
-      let updatedVideos = [...videos];
+      const updatedPhotos = [...photos];
+      const updatedVideos = [...videos];
 
       if (showDeleteAlert.isVideo) {
         updatedVideos.splice(showDeleteAlert.index, 1);
@@ -243,10 +247,10 @@ const PhotosStepPage: React.FC = () => {
     ionRouter.push('/pricing', 'back');
   };
 
-  const isVideoUrl = (url: string) => {
+  const isVideoUrl = (url: string): boolean => {
     const videoExtensions = ['.mp4', '.mov', '.avi', '.mkv', '.webm'];
     const fileExtension = url.split('.').pop()?.toLowerCase();
-    return fileExtension && videoExtensions.includes(`.${fileExtension}`);
+    return !!fileExtension && videoExtensions.includes(`.${fileExtension}`);
   };
 
   return (
@@ -422,7 +426,7 @@ const PhotosStepPage: React.FC = () => {
         onNext={handleNext}
         onBack={handleBack}
         backPath="/pricing"
-        nextPath="/finalReview"
+        showNextButton={true}
       />
       <IonAlert
         isOpen={showDeleteAlert !== null}

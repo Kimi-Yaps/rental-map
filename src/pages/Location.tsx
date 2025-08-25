@@ -1,4 +1,4 @@
-// src/pages/LocationStepPage.tsx
+// src/pages/Location.tsx
 import React, { useState, useCallback, useEffect, Suspense } from "react";
 import {
   IonContent,
@@ -60,12 +60,12 @@ const MapSkeleton = () => (
 );
 
 // --- Main Component ---
-const LocationStepPage: React.FC = () => {
+const Location: React.FC = () => {
   const ionRouter = useIonRouter();
   // Default to a central Malaysian location (e.g., Kuala Lumpur)
   const [markerPosition, setMarkerPosition] = useState<LatLng>({ lat: 2.430917, lng: 103.836113 });
   const [searchQuery, setSearchQuery] = useState<string>("");
-  const [address, setAddress] = useState<string>(""); // CHANGED: Start with empty address
+  const [address, setAddress] = useState<string>("");
   const [suggestions, setSuggestions] = useState<GeoapifyFeature[]>([]);
   const [showSuggestions, setShowSuggestions] = useState<boolean>(false);
   const [isSearching, setIsSearching] = useState<boolean>(false);
@@ -108,7 +108,7 @@ const LocationStepPage: React.FC = () => {
     }
   }, []);
 
-  // MODIFIED: Load localStorage data on component mount - no default address fetching
+  // Load localStorage data on component mount
   useEffect(() => {
     const loadDraftData = () => {
       try {
@@ -123,7 +123,7 @@ const LocationStepPage: React.FC = () => {
             setMarkerPosition(draft.location);
             setAddress(draft.address);
             setManualAddress(draft.address);
-            setSearchQuery(''); // Don't populate search from draft
+            setSearchQuery('');
             setAddressLocked(true);
             return;
           }
@@ -138,27 +138,23 @@ const LocationStepPage: React.FC = () => {
     };
 
     const setInitialMapPosition = async () => {
-      try {
-        // Try browser geolocation first for map positioning only
-        const currentPosition = await GeoapifyGeocodingService.getCurrentPosition();
-        if (currentPosition) {
-          setMarkerPosition(currentPosition);
-          console.log('Using browser geolocation for map position:', currentPosition);
-          return;
-        }
-        
-        // Fallback to default location if browser geolocation fails
-        const defaultLocation = { lat: 2.430917, lng: 103.836113 }; // Mersing coordinates
-        setMarkerPosition(defaultLocation);
-        console.log('Using default location for map position:', defaultLocation);
+      let initialPosition: LatLng = { lat: 2.430917, lng: 103.836113 }; // Default to Mersing
 
+      try {
+        const currentPosition = await GeoapifyGeocodingService.getCurrentPosition();
+        if (currentPosition && typeof currentPosition.lat === 'number' && !isNaN(currentPosition.lat) &&
+            typeof currentPosition.lng === 'number' && !isNaN(currentPosition.lng)) {
+          initialPosition = currentPosition;
+          console.log('Using browser geolocation for map position:', initialPosition);
+        } else {
+          console.log('Browser geolocation failed or returned invalid data. Using default location.');
+        }
       } catch (error) {
-        console.warn('Error getting initial location:', error);
-        // Final fallback to default location
-        const defaultLocation = { lat: 2.430917, lng: 103.836113 }; // Mersing coordinates
-        setMarkerPosition(defaultLocation);
-        console.log('Using default location for map position:', defaultLocation);
+        console.warn('Error getting initial location from browser geolocation:', error);
+        console.log('Falling back to default location.');
       }
+      
+      setMarkerPosition(initialPosition);
     };
 
     loadDraftData();
@@ -180,16 +176,11 @@ const LocationStepPage: React.FC = () => {
       address: finalAddress,
       searchQuery: searchQuery,
       updated_at: new Date().toISOString(),
-      latitude: markerPosition.lat,
-      longitude: markerPosition.lng,
     };
 
     localStorage.setItem('Property', JSON.stringify(updatedDraft));
     setProperty(updatedDraft);
   }, [markerPosition, address, searchQuery, manualAddress, manualMode]);
-
-  // REMOVED: Automatic reverse geocoding on marker position change
-  // The useEffect that automatically fetched address when markerPosition changed has been removed
 
   // Debounced search handler for Geoapify autocomplete
   const fetchSuggestions = useCallback(async (query: string) => {
@@ -245,10 +236,19 @@ const LocationStepPage: React.FC = () => {
       const address_line1 = properties.address_line1 || properties.formatted || '';
 
       // Construct a more reliable address from parts
-      const finalAddress = street && housenumber ? `${housenumber} ${street}` : address_line1;
+      const components = [
+        street && housenumber ? `${housenumber} ${street}` : address_line1,
+        properties.city,
+        properties.state,
+        properties.postcode,
+        properties.country
+      ].filter(Boolean);
 
-      setSearchQuery(properties.formatted);
-      setAddress(finalAddress);
+      const finalAddress = components[0]; // Street address only
+      const fullAddress = components.join(', '); // Complete address
+
+      setSearchQuery(fullAddress); // Show full address in searchbar
+      setAddress(finalAddress); // Keep base address for display
       setManualAddress(finalAddress);
       setMarkerPosition(newPosition);
       setShowSuggestions(false);
@@ -261,13 +261,11 @@ const LocationStepPage: React.FC = () => {
       const updatedDraft = {
         ...currentDraft,
         address: finalAddress,
-        city: properties.city || '',
-        state: properties.state || '',
-        postal_code: properties.postcode || '',
-        country: properties.country || '',
+        city: properties.city ?? '',
+        state: properties.state ?? '',
+        postal_code: properties.postcode ?? '',
+        country: properties.country ?? '',
         location: newPosition,
-        latitude: newPosition.lat,
-        longitude: newPosition.lng
       };
       localStorage.setItem('Property', JSON.stringify(updatedDraft));
 
@@ -301,9 +299,10 @@ const LocationStepPage: React.FC = () => {
           properties.country
         ].filter(Boolean).join(', ');
 
+        // Update both the searchbar and selected location with the full address
         setAddress(streetAddress);
         setManualAddress(streetAddress);
-        setSearchQuery(properties.formatted);
+        setSearchQuery(full_address); // Use the full address in the searchbar
         setAddressLocked(true);
         setToastMessage("Complete address updated from map location.");
         setShowToast(true);
@@ -313,15 +312,13 @@ const LocationStepPage: React.FC = () => {
         const updatedDraft = {
           ...currentDraft,
           address: streetAddress,
-          city: properties.city || '',
-          state: properties.state || '',
-          postal_code: properties.postcode || '',
-          country: properties.country || '',
+          city: properties.city ?? '',
+          state: properties.state ?? '',
+          postal_code: properties.postcode ?? '',
+          country: properties.country ?? '',
           location: location,
           full_address: full_address,
           formatted_address: properties.formatted || '',
-          latitude: location.lat,
-          longitude: location.lng
         };
         localStorage.setItem('Property', JSON.stringify(updatedDraft));
       } else {
@@ -337,7 +334,7 @@ const LocationStepPage: React.FC = () => {
     }
   }, [manualMode]);
 
-  // MODIFIED: Handle location change from map
+  // Handle location change from map
   const handleLocationChange = useCallback(async (location: LatLng) => {
     console.log('Location changed to:', location);
 
@@ -432,7 +429,7 @@ const LocationStepPage: React.FC = () => {
   }, []);
 
   const handleNextStep = () => {
-    // ADDED: Validation to ensure address is provided before proceeding
+    // Validation to ensure address is provided before proceeding
     const finalAddress = manualMode ? manualAddress : address;
     if (!finalAddress || finalAddress.trim() === "") {
       setToastMessage("Please provide a property address before continuing.");
@@ -441,19 +438,20 @@ const LocationStepPage: React.FC = () => {
     }
 
     saveCurrentStepToDraft();
-    ionRouter.push('/amenities', 'forward');
+    ionRouter.push('/rooms', 'forward');
   };
 
   const handleBack = () => {
     // No specific action needed here, as the NavigationButtons component handles the alert and navigation
   };
 
-  // MODIFIED: Get the display address - show placeholder when empty
+  // Get the display address - show placeholder when empty
   const getDisplayAddress = (): string => {
     if (manualMode) {
       return manualAddress || "Enter your property address manually";
     }
-    return address || "Search for your property location or click on the map";
+    // Use the search query if available, otherwise fall back to address
+    return searchQuery || address || "Search for your property location or click on the map";
   };
 
   return (
@@ -665,4 +663,4 @@ const LocationStepPage: React.FC = () => {
   );
 };
 
-export default LocationStepPage;
+export default Location;

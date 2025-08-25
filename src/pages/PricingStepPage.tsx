@@ -36,12 +36,7 @@ import supabase from '../supabaseConfig';
 import Stepper from '../components/Stepper';
 import NavigationButtons from '../components/NavigationButtons';
 
-// Interface for pricing details
-interface PricingDetails {
-  price_type: 'monthly_rent' | 'security_deposit' | 'utilities_deposit' | 'other';
-  amount: number;
-  currency: string;
-}
+import { PriceType } from '../components/DbCrud';
 
 // Helper to get or initialize a rental draft from localStorage
 const getProperty = (): any => {

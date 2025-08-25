@@ -23,17 +23,19 @@ import { useHistory } from 'react-router-dom';
 import { 
   homeOutline, 
   businessOutline, 
-  diamondOutline
+  diamondOutline,
+  checkmarkCircleOutline // Import checkmark icon
 } from 'ionicons/icons';
 import NavigationButtons from '../components/NavigationButtons';
-import supabase from '../supabaseConfig'; // Import supabase
+import { PropertyType as DbPropertyType } from '../components/DbCrud';
 
-// Property type conversion mappings
-const PROPERTY_TYPE_MAPPING = {
-  'Home': 'home',
-  'Hotel': 'hotel',
-  'Unique': 'unique'
-} as const;
+// Property type mapping to database types
+const PROPERTY_TYPE_MAPPING: Record<string, DbPropertyType> = {
+  'Home': 'house',
+  'Apartment': 'apartment',
+  'Condo': 'condo',
+  'Studio': 'studio'
+};
 
 // Conversion function
 const convertPropertyTypeForDB = (displayType: string): string => {
@@ -48,147 +50,118 @@ const PropertyType: React.FC = () => {
   const history = useHistory();
 
   useEffect(() => {
-    const checkUserRole = async () => {
-      setLoading(true);
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session) {
-          setToastMessage('You must be logged in to access this page.');
-          setShowToast(true);
-          history.replace('/login'); // Redirect to login if not logged in
-          return;
-        }
-
-        const { data: profiles, error } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', session.user.id);
-
-        if (error) {
-          console.error('Error fetching profile:', error.message);
-          setToastMessage('Error fetching user profile.');
-          setShowToast(true);
-          history.replace('/home'); // Redirect on profile fetch error
-          return;
-        }
-
-        if (!profiles || profiles.length === 0) {
-          console.error('No profile found for this user.');
-          setToastMessage('Your profile could not be found. Please try logging in again.');
-          setShowToast(true);
-          // Log out the user to force a new login, which should create the profile.
-          await supabase.auth.signOut();
-          history.replace('/login');
-          return;
-        }
-
-        if (profiles.length > 1) {
-          console.warn('Multiple profiles found for this user. Using the first one.');
-        }
-
-        const profile = profiles[0];
-
-        if (profile && profile.user_type === 'property_owner') {
-          // User is a landlord, proceed with loading property type
-          const saved = localStorage.getItem('Property');
-          if (saved) {
-            try {
-              const draft = JSON.parse(saved);
-              if (draft.property_type) {
-                setPropertyType(draft.property_type);
-              }
-            } catch {
-              localStorage.removeItem('Property');
-            }
+    setLoading(true);
+    try {
+      const saved = localStorage.getItem('Property');
+      if (saved) {
+        const draft = JSON.parse(saved);
+        console.log("Loaded draft from localStorage:", draft); // Added debug logging
+        if (draft.property_type) {
+          // Convert database type back to display type
+          const displayType = Object.entries(PROPERTY_TYPE_MAPPING)
+            .find(([, dbType]) => dbType === draft.property_type)?.[0];
+          if (displayType) {
+            setPropertyType(displayType);
+            console.log("Property type loaded from 'property_type':", displayType); // Added debug logging
           }
-        } else {
-          setToastMessage('Access Denied: Only landlords can list properties.');
-          setShowToast(true);
-          history.replace('/home'); // Redirect if not a landlord
+        } else if (draft.HomeType) { // Added for backward compatibility
+          const displayType = Object.entries(PROPERTY_TYPE_MAPPING)
+            .find(([, dbType]) => dbType === draft.HomeType)?.[0];
+          if (displayType) {
+            setPropertyType(displayType);
+            console.log("Property type loaded from 'HomeType':", displayType); // Added debug logging
+          }
         }
-      } catch (error) { // Remove 'any' type
-        console.error('Authentication or profile check failed:', (error as Error).message);
-        setToastMessage('An error occurred during authentication.');
-        setShowToast(true);
-        history.replace('/login');
-      } finally {
-        setLoading(false);
+      } else {
+        console.log("No 'Property' found in localStorage on load."); // Added debug logging
       }
-    };
-
-    checkUserRole();
-  }, [history]);
+    } catch (error) {
+      console.error('Error loading property from localStorage:', error); // Improved error logging
+      localStorage.removeItem('Property');
+      setToastMessage('Error loading saved property data');
+      setShowToast(true);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   const handleSelect = (type: string) => {
     setPropertyType(type);
     
-    // Convert for database and log conversion
-    const dbValue = convertPropertyTypeForDB(type);
-    console.log(`Property Type Selected - Display: ${type} → Database: ${dbValue}`);
+    // Convert the display type to our database type
+    const dbPropertyType = PROPERTY_TYPE_MAPPING[type];
     
-    // Save to localStorage for all property types
+    // Save to localStorage
     const draft = JSON.parse(localStorage.getItem('Property') || '{}');
-    draft.property_type = type; // Save directly to property_type
-    if (type !== 'Home') {
-      delete draft.HomeType; // Use HomeType instead of HomeTypesCategory
-    }
-    draft.lastUpdated = new Date().toISOString();
+    draft.property_type = dbPropertyType;
+    draft.HomeType = dbPropertyType; // Keep for backward compatibility with FinalReviewPage
+    draft.updated_at = new Date().toISOString();
     localStorage.setItem('Property', JSON.stringify(draft));
     
-    setToastMessage(`${type} property type selected`);
+    setToastMessage(`${type} selected as your property type`);
     setShowToast(true);
-    console.log("Property type selected:", type);
+    console.log("Property type selected:", type, "DB value:", dbPropertyType);
+    console.log("Saved to localStorage:", JSON.stringify(draft)); // Added debug logging
   };
 
   const handleBack = () => {
-    // Clear localStorage when going back
-    localStorage.removeItem('Property');
-    setToastMessage('Draft cleared');
-    setShowToast(true);
-    
-    console.log("localStorage cleared - going back to /landlord");
+    // When going back to landlord home, we don't need to clear the draft
+    // as the user might want to continue later
     history.replace('/landlord');
   };
 
   const handleNext = () => {
     if (!propertyType) return;
-    
-    // Navigate based on property type
-    switch (propertyType) {
-      case 'Home':
-        history.replace('/homeBestFit');
-        break;
-      case 'Hotel':
-        history.push('/HotelRoomTypes');
-        break;
-      case 'Unique':
-        history.push('/UniquePropertyDescription');
-        break;
-      default:
-        console.log("Unknown property type:", propertyType);
+
+    // Save to localStorage if not already saved
+    const draft = JSON.parse(localStorage.getItem('Property') || '{}');
+    if (!draft.property_type) {
+      draft.property_type = PROPERTY_TYPE_MAPPING[propertyType];
+      draft.updated_at = new Date().toISOString();
+      localStorage.setItem('Property', JSON.stringify(draft));
     }
+    
+    // Define the step order for all property types
+    const stepOrder = [
+      '/location',
+      '/amenities',
+      '/rooms',
+      '/photos',
+      '/pricing',
+      '/review'
+    ];
+
+    // Move to the first step - location for all property types
+    history.push(stepOrder[0]);
   };
 
   // Property type options with descriptions
   const propertyOptions = [
     {
-      type: 'Home',
-      title: 'Home-Type Property',
-      description: 'Houses, apartments, condos, and residential properties',
+      type: 'House',
+      title: 'House',
+      description: 'Single-family homes, duplexes, and detached houses',
       icon: homeOutline,
       color: 'success'
     },
     {
-      type: 'Hotel',
-      title: 'Hotel-Type Property', 
-      description: 'Hotels, motels, resorts, and commercial accommodations',
+      type: 'Apartment',
+      title: 'Apartment', 
+      description: 'Units in apartment buildings or high-rise complexes',
       icon: businessOutline,
       color: 'primary'
     },
     {
-      type: 'Unique',
-      title: 'Unique-Type Property',
-      description: 'Treehouses, boats, castles, and extraordinary spaces',
+      type: 'Condo',
+      title: 'Condominium',
+      description: 'Individually owned units in shared buildings',
+      icon: businessOutline,
+      color: 'tertiary'
+    },
+    {
+      type: 'Studio',
+      title: 'Studio',
+      description: 'Combined living and sleeping spaces in one room',
       icon: diamondOutline,
       color: 'secondary'
     }
@@ -289,6 +262,7 @@ const PropertyType: React.FC = () => {
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                       <IonIcon icon={propertyOptions.find(opt => opt.type === propertyType)?.icon} color="primary" />
                       <strong>Selected: {propertyType}-Type Property</strong>
+                      <IonIcon icon={checkmarkCircleOutline} color="success" style={{ marginLeft: 'auto' }} /> {/* Added checkmark */}
                     </div>
                     <p style={{ margin: '8px 0 0 0', fontSize: '12px' }}>
                       Database value: {convertPropertyTypeForDB(propertyType)}

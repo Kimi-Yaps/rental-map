@@ -186,7 +186,7 @@ export class GeoapifyGeocodingService {
     }
   }
 
-  static async reverseGeocode(lat: number, lng: number): Promise<string> {
+  static async reverseGeocode(lat: number, lng: number): Promise<GeoapifyFeature | null> {
     if (!this.validateCoordinates(lat, lng)) {
       console.error(`Invalid coordinates for reverse geocoding: lat=${lat}, lng=${lng}`);
       throw new Error('Invalid coordinates provided');
@@ -213,17 +213,14 @@ export class GeoapifyGeocodingService {
       console.log('Geoapify Reverse Geocode Response:', data);
 
       if (data.features && data.features.length > 0) {
-        const feature = data.features[0];
-        return feature.properties.formatted || `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+        return data.features[0];
       } else {
         console.warn('No reverse geocoding results found for:', { lat, lng });
-        return `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+        return null;
       }
     } catch (error: any) {
       console.error("Geoapify Reverse geocoding error:", error.message || error);
-      const fallbackAddress = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
-      console.log('Using coordinate fallback:', fallbackAddress);
-      return fallbackAddress;
+      throw new Error(`Reverse geocoding failed: ${error.message || 'Unknown error'}`);
     }
   }
 

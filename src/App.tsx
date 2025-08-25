@@ -45,6 +45,9 @@ const AmenitiesStepPage = React.lazy(() => import('./pages/AmenitiesStepPage'));
 const FinalReviewPage = React.lazy(() => import('./pages/FinalReviewPage'));
 const Home = React.lazy(() => import('./pages/Home'));
 const LoginPage = React.lazy(() => import('./pages/LoginPage'));
+const LoginSelector = React.lazy(() => import('./pages/LoginSelector'));
+const TenantLoginPage = React.lazy(() => import('./pages/TenantLoginPage'));
+const LandlordLoginPage = React.lazy(() => import('./pages/LandlordLoginPage'));
 const Profile = React.lazy(() => import('./pages/Profile'));
 const TenantProfile = React.lazy(() => import('./pages/TenantProfile'));
 const LandlordProfile = React.lazy(() => import('./pages/LandlordProfile'));
@@ -53,11 +56,11 @@ const HomeBestFit = React.lazy(() => import('./pages/HomeBestFit'));
 const HomeSearched = React.lazy(() => import('./pages/HomeSearched'));
 const LandLordHome = React.lazy(() => import('./pages/landlordHome'));
 const calendarMobile = React.lazy(() => import('./pages/calendarMobile'));
-const LocationStepPage = React.lazy(() => import('./pages/LocationStepPage'));
+const Location = React.lazy(() => import('./pages/Location'));
 const PhotosStepPage = React.lazy(() => import('./pages/PhotosStepPage'));
-const PricingStepPage = React.lazy(() => import('./pages/PricingStepPage'));
+const Pricing = React.lazy(() => import('./pages/Pricing'));
 const PropertyType = React.lazy(() => import('./pages/PropertyType'));
-const RoomsStepPage = React.lazy(() => import('./pages/RoomsStepPage'));
+const Rooms = React.lazy(() => import('./pages/Rooms'));
 const PaymentInsert = React.lazy(() => import('./pages/PaymentInsert'));
 
 // Enhanced setup with better performance
@@ -93,8 +96,14 @@ const App: React.FC = () => (
         >
           {/* Default redirect for root path */}
           <Route exact path="/">
-            <Redirect to="/home" />
+            <Redirect to="/loginselector" />
           </Route>
+
+          {/* Authentication */}
+          <Route exact path="/loginselector" component={LoginSelector} />
+          <Route exact path="/tenant-login" component={TenantLoginPage} />
+          <Route exact path="/landlord-login" component={LandlordLoginPage} />
+          <Route exact path="/login" component={LoginPage} />
 
           {/* payment Gateway */}
           <Route exact path="/payment" component={PaymentInsert} />
@@ -105,10 +114,10 @@ const App: React.FC = () => (
           
           {/* Property listing flow */}
           <Route exact path="/propertyType" component={PropertyType} />
-          <Route exact path="/location" component={LocationStepPage} />
+          <Route exact path="/location" component={Location} />
           <Route exact path="/amenities" component={AmenitiesStepPage} />
-          <Route exact path="/rooms" component={RoomsStepPage} />
-          <Route exact path="/pricing" component={PricingStepPage} />
+          <Route exact path="/rooms" component={Rooms} />
+          <Route exact path="/pricing" component={Pricing} />
           <Route exact path="/photos" component={PhotosStepPage} />
           <Route exact path="/finalReview" component={FinalReviewPage} />
 
@@ -118,9 +127,6 @@ const App: React.FC = () => (
           <Route exact path="/homeSearched" component={HomeSearched} />
           <Route exact path="/calendarMobile" component={calendarMobile} />
           <Route exact path="/searchSuggestions" component={SearchSuggestionsPage} />
-          
-          {/* Authentication */}
-          <Route exact path="/login" component={LoginPage} />
           
           {/* Profile Routes */}
           <Route exact path="/profile" component={Profile} />

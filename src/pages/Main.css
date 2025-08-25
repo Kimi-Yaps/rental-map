@@ -530,3 +530,23 @@ ion-content {
     --padding-end: 3rem;
   }
 }
+
+/* Ensure floating labels and input text start from the left for all floating IonInputs */
+ion-input[label-placement="floating"] {
+  --padding-start: 16px; /* Default padding for all floating inputs */
+  --padding-end: 16px;
+}
+
+ion-input[label-placement="floating"].ion-focused::part(label),
+ion-input[label-placement="floating"].has-value::part(label) {
+  transform: translateY(-100%) translateX(0) scale(0.75);
+  left: var(--padding-start, 16px);
+  right: auto;
+  transform-origin: left top;
+}
+
+ion-input[label-placement="floating"]::part(label) {
+  left: var(--padding-start, 16px);
+  right: auto;
+  transform-origin: left top;
+}

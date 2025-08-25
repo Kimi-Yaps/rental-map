@@ -30,8 +30,7 @@ import {
   accessibilityOutline,
   pawOutline
 } from 'ionicons/icons';
-import { Property, RentalAmenities } from "../supabaseClient";
-import supabase from '../supabaseConfig';
+import { Property, RentalAmenities, PropertyType } from "../components/DbCrud";
 import Stepper from '../components/Stepper';
 import NavigationButtons from '../components/NavigationButtons';
 import ConditionalHeader from '../components/ConditionalHeader';
@@ -44,37 +43,46 @@ const getProperty = (): Property => {
       return JSON.parse(saved);
     } catch (e) {
       console.error("Failed to parse Property from localStorage, initializing new.", e);
-      return { 
-        id: '',
-        building_name: null,
-        address: '',
-        property_type: null,
-        house_rules: null,
-        max_guests: null,
-        instant_booking: null,
-        is_active: null,
-        amenities: { parking: { spots: 1 } },
-        created_at: new Date().toISOString(),
-        updated_at: null
-      };
+      return initializeNewProperty();
     }
   }
-  return { 
-    id: '',
-    building_name: null,
+  return initializeNewProperty();
+};
+
+const initializeNewProperty = (): Property => {
+  return {
+    id: `draft_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+    title: '',
+    description: '',
     address: '',
-    property_type: null,
-    house_rules: null,
-    max_guests: null,
-    instant_booking: null,
-    is_active: null,
-    amenities: { parking: { spots: 1 } },
+    city: '',
+    state: '',
+    postal_code: '',
+    country: '',
+    property_type: 'apartment',
+    bathrooms: 0,
+    size_sqft: 0,
+    monthly_rent: 0,
+    deposit_amount: 0,
+    amenities: {
+      parking: {
+        available: true,
+        details: 'Parking available',
+        quantity: 1
+      }
+    },
     created_at: new Date().toISOString(),
     updated_at: null
   };
 };
 
-const amenityOptions = [
+interface AmenityOption {
+  key: string;
+  label: string;
+  icon: string;
+}
+
+const amenityOptions: AmenityOption[] = [
   { key: 'wifi_included', label: 'Wifi', icon: wifiOutline },
   { key: 'air_conditioning', label: 'Air Conditioning', icon: businessOutline },
   { key: 'in_unit_laundry', label: 'In-Unit Laundry', icon: leafOutline },
@@ -96,17 +104,22 @@ const AmenitiesStepPage: React.FC = () => {
     setAmenities(draft.amenities || {});
   }, []);
 
-  const handleAmenityChange = (key: keyof RentalAmenities) => {
+  const handleAmenityChange = (key: string) => {
     setAmenities(prevAmenities => {
       const newAmenities = { ...prevAmenities };
 
       if (key === 'pet_friendly') {
         newAmenities.pet_friendly = {
           ...newAmenities.pet_friendly,
+          available: !newAmenities.pet_friendly?.available,
           pets_allowed: !newAmenities.pet_friendly?.pets_allowed,
+          details: 'Pets allowed'
         };
       } else {
-        (newAmenities as any)[key] = !(newAmenities as any)[key];
+        newAmenities[key] = {
+          available: !newAmenities[key]?.available,
+          details: `${key.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')} available`
+        };
       }
       saveAmenitiesToDraft(newAmenities);
       return newAmenities;
@@ -185,11 +198,13 @@ const AmenitiesStepPage: React.FC = () => {
   };
 
   const isAmenitySelected = (key: string): boolean => {
+    const amenity = amenities[key];
+    if (!amenity) return false;
+    
     if (key === 'pet_friendly') {
-      return amenities.pet_friendly?.pets_allowed === true;
+      return amenity.pets_allowed === true || amenity.available === true;
     }
-    // For other boolean amenities
-    return (amenities as any)[key] === true;
+    return amenity.available === true;
   };
 
   return (
@@ -228,7 +243,7 @@ const AmenitiesStepPage: React.FC = () => {
               <IonCol size="6" size-md="4" key={option.key}>
                 <IonCard
                   button
-                  onClick={() => handleAmenityChange(option.key as any)}
+                  onClick={() => handleAmenityChange(option.key)}
                   color={isAmenitySelected(option.key) ? 'primary' : 'light'}
                 >
                   <IonCardContent className="ion-text-center amenity-card-content">
@@ -286,7 +301,7 @@ const AmenitiesStepPage: React.FC = () => {
       <NavigationButtons
         onNext={handleNext}
         onBack={handleBack}
-        backPath="/LocationStepPage"
+        backPath="/location"
       />
     </IonPage>
   );

@@ -1,4 +1,3 @@
-// src/pages/RoomsStepPage.tsx
 import React, { useState, useEffect } from 'react';
 import { useHistory } from 'react-router-dom';
 import {
@@ -7,7 +6,6 @@ import {
   IonPage,
   IonTitle,
   IonToolbar,
-  IonButton,
   IonItem,
   IonLabel,
   IonList,
@@ -23,6 +21,7 @@ import {
   IonSelect,
   IonSelectOption,
   IonToggle,
+  IonButton,
 } from '@ionic/react';
 import {
   addCircleOutline,
@@ -30,165 +29,90 @@ import {
   bedOutline,
   add,
 } from 'ionicons/icons';
-import supabase from '../supabaseConfig';
 import Stepper from '../components/Stepper';
 import NavigationButtons from '../components/NavigationButtons';
-import { RoomDetails, Property as DbProperty } from '../components/DbCrud';
 
-interface Property extends DbProperty {
-  // Override or add client-side specific fields if necessary
-  rooms: RoomDetails[]; // Ensure rooms is an array of RoomDetails
-  building_name?: string | null; // Make nullable
-  house_rules?: string | null; // Make nullable
-  max_guests?: number | null; // Make nullable
-  instant_booking?: boolean | null; // Make nullable
-  is_active?: boolean | null; // Make nullable
-  HomeType?: string; // Align with DbProperty's HomeType
+interface RoomDetails {
+  room_type: 'bedroom' | 'bathroom' | 'kitchen' | 'living_room' | 'dining_room' | 'other';
+  bed_counts?: { [key: string]: number };
+  number_of_bathrooms?: number;
+  has_ensuite?: boolean;
+  description?: string;
+  [key: string]: any;
 }
 
-// Helper to get or initialize a rental draft from localStorage
-// Updated to handle an array of rooms
-const getProperty = (): Property => {
-  const saved = localStorage.getItem('Property');
-  if (saved) {
-    try {
-      const parsed = JSON.parse(saved);
-      // Ensure the rooms field is an array, or initialize it
-      if (!parsed.rooms || !Array.isArray(parsed.rooms)) {
-        parsed.rooms = [];
-      }
-      return parsed;
-    } catch (e) {
-      console.error("Failed to parse Property from localStorage, initializing new.", e);
-    }
-  }
-  return {
-    id: '',
-    owner_id: '', // DbProperty requires owner_id
-    address: '',
-    property_type: 'apartment', // Default to a valid PropertyType
-    bathrooms: 0, // DbProperty requires bathrooms
-    bedrooms: {}, // DbProperty requires bedrooms
-    pricetype: { currency: 'USD' }, // DbProperty requires pricetype
-    rooms: [], // Initialize rooms as an empty array
-    created_at: new Date().toISOString(),
-    HomeType: undefined, // Initialize as undefined to match DbProperty
-  };
-};
+const BED_TYPES = ['King', 'Queen', 'Double', 'Single', 'Bunk Bed'];
 
-const RoomsStepPage: React.FC = () => {
+const Rooms: React.FC = () => {
   const history = useHistory();
-  // State for the list of rooms
   const [rooms, setRooms] = useState<RoomDetails[]>([]);
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
-  // Removed showBackAlert as it's not used with the current NavigationButtons setup
 
   useEffect(() => {
     // Load rooms from Property in localStorage on initial render
-    const draft = getProperty();
-    setRooms(draft.rooms || []);
-  }, []);
-
-  // Function to save the current rooms to localStorage and Supabase
-  const saveRoomsToDraft = async (updatedRooms: RoomDetails[]) => {
-    const draft = getProperty();
-    const updatedDraft: Property = {
-      ...draft,
-      rooms: updatedRooms,
-      updated_at: new Date().toISOString(),
-    };
-
-    localStorage.setItem('Property', JSON.stringify(updatedDraft));
-
-    // Also save to Supabase if draft has an ID
-    if (updatedDraft.id) {
+    const saved = localStorage.getItem('Property');
+    if (saved) {
       try {
-        const { error } = await supabase
-          .from('rental_drafts')
-          // Assuming 'rooms' is a JSONB column in your table
-          .upsert([{
-            id: updatedDraft.id,
-            rooms_data: updatedRooms,
-            updated_at: updatedDraft.updated_at,
-          }], { onConflict: 'id' });
-
-        if (error) {
-          console.error('Error saving rooms to Supabase:', error);
-        }
+        const draft = JSON.parse(saved);
+        setRooms(draft.rooms || []);
       } catch (error) {
-        console.error('Error saving rooms to Supabase:', error);
+        console.error("Failed to parse Property from localStorage", error);
+        setRooms([]);
       }
     }
-    setToastMessage('Room details saved!');
-    setShowToast(true);
-    console.log('Rooms saved:', updatedDraft.rooms);
+  }, []);
+
+  const saveRoomsToDraft = (updatedRooms: RoomDetails[]) => {
+    try {
+      const saved = localStorage.getItem('Property');
+      const draft = saved ? JSON.parse(saved) : {};
+      const updatedDraft = {
+        ...draft,
+        rooms: updatedRooms,
+        updated_at: new Date().toISOString(),
+      };
+      localStorage.setItem('Property', JSON.stringify(updatedDraft));
+      setToastMessage('Room details saved');
+      setShowToast(true);
+    } catch (error) {
+      console.error('Error saving rooms to localStorage:', error);
+      setToastMessage('Error saving room details');
+      setShowToast(true);
+    }
   };
 
-  // Handler for updating a room's details
-  const handleRoomChange = <K extends keyof RoomDetails>(index: number, key: K, value: RoomDetails[K]) => {
+  const handleRoomChange = (index: number, key: keyof RoomDetails, value: any) => {
     setRooms(prevRooms => {
       const newRooms = [...prevRooms];
-      // Ensure the room object exists before trying to update it
       if (newRooms[index]) {
-        newRooms[index][key] = value;
+        newRooms[index] = { ...newRooms[index], [key]: value };
       }
       saveRoomsToDraft(newRooms);
       return newRooms;
     });
   };
 
-  // Handler for adding a new room
   const handleAddRoom = () => {
     const newRoom: RoomDetails = {
-      room_type: 'bedroom', // Default to a bedroom
+      room_type: 'bedroom',
       description: '',
+      bed_counts: {},
     };
-    const updatedRooms = [...rooms, newRoom];
-    setRooms(updatedRooms);
-    saveRoomsToDraft(updatedRooms);
+    setRooms(prevRooms => {
+      const updatedRooms = [...prevRooms, newRoom];
+      saveRoomsToDraft(updatedRooms);
+      return updatedRooms;
+    });
   };
 
-  // Handler for removing a room
   const handleRemoveRoom = (index: number) => {
-    const updatedRooms = rooms.filter((_, i) => i !== index);
-    setRooms(updatedRooms);
-    saveRoomsToDraft(updatedRooms);
+    setRooms(prevRooms => {
+      const updatedRooms = prevRooms.filter((_, i) => i !== index);
+      saveRoomsToDraft(updatedRooms);
+      return updatedRooms;
+    });
   };
-
-  // Handler for the "Next" button
-  const handleNext = () => {
-    saveRoomsToDraft(rooms);
-    // You'll need to define the next route, e.g., for pricing or photos
-    history.push('/pricing');
-  };
-
-  // Handlers for the "Back" button (removed confirmation alert as it's not used)
-  const handleBack = () => {
-    // We'll clear the rooms, but not the whole draft, to avoid losing previous steps
-    const draft = getProperty();
-    const updatedDraft = { ...draft, rooms: [] };
-    localStorage.setItem('Property', JSON.stringify(updatedDraft));
-
-    if (draft.id) {
-      try {
-        supabase
-          .from('rental_drafts')
-          .update({ rooms_data: [] })
-          .eq('id', draft.id)
-          .then(({ error }) => {
-            if (error) {
-              console.error('Error clearing rooms in Supabase:', error);
-            }
-          });
-      } catch (error) {
-        console.error('Error clearing rooms to Supabase:', error);
-      }
-    }
-    history.push('/amenities');
-  };
-
-  const BED_TYPES = ['King', 'Queen', 'Double', 'Single', 'Bunk Bed'];
 
   const handleBedCountChange = (roomIndex: number, bedType: string, delta: number) => {
     setRooms(prevRooms => {
@@ -196,18 +120,28 @@ const RoomsStepPage: React.FC = () => {
       if (newRooms[roomIndex]) {
         const currentBedCounts = newRooms[roomIndex].bed_counts || {};
         const currentCount = currentBedCounts[bedType] || 0;
-        const newCount = Math.max(0, currentCount + delta); // Ensure count doesn't go below 0
-
-        const updatedBedCounts = {
-          ...currentBedCounts,
-          [bedType]: newCount,
+        const newCount = Math.max(0, currentCount + delta);
+        
+        newRooms[roomIndex] = {
+          ...newRooms[roomIndex],
+          bed_counts: {
+            ...currentBedCounts,
+            [bedType]: newCount,
+          },
         };
-
-        newRooms[roomIndex].bed_counts = updatedBedCounts;
       }
-      saveRoomsToDraft(newRooms); // Save to draft after state is updated
+      saveRoomsToDraft(newRooms);
       return newRooms;
     });
+  };
+
+  const handleNext = () => {
+    if (rooms.length === 0) {
+      setToastMessage('Please add at least one room');
+      setShowToast(true);
+      return;
+    }
+    history.push('/photos');
   };
 
   return (
@@ -285,7 +219,6 @@ const RoomsStepPage: React.FC = () => {
                         </IonSelect>
                       </IonItem>
 
-                      {/* Conditional fields based on room type */}
                       {room.room_type === 'bedroom' && (
                         <>
                           <IonItem lines="none">
@@ -336,7 +269,7 @@ const RoomsStepPage: React.FC = () => {
                             label="Number of Bathrooms"
                             value={room.number_of_bathrooms || 0}
                             onIncrement={() => handleRoomChange(index, 'number_of_bathrooms', (room.number_of_bathrooms || 0) + 1)}
-                            onDecrement={() => handleRoomChange(index, 'number_of_bathrooms', (room.number_of_bathrooms || 0) - 1)}
+                            onDecrement={() => handleRoomChange(index, 'number_of_bathrooms', Math.max(0, (room.number_of_bathrooms || 0) - 1))}
                             min={0}
                           />
                         </IonItem>
@@ -369,8 +302,7 @@ const RoomsStepPage: React.FC = () => {
               </IonButton>
             </IonCol>
           </IonRow>
-
-          </IonGrid>
+        </IonGrid>
 
         <IonToast
           isOpen={showToast}
@@ -381,11 +313,13 @@ const RoomsStepPage: React.FC = () => {
       </IonContent>
       <NavigationButtons
         onNext={handleNext}
-        onBack={handleBack}
-        backPath="/amenities"
+        onBack={() => history.push('/location')}
+        nextDisabled={rooms.length === 0}
+        backPath="/location"
+        nextPath="/photos"
       />
     </IonPage>
   );
 };
 
-export default RoomsStepPage;
+export default Rooms;

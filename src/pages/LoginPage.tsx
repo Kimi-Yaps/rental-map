@@ -7,29 +7,27 @@ import {
   IonButtons,
   IonButton,
   IonInput,
-  IonSegment,
-  IonSegmentButton,
   IonPage,
   useIonRouter,
   IonToast,
-  IonGrid,
-  IonRow,
-  IonCol,
   IonCard,
   IonCardHeader,
   IonCardTitle,
   IonCardContent,
   IonSpinner,
-  IonText
+  IonText,
+  isPlatform // Import isPlatform
 } from '@ionic/react';
 
-import { arrowBackOutline, mailOutline, eyeOutline, eyeOffOutline, logoGoogle } from 'ionicons/icons';
+import { arrowBackOutline, mailOutline, eyeOutline, eyeOffOutline } from 'ionicons/icons';
 import supabase from '../supabaseConfig';
 import { useLocation } from 'react-router-dom';
-import { Profile } from '../components/DbCrud';
-import { GoogleLogin, GoogleOAuthProvider } from '@react-oauth/google';
+import { Profile } from '../components/DbCrud'; // UserType is used in Profile interface
+import { GoogleLogin, GoogleOAuthProvider, CredentialResponse } from '@react-oauth/google';
+import { Session } from '@supabase/supabase-js'; // User is not directly used here
 import './Main.css';
 import '../theme/variables.css';
+import './login.css';
 
 const LoginPage: React.FC = () => {
   const [selectedSegment, setSelectedSegment] = useState<'login' | 'signup'>('login');
@@ -47,20 +45,63 @@ const LoginPage: React.FC = () => {
   const userType = location.state?.userType || 'normal';
 
   // Helper to upsert profile after login/signup
-  const upsertProfile = async (session: any) => {
+  const upsertProfile = async (session: Session) => {
     if (!session?.user) return;
-    const profileData: Partial<Profile> = {
-      id: session.user.id,
-      full_name: session.user.user_metadata?.full_name || session.user.user_metadata?.name || null,
-      avatar_url: session.user.user_metadata?.avatar_url || null,
-      user_type: userType === 'landlord' ? 'property_owner' : 'tenant',
-    };
-    // Upsert profile (insert or update if exists)
-    const { error: upsertError } = await supabase
-      .from('profiles')
-      .upsert(profileData, { onConflict: ['id'] });
-    if (upsertError) {
-      console.error('Error upserting profile:', upsertError);
+    const user = session.user; // user is now of type User
+
+    if (userType === 'landlord') {
+      // Create property owner profile
+      const propertyOwnerData = {
+        id: user.id,
+        full_name: user.user_metadata?.full_name || user.user_metadata?.name || user.email,
+        email: user.email,
+        phone_number: user.phone || '',
+        ic_number: '',
+        is_verified: false,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+      
+      // First check if the profile already exists
+      const { data: existingOwner, error: checkError } = await supabase
+        .from('property_owners')
+        .select('*')
+        .eq('id', user.id)
+        .maybeSingle();
+
+      if (checkError) {
+        console.error('Error checking existing owner:', checkError);
+        throw checkError;
+      }
+
+      if (!existingOwner) {
+        // Only create if doesn't exist
+        const { error: ownerError } = await supabase
+          .from('property_owners')
+          .insert([propertyOwnerData]);
+        
+        if (ownerError) {
+          console.error('Error creating property owner:', ownerError);
+          throw ownerError;
+        }
+      }
+    } else {
+      // Create regular tenant profile
+      const profileData: Partial<Profile> = {
+        id: user.id,
+        full_name: user.user_metadata?.full_name || user.user_metadata?.name || null,
+        avatar_url: user.user_metadata?.avatar_url || null,
+        userType: { type: 'tenant' },
+      };
+      
+      const { error: upsertError } = await supabase
+        .from('profiles')
+        .upsert(profileData, { onConflict: 'id' });
+      
+      if (upsertError) {
+        console.error('Error upserting profile:', upsertError);
+        throw upsertError;
+      }
     }
   };
 
@@ -94,12 +135,16 @@ const LoginPage: React.FC = () => {
       } else {
         result = await supabase.auth.signUp({ email, password, options: { data: { user_type: userType } } });
       }
-      const { data, error } = result;
-      if (error) {
-        setToastMessage(error.message);
+      const { data, error: authError } = result; // Renamed 'error' to 'authError'
+      if (authError) {
+        if (selectedSegment === 'signup' && authError.message.includes('User already registered')) {
+          setToastMessage('An account with this email already exists. Please sign in.');
+        } else {
+          setToastMessage(authError.message);
+        }
         setShowToast(true);
       } else if (data.session) {
-        await upsertProfile({ user: data.user, session: data.session });
+        await upsertProfile(data.session); // Pass the session directly
         ionRouter.push('/home', 'forward');
       } else if (selectedSegment === 'signup' && data.user && !data.session) {
         setToastMessage('Please check your email to confirm your account');
@@ -113,7 +158,7 @@ const LoginPage: React.FC = () => {
     }
   };
 
-  const handleGoogleSuccess = async (credentialResponse: any) => {
+  const handleGoogleSuccess = async (credentialResponse: CredentialResponse) => {
     setGoogleLoading(true);
     try {
       const { credential } = credentialResponse;
@@ -125,13 +170,33 @@ const LoginPage: React.FC = () => {
       });
       
       if (error) {
+        console.error('Google auth error:', error);
         setToastMessage(`Authentication error: ${error.message}`);
         setShowToast(true);
-      } else if (data.session) {
-        await upsertProfile({ user: data.user, session: data.session });
-        ionRouter.push('/home', 'forward');
+        return;
+      }
+
+      if (!data.session || !data.user) {
+        setToastMessage('Failed to get user session');
+        setShowToast(true);
+        return;
+      }
+
+      try {
+        await upsertProfile(data.session); // Pass the session directly
+        // For landlords, redirect to landlord home
+        if (userType === 'landlord') {
+          ionRouter.push('/landlord', 'forward');
+        } else {
+          ionRouter.push('/home', 'forward');
+        }
+      } catch (profileError) {
+        console.error('Profile creation error:', profileError);
+        setToastMessage('Failed to create user profile. Please try again.');
+        setShowToast(true);
       }
     } catch (error) {
+      console.error('Google auth flow error:', error);
       setToastMessage('An unexpected error occurred. Please try again.');
       setShowToast(true);
     } finally {
@@ -156,204 +221,175 @@ const LoginPage: React.FC = () => {
     return selectedSegment === 'login' ? 'Welcome Back' : 'Create Account';
   };
 
+  const getSubtitle = () => {
+    if (userType === 'landlord') {
+      return selectedSegment === 'login' ? 'Sign in to manage your properties' : 'Start your landlord journey';
+    }
+    return selectedSegment === 'login' ? 'Sign in to find your perfect home' : 'Join thousands of happy renters';
+  };
+
+  const googleClientId = isPlatform('android')
+    ? import.meta.env.VITE_GOOGLE_ANDROID_CLIENT_ID
+    : import.meta.env.VITE_GOOGLE_WEB_CLIENT_ID;
+
   return (
-    <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_WEB_CLIENT_ID}>
+    <GoogleOAuthProvider clientId={googleClientId}>
       <IonPage>
         <IonHeader className="ion-no-border">
           <IonToolbar>
             <IonButtons slot="start">
-              <IonButton onClick={handleBack}>
+              <IonButton onClick={handleBack} fill="clear">
                 <IonIcon icon={arrowBackOutline} />
               </IonButton>
             </IonButtons>
           </IonToolbar>
         </IonHeader>
-        <IonContent fullscreen className="ion-padding">
-          <IonGrid style={{ height: '100%' }}>
-            <IonRow className="ion-justify-content-center ion-align-items-center" style={{ height: '100%' }}>
-              <IonCol size="12" size-md="6" size-lg="4">
-                <IonCard>
-                  <IonCardHeader>
-                    <IonCardTitle className="ion-text-center">{getTitle()}</IonCardTitle>
-                  </IonCardHeader>
-                  <IonCardContent>
+        
+        <IonContent fullscreen className="login-content">
+          <div className="login-container">
+            <div className="login-card-wrapper">
+              <IonCard className="login-card">
+                <IonCardHeader className="login-header">
+                  <IonCardTitle className="login-title">
+                    {getTitle()}
+                  </IonCardTitle>
+                  <IonText color="medium" className="login-subtitle">
+                    {getSubtitle()}
+                  </IonText>
+                </IonCardHeader>
+                
+                <IonCardContent className="login-card-content">
 
-                    <IonSegment
-                      value={selectedSegment}
-                      onIonChange={(e) => setSelectedSegment(e.detail.value as 'login' | 'signup')}
-                      style={{ marginBottom: '1.5rem' }}
-                    >
-                      <IonSegmentButton value="login">
-                        Sign In
-                      </IonSegmentButton>
-                      <IonSegmentButton value="signup">
-                        Sign Up
-                      </IonSegmentButton>
-                    </IonSegment>
-
-                    {/* Register suggestion for Sign In */}
-                    {selectedSegment === 'login' && (
-                      <div style={{ marginBottom: '1rem', textAlign: 'center', fontSize: '15px' }}>
-                        Don't have an account?{' '}
-                        <span
-                          style={{
-                            textDecoration: 'underline',
-                            color: 'var(--ion-color-primary)',
-                            cursor: 'pointer',
-                          }}
-                          onClick={() => setSelectedSegment('signup')}
-                        >
-                          Register
-                        </span>
+                  {/* Google OAuth Button */}
+                  <div className="google-auth-section">
+                    {googleLoading ? (
+                      <IonButton 
+                        expand="block" 
+                        fill="outline"
+                        disabled
+                        className="google-loading-btn"
+                      >
+                        <IonSpinner name="crescent" className="loading-spinner" />
+                        Signing in with Google...
+                      </IonButton>
+                    ) : (
+                      <div className="google-login-wrapper">
+                        <GoogleLogin
+                          onSuccess={handleGoogleSuccess}
+                          onError={handleGoogleError}
+                          useOneTap={false}
+                          text="continue_with"
+                          shape="pill"
+                          theme="outline"
+                          logo_alignment="left"
+                          size="large"
+                          width="100%"
+                          ux_mode="popup"
+                          cancel_on_tap_outside={false}
+                        />
                       </div>
                     )}
+                  </div>
 
-                    {/* Google OAuth Button - Moved to top for better UX */}
-                    <div style={{ marginBottom: '1.5rem' }}>
-                      <div className="google-auth-btn-container">
-                        {googleLoading ? (
-                          <IonButton 
-                            expand="block" 
-                            fill="outline"
-                            disabled
-                            className="google-auth-btn"
-                          >
-                            <IonSpinner name="crescent" style={{ marginRight: '8px' }} />
-                            Signing in...
-                          </IonButton>
-                        ) : (
+                  <div className="divider-section">
+                    <div className="divider-line"></div>
+                    <IonText color="medium" className="divider-text">
+                      or continue with email
+                    </IonText>
+                    <div className="divider-line"></div>
+                  </div>
 
-                            <GoogleLogin
-                              onSuccess={handleGoogleSuccess}
-                              onError={handleGoogleError}
-                              useOneTap={false}
-                              text="continue_with"
-                              shape="pill"
-                              theme="outline"
-                              logo_alignment="left"
-                              size="large"
-                            />
-
-                        )}
-                      </div>
-                    </div>
-
-                    <div style={{ 
-                      display: 'flex', 
-                      alignItems: 'center', 
-                      margin: '1.5rem 0',
-                      gap: '12px'
-                    }}>
-                      <div style={{ 
-                        flex: 1, 
-                        height: '1px', 
-                        backgroundColor: 'var(--ion-color-medium)',
-                        opacity: 0.3
-                      }}></div>
-                      <IonText color="medium" style={{ fontSize: '14px', fontWeight: '500' }}>
-                        or
-                      </IonText>
-                      <div style={{ 
-                        flex: 1, 
-                        height: '1px', 
-                        backgroundColor: 'var(--ion-color-medium)',
-                        opacity: 0.3
-                      }}></div>
-                    </div>
-
-                    {/* Email Form */}
-                    <form onSubmit={(e) => { e.preventDefault(); handleEmailAuth(); }}>
+                  {/* Email Form */}
+                  <form onSubmit={(e) => { e.preventDefault(); handleEmailAuth(); }} className="email-form">
+                    <div className="input-group">
                       <IonInput
                         className="custom-input"
-                        label="Email"
+                        label="Email Address"
                         labelPlacement="floating"
                         type="email"
                         placeholder="you@example.com"
                         value={email}
                         onIonInput={(e) => setEmail(e.detail.value!)}
                         autocomplete="username"
-                        style={{ 
-                          marginBottom: '1rem',
-                          '--border-radius': '12px',
-                          '--padding-start': '16px',
-                          '--padding-end': '16px',
-                        }}
                         fill="outline"
                       />
-                      
-                      <div style={{ position: 'relative', marginBottom: '1.5rem' }}>
-                        <IonInput
-                          className="custom-input"
-                          label="Password"
-                          labelPlacement="floating"
-                          type={showPassword ? 'text' : 'password'}
-                          placeholder="Your password"
-                          value={password}
-                          onIonInput={(e) => setPassword(e.detail.value!)}
-                          autocomplete={selectedSegment === 'signup' ? 'new-password' : 'current-password'}
-                          style={{
-                            '--border-radius': '12px',
-                            '--padding-start': '16px',
-                            '--padding-end': '48px',
-                          }}
-                          fill="outline"
-                        />
-                        <IonButton 
-                          fill="clear" 
-                          size="small" 
-                          onClick={() => setShowPassword(!showPassword)} 
-                          style={{ 
-                            position: 'absolute', 
-                            right: '4px', 
-                            top: '50%', 
-                            transform: 'translateY(-50%)',
-                            '--padding-start': '8px',
-                            '--padding-end': '8px',
-                            minHeight: '40px',
-                            '--color': 'var(--ion-color-medium)'
-                          }}
-                        >
-                          <IonIcon 
-                            slot="icon-only" 
-                            icon={showPassword ? eyeOffOutline : eyeOutline}
-                            style={{ fontSize: '20px' }}
-                          />
-                        </IonButton>
-                      </div>
-                      
+                    </div>
+                    
+                    <div className="password-input-wrapper">
+                      <IonInput
+                        className="custom-input password-input"
+                        label="Password"
+                        labelPlacement="floating"
+                        type={showPassword ? 'text' : 'password'}
+                        placeholder="Enter your password"
+                        value={password}
+                        onIonInput={(e) => setPassword(e.detail.value!)}
+                        autocomplete={selectedSegment === 'signup' ? 'new-password' : 'current-password'}
+                        fill="outline"
+                      />
                       <IonButton 
-                        type="submit" 
-                        expand="block" 
-                        disabled={isLoading || !email || !password}
-                        style={{
-                          '--border-radius': '12px',
-                          height: '48px',
-                          fontSize: '16px',
-                          fontWeight: '600',
-                          textTransform: 'none',
-                          '--padding-start': '16px',
-                          '--padding-end': '16px',
-                        }}
+                        fill="clear" 
+                        size="small" 
+                        onClick={() => setShowPassword(!showPassword)} 
+                        className="password-toggle-btn"
                       >
-                        {isLoading ? (
-                          <>
-                            <IonSpinner name="crescent" style={{ marginRight: '8px' }} />
-                            {selectedSegment === 'login' ? 'Signing In...' : 'Signing Up...'}
-                          </>
-                        ) : (
-                          <>
-                            <IonIcon icon={mailOutline} slot="start" />
-                            {selectedSegment === 'login' ? 'Sign In with Email' : 'Sign Up with Email'}
-                          </>
-                        )}
+                        <IonIcon 
+                          slot="icon-only" 
+                          icon={showPassword ? eyeOffOutline : eyeOutline}
+                        />
                       </IonButton>
-                    </form>
+                    </div>
+                    
+                    <IonButton 
+                      type="submit" 
+                      expand="block" 
+                      disabled={isLoading || !email || !password}
+                      className="submit-btn"
+                    >
+                      {isLoading ? (
+                        <>
+                          <IonSpinner name="crescent" className="loading-spinner" />
+                          {selectedSegment === 'login' ? 'Signing In...' : 'Creating Account...'}
+                        </>
+                      ) : (
+                        <>
+                          <IonIcon icon={mailOutline} slot="start" />
+                          {selectedSegment === 'login' ? 'Sign In with Email' : 'Create Account'}
+                        </>
+                      )}
+                    </IonButton>
 
-                  </IonCardContent>
-                </IonCard>
-              </IonCol>
-            </IonRow>
-          </IonGrid>
+                    {/* Sign In suggestion for Sign Up */}
+                  {selectedSegment === 'signup' && (
+                    <div className="register-suggestion">
+                      Already have an account?{' '}
+                      <span
+                        className="register-link"
+                        onClick={() => setSelectedSegment('login')}
+                      >
+                        Sign In here
+                      </span>
+                    </div>
+                  )}
+
+                    {/* Register suggestion for Sign In */}
+                  {selectedSegment === 'login' && (
+                    <div className="register-suggestion">
+                      Don't have an account?{' '}
+                      <span
+                        className="register-link"
+                        onClick={() => setSelectedSegment('signup')}
+                      >
+                        Register here
+                      </span>
+                    </div>
+                  )}
+                  </form>
+
+                </IonCardContent>
+              </IonCard>
+            </div>
+          </div>
         </IonContent>
         
         <IonToast
@@ -365,46 +401,7 @@ const LoginPage: React.FC = () => {
           position="top"
         />
         
-        <style>{`
-          .google-auth-btn-container {
-            width: 100%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-          }
-          .google-auth-btn {
-            width: 100%;
-            max-width: 100%;
-            min-width: 0;
-            border-radius: var(--custom-border-radius-medium, 12px) !important;
-            box-shadow: none !important;
-            height: 48px !important;
-            font-family: inherit !important;
-            font-size: 16px !important;
-            font-weight: 600 !important;
-            text-transform: none !important;
-            transition: all 0.2s ease !important;
-            padding: 0 !important;
-            background: var(--ion-color-light) !important;
-            border: 1px solid var(--ion-color-medium) !important;
-            margin-bottom: 0;
-          }
-          .google-auth-btn [data-testid="google-oauth-button"] {
-            width: 100% !important;
-            border-radius: var(--custom-border-radius-medium, 12px) !important;
-            height: 48px !important;
-            font-size: 16px !important;
-            font-weight: 600 !important;
-            background: var(--ion-color-light) !important;
-            border: 1px solid var(--ion-color-medium) !important;
-            color: var(--ion-color-primary) !important;
-          }
-          .google-auth-btn [data-testid="google-oauth-button"]:hover {
-            box-shadow: 0 2px 8px rgba(44,95,93,0.08) !important;
-            transform: translateY(-1px) !important;
-          }
-          /* ...existing styles for input, card, segment... */
-        `}</style>
+
       </IonPage>
     </GoogleOAuthProvider>
   );

@@ -84,7 +84,7 @@ const HomeBestFit: React.FC = () => { // Renamed component here
   const handleNext = useCallback(() => {
     if (!homeType) return;
     console.log("Moving to next step in property location Step Page");
-    ionRouter.push('/locationStepPage', 'forward');
+    ionRouter.push('/location', 'forward');
   }, [ionRouter, homeType]);
 
   const homeTypeOptions = [
@@ -212,7 +212,7 @@ const HomeBestFit: React.FC = () => { // Renamed component here
         onBack={handleBack}
         onNext={handleNext}
         nextDisabled={!homeType}
-        backPath="/LocationStepPage"
+        backPath="/location"
         />
         </IonToolbar>
       </IonFooter>
