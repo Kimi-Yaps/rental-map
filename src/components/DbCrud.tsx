@@ -1,5 +1,34 @@
+// Define specific amenity types
+export interface AmenityValue {
+  available: boolean;
+  details?: string;
+  quantity?: number;
+}
+
 // Defines the structure for amenities that will be stored in the database.
-export interface RentalAmenities extends Record<string, any> {}
+export type RentalAmenities = Record<string, AmenityValue>;
+
+// UserType JSONB structure for profiles
+export interface UserType {
+  type: 'admin' | 'landlord' | 'tenant';
+  permissions?: string[];
+  customFields?: Record<string, string | number | boolean>;
+}
+
+export interface AdminUserType extends UserType {
+  type: 'admin';
+  permissions: string[];
+}
+
+export interface LandlordUserType extends UserType {
+  type: 'landlord';
+  business_name?: string;
+}
+
+export interface TenantUserType extends UserType {
+  type: 'tenant';
+  occupation?: string;
+}
 
 export interface pricing {
   id: string; // uuid in SQL, represented as string in TypeScript
@@ -18,8 +47,10 @@ export interface RoomDetails {
   number_of_bathrooms?: number; // For bathroom type rooms
   has_ensuite?: boolean; // For bedrooms with attached bathrooms
   description?: string;
-  // Allows for additional, less structured properties per room
-  [key: string]: any;
+  amenities?: string[];
+  size_sqft?: number;
+  furniture?: string[];
+  [key: string]: string[] | number | boolean | string | undefined;
 }
 // Defines the complete structure of the property draft object
 // that is stored in localStorage as the user progresses through the form.
@@ -39,18 +70,60 @@ export interface Property {
   monthly_rent: number;
   deposit_amount: number;
   is_available?: boolean;
-  images?: Record<string, any>; // jsonb
+  images?: Record<string, {
+    url: string;
+    caption?: string;
+    order?: number;
+    type?: 'primary' | 'additional';
+  }>; // jsonb
   amenities?: RentalAmenities; // Using the existing amenities interface
   created_at: string; // Stored as an ISO string in the database
   updated_at: string | null; // Stored as an ISO string or null
-  bedrooms?: Record<string, any>; // jsonb
+  bedrooms?: Record<string, RoomDetails>; // jsonb
 }
 
 export interface Profile {
   id: string; // uuid in SQL, foreign key to auth.users (id)
   full_name: string | null; // text in SQL
   avatar_url: string | null; // text in SQL
-  user_type: 'property_owner' | 'tenant' | 'admin' | null; // text in SQL, enum type
+  nickname?: string | null;
+  userType?: UserType | null; // jsonb
   created_at: string | null; // timestamp with time zone, represented as ISO string
   updated_at: string | null; // timestamp with time zone, represented as ISO string or null
+}
+
+// --- Profile update helpers ---
+import { supabase } from '../supabaseClient';
+
+// Update userType (jsonb) for a profile
+export async function updateProfileUserType(userId: string, userType: UserType) {
+  const { data, error } = await supabase
+    .from('profiles')
+    .update({ userType, updated_at: new Date().toISOString() })
+    .eq('id', userId)
+    .select();
+  return { data, error };
+}
+
+// Update avatar_url for a profile (upload and set URL)
+export async function updateProfileAvatar(userId: string, file: File) {
+  // Upload to Supabase Storage (bucket: 'avatars')
+  const filePath = `${userId}/${Date.now()}_${file.name}`;
+  const { error: uploadError } = await supabase.storage
+    .from('avatars')
+    .upload(filePath, file, { upsert: true });
+  if (uploadError) return { data: null, error: uploadError };
+
+  // Get public URL
+  const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(filePath);
+  const avatar_url = urlData?.publicUrl || null;
+  if (!avatar_url) return { data: null, error: { message: 'Failed to get avatar URL' } };
+
+  // Update profile
+  const { data, error } = await supabase
+    .from('profiles')
+    .update({ avatar_url, updated_at: new Date().toISOString() })
+    .eq('id', userId)
+    .select();
+  return { data, error };
 }

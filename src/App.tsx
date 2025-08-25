@@ -41,12 +41,13 @@ import '@ionic/react/css/palettes/dark.system.css';
 /* Theme variables */
 import './theme/variables.css';
 
-// Page Imports with consistent naming
-
 const AmenitiesStepPage = React.lazy(() => import('./pages/AmenitiesStepPage'));
 const FinalReviewPage = React.lazy(() => import('./pages/FinalReviewPage'));
 const Home = React.lazy(() => import('./pages/Home'));
 const LoginPage = React.lazy(() => import('./pages/LoginPage'));
+const Profile = React.lazy(() => import('./pages/Profile'));
+const TenantProfile = React.lazy(() => import('./pages/TenantProfile'));
+const LandlordProfile = React.lazy(() => import('./pages/LandlordProfile'));
 const SearchSuggestionsPage = React.lazy(() => import('./pages/SearchSuggestionsPage'));
 const HomeBestFit = React.lazy(() => import('./pages/HomeBestFit'));
 const HomeSearched = React.lazy(() => import('./pages/HomeSearched'));
@@ -120,6 +121,11 @@ const App: React.FC = () => (
           
           {/* Authentication */}
           <Route exact path="/login" component={LoginPage} />
+          
+          {/* Profile Routes */}
+          <Route exact path="/profile" component={Profile} />
+          <Route exact path="/profile/tenant" component={TenantProfile} />
+          <Route exact path="/profile/landlord" component={LandlordProfile} />
           
           {/* Catch-all redirect for unmatched routes */}
           <Route render={() => <Redirect to="/home" />} />
