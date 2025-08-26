@@ -255,6 +255,7 @@ const SearchbarWithSuggestions: React.FC<SearchbarWithSuggestionsProps> = ({
             value={value}
             onIonInput={handleInput}
             placeholder={placeholder}
+            className={value ? 'searchbar-filled' : ''} {/* Add class when value is present */}
             style={{ 
               marginBottom: showSuggestions ? '0' : '15px',
               transition: 'margin-bottom 0.2s ease'

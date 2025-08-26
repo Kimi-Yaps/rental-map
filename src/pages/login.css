@@ -186,14 +186,17 @@ ion-input.custom-input {
 ion-input.custom-input.ion-focused::part(label),
 ion-input.custom-input.has-value::part(label) {
   transform: translateY(-100%) translateX(0) scale(0.75); /* Adjust as needed */
-  left: var(--padding-start, 20px); /* Align floating label to start padding */
-  right: auto;
   transform-origin: left top;
 }
 
+/* Ensure label floats when custom-input's native input is auto-filled */
+ion-input.custom-input:has(input:-webkit-autofill)::part(label) {
+  transform: translateY(-100%) translateX(0) scale(0.75);
+  transform-origin: left top;
+}
+
+
 ion-input.custom-input::part(label) {
-  left: var(--padding-start, 20px); /* Ensure initial label is also left-aligned */
-  right: auto;
   transform-origin: left top;
 }
 
@@ -203,17 +206,38 @@ ion-input.custom-input::part(label) {
 }
 
 .password-input {
+  --border-radius: 16px;
+  --padding-start: 20px;
+  --border-color: var(--ion-color-light-shade);
+  --color: var(--ion-color-dark);
+  --placeholder-color: var(--ion-color-medium);
+  height: 56px;
+  font-size: 16px;
+  --padding-end: 60px; /* Keep this specific override */
+}
+
+.password-input.ion-focused {
+  --border-color: var(--ion-color-primary);
+  --highlight-color: var(--ion-color-primary);
+}
+
+ion-input.password-input {
+  --padding-start: 20px;
   --padding-end: 60px;
 }
 
-.password-toggle-btn {
-  position: absolute;
-  right: 8px;
-  top: 50%;
-  transform: translateY(-50%);
-  --color: var(--ion-color-medium);
-  --padding-start: 12px;
-  --padding-end: 12px;
+ion-input.password-input.ion-focused::part(label),
+ion-input.password-input.has-value::part(label) {
+  transform: translateY(-100%) translateX(0) scale(0.75);
+  transform-origin: left top;
+}
+
+/* Ensure label floats when password-input's native input is auto-filled */
+ion-input.password-input:has(input:-webkit-autofill)::part(label) {
+  transform: translateY(-100%) translateX(0) scale(0.75);
+  transform-origin: left top;
+}
+
   height: 40px;
   z-index: 10;
 }
@@ -268,7 +292,7 @@ ion-input.custom-input::part(label) {
   }
 }
 
-@media (max-width: 768px) {
+@media (max-width: 767.98px) { /* Targeting smaller screens, including most phones and small tablets */
   .login-container {
     padding: 10px 0;
     align-items: flex-start; /* Align to top on smaller screens */
@@ -327,7 +351,7 @@ ion-input.custom-input::part(label) {
   }
 }
 
-@media (max-width: 480px) {
+@media (max-width: 479.98px) { /* Targeting very small mobile screens */
   .login-header {
     padding: 20px 16px 12px;
   }

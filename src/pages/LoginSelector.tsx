@@ -14,16 +14,22 @@ import {
   IonIcon
 } from '@ionic/react';
 import { personCircleOutline, businessOutline } from 'ionicons/icons';
-import { useIonRouter } from '@ionic/react';
+import { useIonRouter, isPlatform } from '@ionic/react';
 
 const LoginSelector: React.FC = () => {
   const ionRouter = useIonRouter();
 
   const handleSelection = (userType: 'landlord' | 'normal') => {
-    if (userType === 'normal') {
-      ionRouter.push('/tenant-login', 'forward');
+    if (!isPlatform('android') && !isPlatform('ios')) { // Check if it's a web platform
+      // For web, redirect to the unified LoginPage
+      ionRouter.push('/login', 'forward', undefined, { state: { userType } });
     } else {
-      ionRouter.push('/landlord-login', 'forward');
+      // For native platforms, use the specific login pages
+      if (userType === 'normal') {
+        ionRouter.push('/tenant-login', 'forward');
+      } else {
+        ionRouter.push('/landlord-login', 'forward');
+      }
     }
   };
 
