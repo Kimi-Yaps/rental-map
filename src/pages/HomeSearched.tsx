@@ -18,15 +18,14 @@ import {
   IonIcon,
   IonChip,
   IonToolbar,
-  IonTitle,
   IonHeader
 } from '@ionic/react';
 import { useState, useEffect, useCallback } from 'react';
-import { locationOutline, checkmarkCircle, warningOutline } from 'ionicons/icons';
+import { checkmarkCircle, warningOutline } from 'ionicons/icons';
 import SearchbarWithSuggestions from '../components/SearchbarWithSuggestions';
 import { useLocation } from 'react-router-dom';
 import { createClient } from '@supabase/supabase-js';
-import { Property as DbProperty, pricing as DbPricing, RoomDetails as DbRoomDetails, RentalAmenities as DbRentalAmenities } from '../components/DbCrud';
+import { Property as DbProperty } from '../components/DbCrud';
 
 // Supabase configuration
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
@@ -38,9 +37,6 @@ const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 
 // Use types from DbCrud
-type RentalAmenities = DbRentalAmenities;
-type Pricing = DbPricing;
-type RoomDetails = DbRoomDetails;
 type Property = DbProperty;
 
 // Enhanced suggestion interface
@@ -64,9 +60,8 @@ const HomeSearched: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState(location.state?.searchText || '');
 
   // Build display address string from property data
-  const buildAddressString = (property: Property): string => {
+    const buildAddressString = (property: Property): string => {
     const parts = [
-      property.title,
       property.address,
       property.city,
       property.state,
@@ -89,7 +84,8 @@ const HomeSearched: React.FC = () => {
 
       // Add search filter if term provided
       if (term && term.trim()) {
-        const safeTerm = term.replace(/"/g, '""'); // Escape double quotes for PostgREST
+          const safeTerm = term.replace(/"/g, '""'); // Escape double quotes for PostgREST
+          query = query.or(`address.ilike."%${safeTerm}%",city.ilike."%${safeTerm}%",state.ilike."%${safeTerm}%",property_type.ilike."%${safeTerm}%"`);
         query = query.or(`address.ilike."%${safeTerm}%",title.ilike."%${safeTerm}%",city.ilike."%${safeTerm}%",state.ilike."%${safeTerm}%",property_type.ilike."%${safeTerm}%"`);
       }
 
@@ -100,9 +96,14 @@ const HomeSearched: React.FC = () => {
       }
 
       setProperties(propertiesData || []);
-    } catch (err: any) {
-      console.error('Error fetching properties:', err);
-      setError(err.message || 'An error occurred while fetching data');
+    } catch (err: unknown) { // Changed 'any' to 'unknown'
+      if (err instanceof Error) {
+        console.error('Error fetching properties:', err.message);
+        setError(err.message || 'An error occurred while fetching data');
+      } else {
+        console.error('An unknown error occurred:', err);
+        setError('An unknown error occurred');
+      }
       setShowAlert(true);
     } finally {
       setLoading(false);
@@ -117,7 +118,7 @@ const HomeSearched: React.FC = () => {
     
     try {
       const safeTerm = term.replace(/"/g, '""'); // Escape double quotes for PostgREST
-      const { data, error } = await supabase
+      const { data, error }: { data: any[] | null; error: unknown } = await supabase
         .from('properties')
         .select('address, building_name, property_type, HomeType')
         .or(`address.ilike."%${safeTerm}%",building_name.ilike."%${safeTerm}%",property_type.ilike."%${safeTerm}%",HomeType.ilike."%${safeTerm}%"`)
@@ -125,7 +126,11 @@ const HomeSearched: React.FC = () => {
         .limit(10);
         
       if (error) {
-        console.error('Supabase error:', error);
+        if (error instanceof Error) {
+          console.error('Error in fetchSuggestions:', error.message);
+        } else {
+          console.error('An unknown error occurred in fetchSuggestions:', error);
+        }
         return [];
       }
 
@@ -213,8 +218,8 @@ const HomeSearched: React.FC = () => {
         })
         .slice(0, 8);
       
-    } catch (error) {
-      console.error('Error in fetchSuggestions:', error);
+    } catch (error) { // Correctly structured catch block
+      console.error('An unexpected error occurred during fetchSuggestions:', error);
       return [];
     }
   }, []);
@@ -227,14 +232,6 @@ const HomeSearched: React.FC = () => {
     setSearchTerm(term);
   }, []);
 
-  // Format price display (use monthly_rent from property)
-  const formatPrice = (property: Property) => {
-    if (property.monthly_rent) {
-      return `MYR ${property.monthly_rent}/month`;
-    }
-    return null;
-  };
-
   useEffect(() => {
     fetchProperties(searchTerm);
   }, [searchTerm]);
@@ -246,7 +243,7 @@ const HomeSearched: React.FC = () => {
         </IonToolbar>
       </IonHeader>
       
-      <IonContent className="ion-padding" onIonRefresh={handleRefresh}>
+      <IonContent className="ion-padding"> {/* Removed onIonRefresh prop */}
         <IonGrid>
           <IonRow className="ion-justify-content-center">
             <IonCol size-xs="12" size-md="8" size-lg="6">
@@ -318,11 +315,7 @@ const HomeSearched: React.FC = () => {
                               </IonChip>
                             </div>
 
-                            {formatPrice(property) && (
-                              <p style={{ margin: '4px 0', fontSize: '16px', fontWeight: 'bold', color: 'var(--ion-color-success)' }}>
-                                {formatPrice(property)}
-                              </p>
-                            )}
+                            {/* Removed formatPrice and monthly_rent display */}
                             
                             {/* No max_guests or instant_booking in schema */}
                             
@@ -352,16 +345,7 @@ const HomeSearched: React.FC = () => {
                               </div>
                             )}
 
-                            {property.house_rules && (
-                              <details style={{ marginTop: '8px' }}>
-                                <summary style={{ cursor: 'pointer', fontSize: '12px', color: 'var(--ion-color-medium)' }}>
-                                  House Rules
-                                </summary>
-                                <p style={{ fontSize: '12px', marginTop: '4px', padding: '8px', background: 'var(--ion-color-light-shade)', borderRadius: '4px' }}>
-                                  {property.house_rules}
-                                </p>
-                              </details>
-                            )}
+                            {/* Removed house_rules display */}
                           </IonLabel>
                         </IonItem>
                       ))}

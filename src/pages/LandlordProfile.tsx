@@ -30,13 +30,10 @@ const LandlordProfile: React.FC = () => {
   const [userId, setUserId] = useState<string | null>(null);
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
-  interface Property {
+    interface Property {
     id: string;
-    title: string;
+    description: string;
     address: string;
-    monthly_rent: number;
-    owner_id: string;
-  }
   const [properties, setProperties] = useState<Property[]>([]);
 
   useEffect(() => {

@@ -38,7 +38,7 @@ export interface GeoapifyResponse {
   features: GeoapifyFeature[];
   query?: {
     text?: string;
-    parsed?: any;
+    parsed?: unknown; // Changed 'any' to 'unknown'
   };
 }
 
@@ -98,10 +98,9 @@ export class GeoapifyGeocodingService {
       }
 
       return await response.json() as T;
-    } catch (error: any) {
-      clearTimeout(timeoutId);
-
-      if (error.name === 'AbortError') {
+    } catch (error: unknown) { // Changed 'any' to 'unknown'
+      // Type guard for AbortError
+      if (error instanceof Error && error.name === 'AbortError') {
         console.error(`Geoapify request timed out after ${this.REQUEST_TIMEOUT}ms`);
         throw new Error('Geoapify request timed out');
       }
@@ -145,9 +144,14 @@ export class GeoapifyGeocodingService {
       const data = await this.makeRequest<GeoapifyResponse>(url);
       console.log('Geoapify Autocomplete Response:', data);
       return data.features || [];
-    } catch (error: any) {
-      console.error("Geoapify Autocomplete error:", error.message || error);
-      throw new Error(`Autocomplete failed: ${error.message || 'Unknown error'}`);
+    } catch (error: unknown) { // Changed 'any' to 'unknown'
+      if (error instanceof Error) {
+        console.error("Geoapify Autocomplete error:", error.message || error);
+        throw new Error(`Autocomplete failed: ${error.message || 'Unknown error'}`);
+      } else {
+        console.error("Geoapify Autocomplete error: An unknown error occurred", error);
+        throw new Error(`Autocomplete failed: Unknown error`);
+      }
     }
   }
 
