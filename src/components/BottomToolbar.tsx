@@ -1,10 +1,12 @@
 
+import React from 'react'; // Added React import as it's good practice
+import { IonTabs, IonRouterOutlet, IonTabBar, IonTabButton, IonIcon, IonLabel } from '@ionic/react';
+import { Route, Redirect } from 'react-router-dom';
+import { compassOutline, personOutline } from 'ionicons/icons'; // Assuming these icons are imported from ionicons/icons
 import Profile from '../pages/Profile';
-import { useIonRouter } from '@ionic/react';
 
 
 const BottomToolbar: React.FC = () => {
-  const ionRouter = useIonRouter();
   return (
     <IonTabs>
       <IonRouterOutlet>

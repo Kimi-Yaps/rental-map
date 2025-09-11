@@ -21,7 +21,7 @@ import {
 } from '@ionic/react';
 import { useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
-import { camera, business, card, call } from 'ionicons/icons';
+import { camera, business } from 'ionicons/icons';
 import { PropertyOwner } from '../interfaces/PropertyOwner';
 
 const LandlordProfile: React.FC = () => {
@@ -34,6 +34,7 @@ const LandlordProfile: React.FC = () => {
     id: string;
     description: string;
     address: string;
+  }
   const [properties, setProperties] = useState<Property[]>([]);
 
   useEffect(() => {

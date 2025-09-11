@@ -45,7 +45,7 @@ const AmenitiesStepPage = React.lazy(() => import('./pages/AmenitiesStepPage'));
 const FinalReviewPage = React.lazy(() => import('./pages/FinalReviewPage'));
 const Home = React.lazy(() => import('./pages/Home'));
 const LoginPage = React.lazy(() => import('./pages/LoginPage'));
-const LoginSelector = React.lazy(() => import('./pages/LoginSelector'));
+
 const TenantLoginPage = React.lazy(() => import('./pages/TenantLoginPage'));
 const LandlordLoginPage = React.lazy(() => import('./pages/LandlordLoginPage'));
 const Profile = React.lazy(() => import('./pages/Profile'));
@@ -96,11 +96,10 @@ const App: React.FC = () => (
         >
           {/* Default redirect for root path */}
           <Route exact path="/">
-            <Redirect to="/loginselector" />
+            <Redirect to="/home" />
           </Route>
 
           {/* Authentication */}
-          <Route exact path="/loginselector" component={LoginSelector} />
           <Route exact path="/tenant-login" component={TenantLoginPage} />
           <Route exact path="/landlord-login" component={LandlordLoginPage} />
           <Route exact path="/login" component={LoginPage} />

@@ -61,7 +61,7 @@ const SearchbarWithSuggestions: React.FC<SearchbarWithSuggestionsProps> = ({
   // Refs for managing focus and debouncing
   const searchbarRef = useRef<HTMLIonSearchbarElement>(null);
   const suggestionsRef = useRef<HTMLDivElement>(null);
-  const debounceRef = useRef<NodeJS.Timeout>();
+  const debounceRef = useRef<NodeJS.Timeout | null>(null);
 
   // Debounced handler to fetch suggestions
   const handleFetchSuggestions = useCallback(async (term: string) => {
@@ -121,7 +121,7 @@ const SearchbarWithSuggestions: React.FC<SearchbarWithSuggestionsProps> = ({
     
     // Blur the searchbar
     if (searchbarRef.current) {
-      searchbarRef.current.setFocus(false);
+      searchbarRef.current.setFocus();
     }
   };
 

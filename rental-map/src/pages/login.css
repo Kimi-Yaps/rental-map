@@ -1,0 +1,378 @@
+:root {
+  color-scheme: light; /* Tells browser we only support light */
+}
+
+.login-content {
+  --padding-top: 2.8rem;
+  --padding-bottom: 1rem;
+  --padding-start: 1rem;
+  --padding-end: 1rem;
+}
+
+.login-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100%;
+  padding: 20px 0;
+  box-sizing: border-box; /* Ensure padding is included in the element's total width and height */
+}
+
+.login-card-wrapper {
+  width: 100%;
+  max-width: 420px;
+  margin: 0 auto;
+  padding: 0 16px; /* Add horizontal padding for smaller screens */
+  box-sizing: border-box;
+}
+
+.login-card {
+  --background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(20px);
+  border-radius: 24px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  margin: 0;
+  overflow: hidden;
+}
+
+.login-header {
+  text-align: center;
+  padding: 32px 24px 16px;
+  background: transparent;
+}
+
+.login-icon-wrapper {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+
+.login-icon {
+  font-size: 48px;
+  color: var(--ion-color-primary);
+  border-radius: 50%;
+  padding: 16px;
+  width: 48px;
+  height: 48px;
+}
+
+.login-title {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--ion-color-dark);
+  margin-bottom: 8px;
+  line-height: 1.2;
+}
+
+.login-subtitle {
+  font-size: 16px;
+  line-height: 1.4;
+  opacity: 0.8;
+}
+
+.login-card-content {
+  padding: 0 24px 32px;
+  text-align: center; /* Ensure all content within the card content is centered */
+}
+
+.login-segment {
+  margin-bottom: 24px;
+  background: var(--ion-color-light);
+  border-radius: 16px;
+  padding: 4px;
+}
+
+.segment-button {
+  --color: var(--ion-color-medium);
+  --color-checked: var(--ion-color-primary);
+  --background-checked: white;
+  --border-radius: 12px;
+  font-weight: 600;
+  min-height: 44px;
+}
+
+.register-suggestion {
+  text-align: center;
+  margin-bottom: 24px;
+  font-size: 15px;
+  color: var(--ion-color-medium);
+}
+
+.register-link {
+  color: var(--ion-color-primary);
+  text-decoration: underline;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.google-auth-section {
+  display: flex;
+  justify-content: center;
+  align-items: center; /* vertical centering */
+  width: 100%;
+}
+
+.google-login-wrapper {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
+
+.google-login-wrapper > div {
+  margin: 0 auto !important; /* force center */
+}
+
+
+.google-loading-btn {
+  height: 56px;
+  border-radius: 16px;
+  font-size: 16px;
+  font-weight: 600;
+  text-transform: none;
+  --border-color: var(--ion-color-medium);
+}
+
+.divider-section {
+  display: flex;
+  align-items: center;
+  margin: 32px 0;
+  gap: 16px;
+}
+
+.divider-line {
+  flex: 1;
+  height: 1px;
+  background: var(--ion-color-medium);
+  opacity: 0.3;
+}
+
+.divider-text {
+  font-size: 14px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.email-form {
+  width: 100%;
+}
+
+.input-group {
+  margin-bottom: 20px;
+}
+
+.custom-input {
+  --border-radius: 16px;
+  --padding-start: 20px;
+  --padding-end: 20px;
+  --border-color: var(--ion-color-light-shade);
+  --color: var(--ion-color-dark);
+  --placeholder-color: var(--ion-color-medium);
+  height: 56px;
+  font-size: 16px;
+}
+
+.custom-input.ion-focused {
+  --border-color: var(--ion-color-primary);
+  --highlight-color: var(--ion-color-primary);
+}
+
+/* Ensure floating label and input text start from the left */
+ion-input.custom-input {
+  --padding-start: 20px; /* Ensure input text starts from left */
+  --padding-end: 20px;
+}
+
+ion-input.custom-input.ion-focused::part(label),
+ion-input.custom-input.has-value::part(label) {
+  transform: translateY(-100%) translateX(0) scale(0.75); /* Adjust as needed */
+  transform-origin: left top;
+}
+
+/* Ensure label floats when custom-input's native input is auto-filled */
+ion-input.custom-input:has(input:-webkit-autofill)::part(label) {
+  transform: translateY(-100%) translateX(0) scale(0.75);
+  transform-origin: left top;
+}
+
+
+ion-input.custom-input::part(label) {
+  transform-origin: left top;
+}
+
+.password-input-wrapper {
+  position: relative;
+  margin-bottom: 32px;
+}
+
+.password-input {
+  --border-radius: 16px;
+  --padding-start: 20px;
+  --border-color: var(--ion-color-light-shade);
+  --color: var(--ion-color-dark);
+  --placeholder-color: var(--ion-color-medium);
+  height: 56px;
+  font-size: 16px;
+  --padding-end: 60px; /* Keep this specific override */
+}
+
+.password-input.ion-focused {
+  --border-color: var(--ion-color-primary);
+  --highlight-color: var(--ion-color-primary);
+}
+
+ion-input.password-input {
+  --padding-start: 20px;
+  --padding-end: 60px;
+}
+
+ion-input.password-input.ion-focused::part(label),
+ion-input.password-input.has-value::part(label) {
+  transform: translateY(-100%) translateX(0) scale(0.75);
+  transform-origin: left top;
+}
+
+/* Ensure label floats when password-input's native input is auto-filled */
+ion-input.password-input:has(input:-webkit-autofill)::part(label) {
+  transform: translateY(-100%) translateX(0) scale(0.75);
+  transform-origin: left top;
+}
+
+  height: 40px;
+  z-index: 10;
+}
+
+.submit-btn {
+  height: 56px;
+  border-radius: 16px;
+  font-size: 16px;
+  font-weight: 600;
+  text-transform: none;
+  --box-shadow: 0 8px 24px rgba(var(--ion-color-primary-rgb), 0.3);
+  margin-bottom: 32px; /* Add gap below the button */
+}
+
+.submit-btn:hover {
+  --box-shadow: 0 12px 32px rgba(var(--ion-color-primary-rgb), 0.4);
+  transform: translateY(-2px);
+  transition: all 0.3s ease;
+}
+
+.loading-spinner {
+  margin-right: 8px;
+  --color: currentColor;
+}
+
+/* Google OAuth button styling override */
+.google-login-wrapper [data-testid="google-oauth-button"] {
+  width: 100% !important;
+  height: 56px !important;
+  border-radius: 16px !important;
+  font-size: 16px !important;
+  font-weight: 600 !important;
+  border: 2px solid var(--ion-color-light-shade) !important;
+  background: white !important;
+  transition: all 0.3s ease !important;
+  margin: 0 auto !important; /* Force centering of the button itself */
+}
+
+.google-login-wrapper [data-testid="google-oauth-button"]:hover {
+  border-color: var(--ion-color-primary) !important;
+  box-shadow: 0 4px 16px rgba(var(--ion-color-primary-rgb), 0.15) !important;
+  transform: translateY(-1px) !important;
+}
+
+/* Responsive adjustments */
+@media (min-width: 768px) {
+  .login-content {
+    --padding-top: 3.2rem;
+    --padding-bottom: 2rem;
+    --padding-start: 2rem;
+    --padding-end: 2rem;
+  }
+}
+
+@media (max-width: 767.98px) { /* Targeting smaller screens, including most phones and small tablets */
+  .login-container {
+    padding: 10px 0;
+    align-items: flex-start; /* Align to top on smaller screens */
+  }
+  
+  .login-card-wrapper {
+    max-width: 100%;
+    padding: 0 16px; /* Ensure consistent padding */
+  }
+  
+  .login-card {
+    border-radius: 20px;
+    margin: 0; /* Remove margin to allow full width within wrapper padding */
+  }
+  
+  .login-header {
+    padding: 24px 20px 16px;
+  }
+  
+  .login-card-content {
+    padding: 0 20px 24px;
+  }
+  
+  .login-title {
+    font-size: 24px;
+  }
+
+  .login-subtitle {
+    font-size: 15px;
+  }
+
+  .custom-input, .submit-btn, .google-loading-btn {
+    height: 50px; /* Slightly reduce height for mobile */
+    font-size: 15px;
+  }
+
+  .password-toggle-btn {
+    height: 36px; /* Adjust toggle button size */
+  }
+
+  .divider-section {
+    margin: 24px 0; /* Adjust margin for dividers */
+  }
+
+  .submit-btn {
+    margin-bottom: 24px; /* Adjust gap for smaller screens */
+  }
+}
+
+@media (min-width: 1200px) {
+  .login-content {
+    --padding-top: 4rem;
+    --padding-bottom: 2.5rem;
+    --padding-start: 3rem;
+    --padding-end: 3rem;
+  }
+}
+
+@media (max-width: 479.98px) { /* Targeting very small mobile screens */
+  .login-header {
+    padding: 20px 16px 12px;
+  }
+
+  .login-title {
+    font-size: 22px;
+  }
+
+  .login-subtitle {
+    font-size: 14px;
+  }
+
+  .login-card-content {
+    padding: 0 16px 20px;
+  }
+
+  .register-suggestion, .divider-text {
+    font-size: 14px;
+  }
+
+  .submit-btn {
+    margin-bottom: 20px; /* Further adjust gap for very small screens */
+  }
+}
