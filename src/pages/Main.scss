@@ -185,3 +185,46 @@ IonIcon{
 .cust-icon {
   margin-right: 12px; /* Add margin to the right of each icon */
 }
+
+.home-move
+{
+  width: auto;
+  height: 1em;
+}
+
+.home-Bg{
+  overflow: hidden;
+  border-radius: 2em;
+  margin-top: 4em;
+  position: absolute;
+  z-index: 3;
+  object-fit: cover;
+  height: auto;
+  width: 64em;
+}
+
+.home-Poly{
+  top: 3.8em;
+  left: 65%;
+  height: auto;
+  width: 8em;
+  position: absolute;
+  z-index: 2;
+}
+.home-Elips{
+  height: auto;
+  width: 42em;
+  position: absolute;
+  z-index: 1;
+}
+
+.frontPageContainer
+{
+  margin-top: 8em;
+  display: flex;
+  justify-content: center;
+  position: relative; /* children can be absolutely positioned inside */
+  width: 100%;
+  height: 100vh; /* or any height you want */
+  overflow: hidden;   /* optional: prevent children spilling out */
+}

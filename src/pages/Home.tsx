@@ -7,10 +7,19 @@ import {
   IonText,
   IonHeader,
   IonToolbar,
-  IonIcon
+  IonIcon,
+  IonImg
 } from "@ionic/react";
 import { useState, useEffect } from "react";
-import "./Main.css";
+import "./Main.scss";
+import { storageService } from "../services/storage";
+
+export const getAssetUrls = () => ({
+  move: storageService.getPublicUrl('Asset/moving.webp'),
+  elips: storageService.getPublicUrl('Asset/ellipse_bg.webp'),
+  polygon: storageService.getPublicUrl('Asset/polygon_bg.webp'),
+  homeBackground: storageService.getPublicUrl('Asset/PulauHarimau09.webp')
+})
 
 export const Icons = {
   cart: "public/cart.svg",
@@ -49,9 +58,10 @@ const Home: React.FC = () => {
   }, []);
 
   return (
-    <IonPage id="main-content">
-      <IonContent className="ion-padding">
-        <IonGrid className="ion-no-padding">
+    <IonPage id="main-content" style={{ '--background': 'rgba(246, 239, 229, 1)' }}>
+     <IonContent style={{ '--background': 'rgba(246, 239, 229, 1)' }}>
+        <IonGrid>
+          <IonImg className="home-move" src={getAssetUrls().move}></IonImg>
           {/* Navigation Row */}
           <IonRow className="ion-justify-content-between ion-align-items-center nav-row">
             {/* Left Navigation Items */}
@@ -89,10 +99,14 @@ const Home: React.FC = () => {
             <IonIcon src={Icons.search} className="cust-icon"></IonIcon>
             <IonIcon src={Icons.cart} className="cust-icon"></IonIcon>
           </IonCol>
-          
-
           </IonRow>
         </IonGrid>
+
+          <IonGrid className="frontPageContainer">
+            <IonImg className="home-Bg" src={getAssetUrls().homeBackground}></IonImg>
+            <IonImg className="home-Poly" src={getAssetUrls().polygon}></IonImg>
+            <IonImg className="home-Elips" src={getAssetUrls().elips}></IonImg>
+          </IonGrid>
       </IonContent>
     </IonPage>
   );
