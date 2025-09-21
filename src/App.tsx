@@ -51,6 +51,7 @@ const HomeBestFit = React.lazy(() => import('./pages/HomeBestFit'));
 const HomeSearched = React.lazy(() => import('./pages/HomeSearched'));
 const LandLordHome = React.lazy(() => import('./pages/landlordHome'));
 const calendarMobile = React.lazy(() => import('./pages/calendarMobile'));
+const Profile = React.lazy(() => import('./pages/Profile'));
 const Location = React.lazy(() => import('./pages/Location'));
 const PhotosStepPage = React.lazy(() => import('./pages/PhotosStepPage'));
 const Pricing = React.lazy(() => import('./pages/Pricing'));
@@ -122,7 +123,9 @@ const App: React.FC = () => (
           <Route exact path="/searchSuggestions" component={SearchSuggestionsPage} />
           
           {/* Profile Routes */}
+          <Route exact path="/profile" component={Profile} />
  
+          
           
           {/* Catch-all redirect for unmatched routes */}
           <Route render={() => <Redirect to="/home" />} />

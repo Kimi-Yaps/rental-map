@@ -12,7 +12,8 @@ import {
 } from "@ionic/react";
 import { useState, useEffect } from "react";
 import "./BookPage.scss";
-import ResizableWindow from "../components/ResizableWindow";
+import ResizableWindow from '../components/ResizableWindow';
+import supabase from "../supabaseConfig";
 
 export const Icons = {
   camera: "public/camera.svg",
@@ -66,7 +67,7 @@ const BookPackage: React.FC = () => {
           {/* Moved camera icon to be a sibling of background-noise */}
           <IonImg src={Icons.noise} className="background-noise"></IonImg>
           <IonImg src={Icons.camera} className="centered-icon"></IonImg>
-          
+
           <IonGrid className="booking-nav-container">
           <IonRow className="booking-nav">
             
@@ -107,7 +108,7 @@ const BookPackage: React.FC = () => {
           </IonRow>
         </IonGrid>
 
-        
+        <ResizableWindow />
 
         {/* Rest of your page content goes here */}
         <IonGrid>
