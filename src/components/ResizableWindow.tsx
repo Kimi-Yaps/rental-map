@@ -10,83 +10,52 @@ import {
   IonText,
 } from '@ionic/react';
 import './ResizableWindow.scss'; // We will create this SCSS file next
-import { Booking, WindowState, WindowPosition, WindowSize } from '../interfaces/Booking'; // Import interfaces
+import { Package } from '../interfaces/Package'; // Import Package interface
+import { WindowState, WindowPosition, WindowSize } from '../interfaces/Booking'; // Keep these types if they are used elsewhere and not defined locally
 import { Icons } from '../pages/BookPackage'; // Import Icons from BookPackage
 import supabase from '../supabaseConfig';
 
 // Actual data fetching function using Supabase
-const fetchBookings = async (): Promise<Booking[]> => {
+const fetchPackages = async (): Promise<Package[]> => {
   try {
     const { data, error } = await supabase
-      .from('bookings')
+      .from('Packages') // Changed table to 'Packages'
       .select('*'); // Select all columns
 
     if (error) {
-      console.error("Supabase error fetching bookings:", error);
+      console.error("Supabase error fetching packages:", error);
       throw error;
     }
 
     // Supabase typically returns JSONB fields as parsed objects and dates as strings.
-    // We ensure dates are in a consistent string format for our helpers.
-    const formattedData = data?.map((booking: any) => ({
-      ...booking,
-      // Ensure dates are strings in 'YYYY-MM-DD' format if they come as Date objects or different string formats
-      check_in_date: booking.check_in_date ? new Date(booking.check_in_date).toISOString().split('T')[0] : '',
-      check_out_date: booking.check_out_date ? new Date(booking.check_out_date).toISOString().split('T')[0] : '',
-      created_at: booking.created_at ? new Date(booking.created_at).toISOString() : '',
-      updated_at: booking.updated_at ? new Date(booking.updated_at).toISOString() : '',
-      // booking_status and Icon_Url are JSONB, Supabase should parse them correctly into JS objects.
-      // No explicit mapping needed here if Supabase returns them as expected.
+    const formattedData = data?.map((pkg: Package) => ({ // Use Package type
+      ...pkg,
+      // No date formatting needed for packages based on schema, but keep if created_at is relevant
+      created_at: pkg.created_at ? new Date(pkg.created_at).toISOString() : '',
+      // 'Contact' and 'ammenities' are JSONB, Supabase should parse them correctly into JS objects.
+      // Spreading pkg should handle these if they are parsed correctly.
     })) || [];
 
     return formattedData;
-  } catch (err: any) {
-    console.error("Failed to fetch bookings:", err);
-    // Set error state here if this function is called within a component that manages state
-    // For this standalone function, we'll just log and re-throw or return empty
-    // If this were inside a component's useEffect, we'd use setError from useState
-    // For now, let's assume the component's useEffect handles error state.
-    throw err; // Re-throw to be caught by the component's try-catch
-  }
-};
-
-// Helper to format dates
-const formatDate = (dateString: string): string => {
-  if (!dateString) return 'N/A';
-  try {
-    const date = new Date(dateString);
-    return date.toLocaleDateString(undefined, {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-    });
-  } catch (e) {
-    console.error("Error formatting date:", e);
-    return dateString; // Return original string if parsing fails
-  }
+  } catch (err: unknown) {
+      // Type guard for error object
+      if (err instanceof Error) {
+        console.error("Failed to fetch packages:", err.message);
+        throw new Error(`Failed to fetch packages: ${err.message}`);
+      } else {
+        console.error("Failed to fetch packages: An unknown error occurred");
+        throw new Error("Failed to fetch packages: An unknown error occurred");
+      }
+    }
 };
 
 // Helper to format currency
-const formatCurrency = (amount: number): string => {
+const formatCurrency = (amount: number | null): string => { // Allow null for amount
+  if (amount === null) return 'N/A';
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency: 'USD', // Assuming USD, adjust if needed
   }).format(amount);
-};
-
-// Helper for status badges
-const getStatusBadgeClass = (status: string): string => {
-  switch (status) {
-    case 'confirmed': return 'status-confirmed';
-    case 'pending': return 'status-pending';
-    case 'cancelled': return 'status-cancelled';
-    case 'completed': return 'status-completed';
-    case 'paid': return 'payment-paid';
-    case 'unpaid': return 'payment-unpaid';
-    case 'overdue': return 'payment-overdue';
-    case 'refunded': return 'payment-refunded';
-    default: return 'status-default';
-  }
 };
 
 interface ResizableWindowProps {
@@ -100,7 +69,7 @@ interface ResizableWindowProps {
 const ResizableWindow: React.FC<ResizableWindowProps> = ({
   initialPosition = { x: 0, y: 0 }, // Default to top-left, will be centered later
   initialSize = { width: 600, height: 400 },
-  title = "Bookings",
+  title = "Packages", // Changed title to "Packages"
   onClose,
 }) => {
   const [windowState, setWindowState] = useState<WindowState>({
@@ -111,7 +80,7 @@ const ResizableWindow: React.FC<ResizableWindowProps> = ({
     zIndex: 1, // Initial z-index
   });
 
-  const [bookings, setBookings] = useState<Booking[]>([]);
+  const [packages, setPackages] = useState<Package[]>([]); // Changed state from bookings to packages
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -154,11 +123,11 @@ const ResizableWindow: React.FC<ResizableWindowProps> = ({
       setIsLoading(true);
       setError(null);
       try {
-        const fetchedBookings = await fetchBookings();
-        setBookings(fetchedBookings);
+        const fetchedPackages = await fetchPackages(); // Call the new fetch function
+        setPackages(fetchedPackages); // Update the new state variable
       } catch (err) {
-        console.error("Failed to fetch bookings:", err);
-        setError("Failed to load bookings. Please try again later.");
+        console.error("Failed to fetch packages:", err);
+        setError("Failed to load packages. Please try again later."); // Update error message
       } finally {
         setIsLoading(false);
       }
@@ -166,7 +135,7 @@ const ResizableWindow: React.FC<ResizableWindowProps> = ({
     loadData();
   }, []);
 
-  // Dragging logic
+  // Dragging logic (remains the same)
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     if (!headerRef.current || !windowRef.current) return;
 
@@ -206,7 +175,7 @@ const ResizableWindow: React.FC<ResizableWindowProps> = ({
     setIsDragging(false);
   }, []);
 
-  // Resizing logic
+  // Resizing logic (remains the same)
   const handleResizeMouseDown = useCallback((e: React.MouseEvent, handleName: string) => {
     e.preventDefault(); // Prevent default drag behavior
     e.stopPropagation(); // Stop propagation to avoid triggering drag
@@ -332,7 +301,7 @@ const ResizableWindow: React.FC<ResizableWindowProps> = ({
     setResizeHandle(null);
   }, []);
 
-  // Add and remove event listeners
+  // Add and remove event listeners (remains the same)
   useEffect(() => {
     if (isDragging) {
       document.addEventListener('mousemove', handleMouseMove);
@@ -361,7 +330,7 @@ const ResizableWindow: React.FC<ResizableWindowProps> = ({
     };
   }, [isResizing, resizeHandle, handleResizeMouseMove, handleResizeMouseUp]);
 
-  // Window controls handlers
+  // Window controls handlers (remains the same)
   const handleMinimize = () => {
     setWindowState(prevState => ({ ...prevState, isMinimized: !prevState.isMinimized }));
   };
@@ -380,33 +349,27 @@ const ResizableWindow: React.FC<ResizableWindowProps> = ({
     console.log("Close button clicked");
   };
 
-  // Render booking cards
-  const renderBookingCard = (booking: Booking) => (
-    <IonCol sizeXs="12" sizeMd="6" sizeLg="4" key={booking.id}>
-      <div className="booking-card">
+  // Render package cards
+  const renderPackageCard = (pkg: Package) => ( // Renamed function and parameter
+    <IonCol sizeXs="12" sizeMd="6" sizeLg="4" key={pkg.id}>
+      <div className="package-card"> {/* Changed class name */}
         <div className="card-header">
-          <IonText>Booking #{booking.id}</IonText>
-          {booking.Icon_Url?.property_icon && (
-            <IonImg src={booking.Icon_Url.property_icon} alt="Property Icon" className="card-property-icon" />
+          {pkg.icon_url && ( // Check if icon_url exists
+            <IonImg src={pkg.icon_url} alt="Package Icon" className="card-package-icon" /> // Changed alt text and class name
           )}
         </div>
         <div className="card-body">
-          <p><strong>Dates:</strong> {formatDate(booking.check_in_date)} - {formatDate(booking.check_out_date)}</p>
-          <p><strong>Guests:</strong> {booking.total_guests}</p>
-          <p><strong>Price:</strong> {formatCurrency(booking.total_price)}</p>
-          <div className="status-badges">
-            <span className={`status-badge ${getStatusBadgeClass(booking.booking_status.current_status)}`} >
-              {booking.booking_status.current_status}
-            </span>
-            <span className={`status-badge ${getStatusBadgeClass(booking.booking_status.payment_status)}`} >
-              {booking.booking_status.payment_status}
-            </span>
-          </div>
-          {/* Render amenity icons if available */}
-          {booking.Icon_Url?.amenity_icons && booking.Icon_Url.amenity_icons.length > 0 && (
+          <p><strong>Description:</strong> {pkg.description || 'No description available'}</p> {/* Display description */}
+          <p><strong>Location:</strong> {pkg.location || 'N/A'}</p> {/* Display location */}
+          <p><strong>Price:</strong> {formatCurrency(pkg.price)}</p> {/* Display price */}
+          {/* Render amenity icons if available - assuming 'ammenities' is an object with amenity details or icon URLs */}
+          {pkg.ammenities && typeof pkg.ammenities === 'object' && Object.keys(pkg.ammenities).length > 0 && (
             <div className="amenity-icons">
-              {booking.Icon_Url.amenity_icons.map((iconUrl, index) => (
-                <IonImg key={index} src={iconUrl} alt={`Amenity Icon ${index + 1}`} className="amenity-icon" />
+              {/* This part needs adjustment based on the actual structure of pkg.ammenities */}
+              {/* For now, assuming it's an object where values are URLs */}
+              {Object.entries(pkg.ammenities).map(([key, value]) => (
+                // Assuming value is a URL string. Adjust if value is an object itself.
+                <IonImg key={key} src={String(value)} alt={`Amenity: ${key}`} className="amenity-icon" />
               ))}
             </div>
           )}
@@ -419,7 +382,7 @@ const ResizableWindow: React.FC<ResizableWindowProps> = ({
   const renderLoadingState = () => (
     <div className="loading-overlay">
       <div className="spinner"></div>
-      <IonText>Loading bookings...</IonText>
+      <IonText>Loading packages...</IonText> {/* Updated text */}
     </div>
   );
 
@@ -434,11 +397,11 @@ const ResizableWindow: React.FC<ResizableWindowProps> = ({
   // Render empty state
   const renderEmptyState = () => (
     <div className="empty-overlay">
-      <IonText>No bookings found.</IonText>
+      <IonText>No packages found.</IonText> {/* Updated text */}
     </div>
   );
 
-  // Apply styles based on state
+  // Apply styles based on state (remains the same)
   const windowStyle: React.CSSProperties = {
     position: 'absolute',
     left: `${windowState.position.x}px`,
@@ -455,7 +418,7 @@ const ResizableWindow: React.FC<ResizableWindowProps> = ({
     height: windowState.isMaximized ? 'calc(90vh - var(--header-height) - var(--footer-height, 0px))' : `calc(${windowState.size.height}px - var(--header-height) - var(--footer-height, 0px))`,
   };
 
-  // Define resize handles
+  // Define resize handles (remains the same)
   const resizeHandles = [
     'top-left', 'top-right', 'bottom-left', 'bottom-right',
     'top', 'bottom', 'left', 'right'
@@ -499,11 +462,11 @@ const ResizableWindow: React.FC<ResizableWindowProps> = ({
         <IonContent className="window-content" style={contentStyle}>
           {isLoading && renderLoadingState()}
           {error && renderErrorState()}
-          {!isLoading && !error && bookings.length === 0 && renderEmptyState()}
-          {!isLoading && !error && bookings.length > 0 && (
+          {!isLoading && !error && packages.length === 0 && renderEmptyState()} {/* Changed from bookings to packages */}
+          {!isLoading && !error && packages.length > 0 && (
             <IonGrid>
               <IonRow>
-                {bookings.map(renderBookingCard)}
+                {packages.map(renderPackageCard)} {/* Changed from bookings to packages and renderBookingCard to renderPackageCard */}
               </IonRow>
             </IonGrid>
           )}

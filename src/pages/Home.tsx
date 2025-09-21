@@ -99,7 +99,11 @@ const Home: React.FC = () => {
             <IonIcon src={Icons.whatsapp} className="cust-icon"></IonIcon>
             <IonIcon src={Icons.facebook} className="cust-icon"></IonIcon>
             <IonIcon src={Icons.email} className="cust-icon"></IonIcon>
-            <IonIcon src={Icons.user} className="cust-icon"></IonIcon>
+
+             <IonRouterLink routerLink="/profile" className="no-style-link">
+              <IonIcon src={Icons.user} className="cust-icon"></IonIcon>
+            </IonRouterLink>
+            
             <IonIcon src={Icons.malayFlag} className="cust-icon"></IonIcon>
             <IonIcon src={Icons.cart} className="cust-icon"></IonIcon>
           </IonCol>
