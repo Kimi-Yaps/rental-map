@@ -12,7 +12,7 @@ import {
   IonRouterLink
 } from "@ionic/react";
 import { Fragment } from "react";
-import "./Main.scss";
+import "../Main.scss";
 import { storageService } from "../services/storage";
 
 export const getAssetUrls = () => ({

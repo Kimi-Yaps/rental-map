@@ -14,6 +14,7 @@ import { useState, useEffect } from "react";
 import "./BookPage.scss";
 import ResizableWindow from '../components/ResizableWindow';
 import supabase from "../supabaseConfig";
+import { Package } from "../interfaces/Booking"; // Import the Package interface
 
 export const Icons = {
   camera: "public/camera.svg",
@@ -43,7 +44,10 @@ interface TabButtonProps {
 // Main component - removed the props that don't belong here
 const BookPackage: React.FC = () => {
   const [isDesktop, setIsDesktop] = useState(window.innerWidth > 768);
-  
+  const [packages, setPackages] = useState<Package[]>([]);
+  const [selectedPackage, setSelectedPackage] = useState<Package | null>(null);
+  const [isWindowOpen, setIsWindowOpen] = useState(false);
+
   useEffect(() => {
     const handleResize = () => {
       setIsDesktop(window.innerWidth > 768);
@@ -54,6 +58,29 @@ const BookPackage: React.FC = () => {
       window.removeEventListener("resize", handleResize);
     };
   }, []);
+
+  useEffect(() => {
+    const fetchPackages = async () => {
+      const { data, error } = await supabase.from('Packages').select('*');
+      if (error) {
+        console.error('Error fetching packages:', error);
+      } else {
+        setPackages(data as Package[]);
+      }
+    };
+
+    fetchPackages();
+  }, []);
+
+  const handleIconClick = (pkg: Package) => {
+    setSelectedPackage(pkg);
+    setIsWindowOpen(true);
+  };
+
+  const handleCloseWindow = () => {
+    setIsWindowOpen(false);
+    setSelectedPackage(null);
+  };
 
   // Handler for the tab button
   const handleTabButtonClick = () => {
@@ -108,13 +135,26 @@ const BookPackage: React.FC = () => {
           </IonRow>
         </IonGrid>
 
-        <ResizableWindow />
+        {isWindowOpen && selectedPackage && (
+          <ResizableWindow title="Package" onClose={handleCloseWindow}>
+            <div>
+              <h2>{selectedPackage.description}</h2>
+              <p>Price: {selectedPackage.price}</p>
+              <p>Location: {selectedPackage.location}</p>
+              <p>Number of Tenants: {selectedPackage.numberOfTenant}</p>
+              {/* Add more details as needed */}
+            </div>
+          </ResizableWindow>
+        )}
 
         {/* Rest of your page content goes here */}
         <IonGrid>
           <IonRow>
-            <IonCol>
-            </IonCol>
+            {packages.map((pkg) => (
+              <IonCol key={pkg.id} size="auto" onClick={() => handleIconClick(pkg)}>
+                {pkg.icon_url && <IonImg src={pkg.icon_url} style={{ width: '50px', height: '50px', cursor: 'pointer' }} />}
+              </IonCol>
+            ))}
           </IonRow>
         </IonGrid>
 

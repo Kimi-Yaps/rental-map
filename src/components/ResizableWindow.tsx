@@ -15,6 +15,7 @@ import { WindowState, WindowPosition, WindowSize } from '../interfaces/Booking';
 import { Icons } from '../pages/BookPackage'; // Import Icons from BookPackage
 import supabase from '../supabaseConfig';
 
+
 // Actual data fetching function using Supabase
 const fetchPackages = async (): Promise<Package[]> => {
   try {
