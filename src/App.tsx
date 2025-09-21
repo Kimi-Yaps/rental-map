@@ -44,13 +44,8 @@ import './theme/variables.css';
 const AmenitiesStepPage = React.lazy(() => import('./pages/AmenitiesStepPage'));
 const FinalReviewPage = React.lazy(() => import('./pages/FinalReviewPage'));
 const Home = React.lazy(() => import('./pages/Home'));
-const LoginPage = React.lazy(() => import('./pages/LoginPage'));
-
-const TenantLoginPage = React.lazy(() => import('./pages/TenantLoginPage'));
-const LandlordLoginPage = React.lazy(() => import('./pages/LandlordLoginPage'));
-const Profile = React.lazy(() => import('./pages/Profile'));
-const TenantProfile = React.lazy(() => import('./pages/TenantProfile'));
-const LandlordProfile = React.lazy(() => import('./pages/LandlordProfile'));
+const SignInPage = React.lazy(() => import('./pages/SignInPage'));
+const BookPackage = React.lazy(() => import('./pages/BookPackage'));
 const SearchSuggestionsPage = React.lazy(() => import('./pages/SearchSuggestionsPage'));
 const HomeBestFit = React.lazy(() => import('./pages/HomeBestFit'));
 const HomeSearched = React.lazy(() => import('./pages/HomeSearched'));
@@ -100,9 +95,7 @@ const App: React.FC = () => (
           </Route>
 
           {/* Authentication */}
-          <Route exact path="/tenant-login" component={TenantLoginPage} />
-          <Route exact path="/landlord-login" component={LandlordLoginPage} />
-          <Route exact path="/login" component={LoginPage} />
+          <Route exact path="/SignIn" component={SignInPage} />
 
           {/* payment Gateway */}
           <Route exact path="/payment" component={PaymentInsert} />
@@ -111,7 +104,8 @@ const App: React.FC = () => (
           <Route exact path="/home" component={Home} />
           <Route exact path="/landlord" component={LandLordHome} />
           
-          {/* Property listing flow */}
+          {/* Booking listing flow */}
+          <Route exact path="/bookpackage" component={BookPackage} />
           <Route exact path="/propertyType" component={PropertyType} />
           <Route exact path="/location" component={Location} />
           <Route exact path="/amenities" component={AmenitiesStepPage} />
@@ -128,9 +122,7 @@ const App: React.FC = () => (
           <Route exact path="/searchSuggestions" component={SearchSuggestionsPage} />
           
           {/* Profile Routes */}
-          <Route exact path="/profile" component={Profile} />
-          <Route exact path="/profile/tenant" component={TenantProfile} />
-          <Route exact path="/profile/landlord" component={LandlordProfile} />
+ 
           
           {/* Catch-all redirect for unmatched routes */}
           <Route render={() => <Redirect to="/home" />} />

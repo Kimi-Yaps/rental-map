@@ -1,0 +1,15 @@
+.window-container
+{
+    position: relative; /* Added for z-index to work */
+    z-index: 1000; /* High z-index to ensure it's on top */
+    width: 16cm;
+    height: 28em;
+    display: block; /* Ensure it behaves as a block element */
+}
+
+.window-header
+{
+    background-color: aliceblue;
+    width: 16m;
+    height:28em;
+}

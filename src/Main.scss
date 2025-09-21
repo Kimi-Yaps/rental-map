@@ -382,3 +382,11 @@ body {
   text-decoration: none;
   color: #503216;
 }
+
+/* New CSS for icon alignment */
+.icon-row {
+  display: flex;
+  justify-content: center; /* Centers the icons */
+  align-items: center;     /* Aligns icons vertically in the center */
+  gap: 16px;               /* Adds space between icons */
+}

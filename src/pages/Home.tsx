@@ -5,12 +5,13 @@ import {
   IonRow,
   IonCol,
   IonText,
-  IonHeader,
-  IonToolbar,
+  IonItem,
+  IonLabel,
   IonIcon,
-  IonImg
+  IonImg,
+  IonRouterLink
 } from "@ionic/react";
-import { useState, useEffect } from "react";
+import { Fragment } from "react";
 import "./Main.scss";
 import { storageService } from "../services/storage";
 
@@ -28,7 +29,6 @@ export const Icons = {
   malayFlag:"public/flag-malaysia.svg",
   instagram:"public/instagram.svg",
   user: "public/profile-fill.svg",
-  search:"public/search.svg",
   tiktok:"public/tiktok-circle.svg",
   whatsapp:"public/whatsapp-filled.svg",
   home: "public/home.svg",
@@ -44,30 +44,32 @@ export interface EnhancedSuggestion {
 }
 
 const Home: React.FC = () => {
-  const [isDesktop, setIsDesktop] = useState(window.innerWidth > 768);
+  const scrollItems = Array.from({ length: 7 }, (_, i) => (
+    <Fragment key={i}>
+      <IonImg className="home-move" src={getAssetUrls().move}></IonImg>
+      <IonLabel aria-hidden="true">Book Your Place Now</IonLabel>
+    </Fragment>
+  ));
   
-  useEffect(() => {
-    const handleResize = () => {
-      setIsDesktop(window.innerWidth > 768);
-    };
-
-    window.addEventListener("resize", handleResize);
-    return () => {
-      window.removeEventListener("resize", handleResize);
-    };
-  }, []);
 
   return (
     <IonPage id="main-content" style={{ '--background': 'rgba(246, 239, 229, 1)' }}>
      <IonContent style={{ '--background': 'rgba(246, 239, 229, 1)' }}>
         <IonGrid>
-          <IonImg className="home-move" src={getAssetUrls().move}></IonImg>
+          <IonItem lines="none" className="infinite-scroll" style={{'--background':'rgb(231, 223, 213)'}}>
+              <div className="scroll-content">
+                {scrollItems}
+              </div>
+            </IonItem>
+            
           {/* Navigation Row */}
           <IonRow className="ion-justify-content-between ion-align-items-center nav-row">
             {/* Left Navigation Items */}
             <IonCol size="auto" className="ion-no-padding">
               <div className="nav-items-container">
-                <IonText className="nav-text ion-margin-end">Book</IonText>
+                <IonRouterLink routerLink="/bookPackage" className="no-style-link">
+                  <IonText className="nav-text ion-margin-end">Book</IonText>
+                </IonRouterLink>
                 <IonText className="nav-text ion-margin-end">Packages</IonText>
                 <IonText className="nav-text">Event</IonText>
               </div>
@@ -80,7 +82,7 @@ const Home: React.FC = () => {
 
                 {/* Group & + Travel */}
                 <span className="brand-center">
-                  <span className="brand-ampersand">&amp;</span>
+                  <span className="brand-ampersand">&</span>
                   <span className="brand-travel">Travel</span>
                 </span>
 
@@ -89,14 +91,16 @@ const Home: React.FC = () => {
             </div>
           </IonCol>
 
-          <IonCol size="auto">
+          <IonCol size="auto" className="icon-row">
+            <IonRouterLink routerLink="/SignIn" className="no-style-link">
+              <IonText className="nav-SignIn ion-margin-end">Sign In</IonText>
+            </IonRouterLink>
             <IonIcon src={Icons.tiktok} className="cust-icon"></IonIcon>
             <IonIcon src={Icons.whatsapp} className="cust-icon"></IonIcon>
             <IonIcon src={Icons.facebook} className="cust-icon"></IonIcon>
             <IonIcon src={Icons.email} className="cust-icon"></IonIcon>
             <IonIcon src={Icons.user} className="cust-icon"></IonIcon>
             <IonIcon src={Icons.malayFlag} className="cust-icon"></IonIcon>
-            <IonIcon src={Icons.search} className="cust-icon"></IonIcon>
             <IonIcon src={Icons.cart} className="cust-icon"></IonIcon>
           </IonCol>
           </IonRow>
