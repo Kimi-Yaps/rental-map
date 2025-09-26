@@ -8,13 +8,17 @@ import {
   IonIcon,
   IonRouterLink,
   IonButton,
-  IonImg
+  IonImg,
 } from "@ionic/react";
 import { useState, useEffect } from "react";
+import { useHistory } from "react-router"; // Import useHistory
 import "./BookPage.scss";
 import ResizableWindow from '../components/ResizableWindow';
 import supabase from "../supabaseConfig";
 import { Package } from "../interfaces/Booking"; // Import the Package interface
+import { 
+  arrowBackOutline, 
+} from 'ionicons/icons';
 
 export const Icons = {
   camera: "public/camera.svg",
@@ -43,21 +47,36 @@ interface TabButtonProps {
 
 // Main component - removed the props that don't belong here
 const BookPackage: React.FC = () => {
-  const [isDesktop, setIsDesktop] = useState(window.innerWidth > 768);
+  const history = useHistory(); // Get the history object
+
+ const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  // Listen for authentication state changes
+  useEffect(() => {
+    const { data: authListener } = supabase.auth.onAuthStateChange((event) => { // Removed unused session parameter
+      if (event === 'SIGNED_IN' || event === 'USER_UPDATED') {
+        setIsLoggedIn(true);
+      } else if (event === 'SIGNED_OUT') {
+        setIsLoggedIn(false);
+      }
+    });
+
+    // Cleanup the listener when the component unmounts
+    return () => {
+      // Supabase auth state listener returns an object with an 'unsubscribe' method
+      authListener?.subscription?.unsubscribe(); // Corrected unsubscribe call
+    };
+  }, []);
+
   const [packages, setPackages] = useState<Package[]>([]);
   const [selectedPackage, setSelectedPackage] = useState<Package | null>(null);
   const [isWindowOpen, setIsWindowOpen] = useState(false);
 
-  useEffect(() => {
-    const handleResize = () => {
-      setIsDesktop(window.innerWidth > 768);
-    };
+  const handleBack = () => {
+    history.goBack(); // Use history.goBack()
+  };
 
-    window.addEventListener("resize", handleResize);
-    return () => {
-      window.removeEventListener("resize", handleResize);
-    };
-  }, []);
+  // Removed unused useEffect for isDesktop
 
   useEffect(() => {
     const fetchPackages = async () => {
@@ -105,11 +124,19 @@ const BookPackage: React.FC = () => {
 
             {/* Main navigation icons */}
             <IonCol className="icon-list">
-              
-              <IonRouterLink routerLink="/SignIn" className="no-style-link">
-                <IonText className="nav-SignIn ion-margin-end">Sign In</IonText>
-              </IonRouterLink>
 
+              <IonCol>
+                <IonButton onClick={handleBack} className='backButton'>
+                  <IonIcon icon={arrowBackOutline} />
+                </IonButton>
+              </IonCol>
+
+              {!isLoggedIn && (
+                <IonRouterLink routerLink="/SignIn" className="no-style-link">
+                  <IonText className="nav-SignIn ion-margin-end">Sign In</IonText>
+                </IonRouterLink>
+              )}
+              
               <IonIcon src={Icons.malayFlag} className="cust-icon"></IonIcon>
               <IonIcon src={Icons.cart} className="cust-icon"></IonIcon>
               <IonIcon src={Icons.user} className="cust-icon"></IonIcon>
@@ -136,15 +163,19 @@ const BookPackage: React.FC = () => {
         </IonGrid>
 
         {isWindowOpen && selectedPackage && (
-          <ResizableWindow title="Package" onClose={handleCloseWindow}>
-            <div>
-              <h2>{selectedPackage.description}</h2>
-              <p>Price: {selectedPackage.price}</p>
-              <p>Location: {selectedPackage.location}</p>
-              <p>Number of Tenants: {selectedPackage.numberOfTenant}</p>
-              {/* Add more details as needed */}
-            </div>
-          </ResizableWindow>
+          <ResizableWindow
+            title="Package"
+            onClose={handleCloseWindow}
+            content={
+              <div>
+                <h2>{selectedPackage.description}</h2>
+                <p>Price: {selectedPackage.price}</p>
+                <p>Location: {selectedPackage.location}</p>
+                <p>Number of Tenants: {selectedPackage.numberOfTenant}</p>
+                {/* Add more details as needed */}
+              </div>
+            }
+          />
         )}
 
         {/* Rest of your page content goes here */}

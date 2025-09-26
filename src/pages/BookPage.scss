@@ -249,3 +249,14 @@
   object-fit: contain; /* Ensure the icon scales correctly */
   z-index: 1; /* Ensure it's above the noise background but below other content if needed */
 }
+
+/* Back button styles */
+.backButton {
+  --background: transparent !important;
+  --color: black !important; /* Sets the icon color to black */
+  --ripple-color: transparent !important; /* Removes ripple effect background */
+  padding: 0; /* Remove default padding if any */
+  margin: 0; /* Remove default margin if any */
+  min-width: auto; /* Adjust min-width if needed */
+  height: auto; /* Adjust height if needed */
+}

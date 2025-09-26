@@ -42,22 +42,29 @@
   background-color: rgb(231, 223, 213);
 }
 
-.nav-SignIn:hover
-{
-  border-radius: 1em;
-  cursor: pointer;
-  user-select: none;
-  font-family: 'Kaisei Tokumin', serif;
-  background-color: rgb(231, 223, 213);
+.no-style-link {
+  text-decoration: none;
+  color: inherit; /* Changed from #503216 to inherit */
+  
+  &:hover {
+    text-decoration: none;
+    
+    .nav-SignIn {
+      color: var(--brand-primary-color); /* Sets color on hover */
+      opacity: 0.7;
+    }
+  }
 }
 
-.nav-SignIn
-{
+.nav-SignIn {
   user-select: none;
   font-family: 'Kaisei Tokumin', serif;
-  font-size: 18px;
-  padding-block: 0.6em;
-  padding-inline: 1.4em;
+  font-size: 16px; /* Changed from 18px to 16px */
+  color: var(--brand-primary-color); /* Explicit color */
+  font-weight: 500; /* Added font-weight to match BookPackage.tsx */
+  transition: opacity 0.2s ease; /* Added transition to match BookPackage.tsx */
+  padding-block: 0.6em; /* Kept padding, but might need adjustment */
+  padding-inline: 1.4em; /* Kept padding, but might need adjustment */
 }
 
 .nav-text span {

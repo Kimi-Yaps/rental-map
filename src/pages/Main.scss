@@ -171,6 +171,10 @@
 
 /* Custom CSS variables for consistent theming */
 
+:root {
+  --background-color: #1a1a1a; /* Define the background color for the sign-in page */
+}
+
 .brand-text {
   display: flex;
   align-items: center;        /* vertically align */

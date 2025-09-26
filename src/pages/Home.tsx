@@ -8,11 +8,12 @@ import {
   IonItem,
   IonLabel,
   IonIcon,
-  IonImg,
-  IonRouterLink
+  IonRouterLink,
+  IonImg
 } from "@ionic/react";
-import { Fragment } from "react";
+import { Fragment, useState, useEffect } from "react";
 import "../Main.scss";
+import supabase from "../supabaseConfig";
 import { storageService } from "../services/storage";
 
 export const getAssetUrls = () => ({
@@ -44,6 +45,20 @@ export interface EnhancedSuggestion {
 }
 
 const Home: React.FC = () => {
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  useEffect(() => {
+    const checkLoginStatus = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        setIsLoggedIn(true);
+      } else {
+        setIsLoggedIn(false);
+      }
+    };
+    checkLoginStatus();
+  }, []);
+
   const scrollItems = Array.from({ length: 7 }, (_, i) => (
     <Fragment key={i}>
       <IonImg className="home-move" src={getAssetUrls().move}></IonImg>
@@ -51,6 +66,18 @@ const Home: React.FC = () => {
     </Fragment>
   ));
   
+
+  const handleSignOut = async () => {
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      console.error("Error signing out:", error.message);
+      // Optionally, show an error message to the user
+    } else {
+      setIsLoggedIn(false); // Update state to reflect logged out status
+      // Optionally, redirect to login page or home page
+      // history.push('/SignIn'); // Requires useHistory to be imported and used
+    }
+  };
 
   return (
     <IonPage id="main-content" style={{ '--background': 'rgba(246, 239, 229, 1)' }}>
@@ -67,10 +94,11 @@ const Home: React.FC = () => {
             {/* Left Navigation Items */}
             <IonCol size="auto" className="ion-no-padding">
               <div className="nav-items-container">
+                <IonText className="nav-text ion-margin-end">Book</IonText>
                 <IonRouterLink routerLink="/bookPackage" className="no-style-link">
-                  <IonText className="nav-text ion-margin-end">Book</IonText>
+                   <IonText className="nav-text ion-margin-end">Packages</IonText>
                 </IonRouterLink>
-                <IonText className="nav-text ion-margin-end">Packages</IonText>
+               
                 <IonText className="nav-text">Event</IonText>
               </div>
             </IonCol>
@@ -91,10 +119,12 @@ const Home: React.FC = () => {
             </div>
           </IonCol>
 
-          <IonCol size="auto" className="icon-row">
-            <IonRouterLink routerLink="/SignIn" className="no-style-link">
-              <IonText className="nav-SignIn ion-margin-end">Sign In</IonText>
-            </IonRouterLink>
+            <IonCol size="auto" className="icon-row">
+            {!isLoggedIn && (
+              <IonRouterLink routerLink="/SignIn" className="no-style-link">
+                <IonText className="nav-SignIn ion-margin-end">Sign In</IonText>
+              </IonRouterLink>
+            )}
             <IonIcon src={Icons.tiktok} className="cust-icon"></IonIcon>
             <IonIcon src={Icons.whatsapp} className="cust-icon"></IonIcon>
             <IonIcon src={Icons.facebook} className="cust-icon"></IonIcon>
