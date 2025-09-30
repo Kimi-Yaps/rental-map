@@ -9,9 +9,11 @@ import {
   IonLabel,
   IonIcon,
   IonRouterLink,
-  IonImg
+  IonImg,
+  useIonViewWillEnter,
+  IonButton
 } from "@ionic/react";
-import { Fragment, useState, useEffect } from "react";
+import { Fragment, useState } from "react";
 import "../Main.scss";
 import supabase from "../supabaseConfig";
 import { storageService } from "../services/storage";
@@ -47,17 +49,18 @@ export interface EnhancedSuggestion {
 const Home: React.FC = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
-  useEffect(() => {
+  useIonViewWillEnter(() => {
     const checkLoginStatus = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        setIsLoggedIn(true);
-      } else {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        setIsLoggedIn(!!session);
+      } catch (error) {
+        console.error("Error checking login status:", error);
         setIsLoggedIn(false);
       }
     };
     checkLoginStatus();
-  }, []);
+  });
 
   const scrollItems = Array.from({ length: 7 }, (_, i) => (
     <Fragment key={i}>
@@ -68,14 +71,14 @@ const Home: React.FC = () => {
   
 
   const handleSignOut = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) {
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        throw error;
+      }
+      setIsLoggedIn(false);
+    } catch (error: any) {
       console.error("Error signing out:", error.message);
-      // Optionally, show an error message to the user
-    } else {
-      setIsLoggedIn(false); // Update state to reflect logged out status
-      // Optionally, redirect to login page or home page
-      // history.push('/SignIn'); // Requires useHistory to be imported and used
     }
   };
 
@@ -124,6 +127,9 @@ const Home: React.FC = () => {
               <IonRouterLink routerLink="/SignIn" className="no-style-link">
                 <IonText className="nav-SignIn ion-margin-end">Sign In</IonText>
               </IonRouterLink>
+            )}
+            {isLoggedIn && (
+              <IonButton onClick={handleSignOut}>Sign Out</IonButton>
             )}
             <IonIcon src={Icons.tiktok} className="cust-icon"></IonIcon>
             <IonIcon src={Icons.whatsapp} className="cust-icon"></IonIcon>

@@ -1,4 +1,4 @@
-import React, { Suspense } from 'react';
+import React, { Suspense, useEffect } from 'react';
 import { Redirect, Route } from 'react-router-dom';
 import { 
   IonApp, 
@@ -10,6 +10,7 @@ import {
 } from '@ionic/react';
 
 import { IonReactRouter } from '@ionic/react-router';
+import { GoogleAuth } from '@codetrix-studio/capacitor-google-auth';
 
 /* Core CSS required for Ionic components to work properly */
 import '@ionic/react/css/core.css';
@@ -67,43 +68,52 @@ const LoadingFallback: React.FC = () => (
   </IonPage>
 );
 
-const App: React.FC = () => (
-  <IonApp>
-    <IonReactRouter>
+const App: React.FC = () => {
+  useEffect(() => {
+    GoogleAuth.initialize({
+      clientId: import.meta.env.VITE_GOOGLE_WEB_CLIENT_ID,
+      scopes: ['profile', 'email'],
+    });
+  }, []);
 
-      <Suspense fallback={<LoadingFallback />}>
-        <IonRouterOutlet 
-          id="main-content" 
-          animated={false}
-        >
-          {/* Default redirect for root path */}
-          <Route exact path="/">
-            <Redirect to="/home" />
-          </Route>
+  return (
+    <IonApp>
+      <IonReactRouter>
 
-          {/* Authentication */}
-          <Route exact path="/SignIn" component={SignInPage} />
+        <Suspense fallback={<LoadingFallback />}>
+          <IonRouterOutlet 
+            id="main-content" 
+            animated={false}
+          >
+            {/* Default redirect for root path */}
+            <Route exact path="/">
+              <Redirect to="/home" />
+            </Route>
 
-          {/* payment Gateway */}
-          <Route exact path="/payment" component={PaymentInsert} />
+            {/* Authentication */}
+            <Route exact path="/SignIn" component={SignInPage} />
 
-          {/* Main routes */}
-          <Route exact path="/home" component={Home} />
+            {/* payment Gateway */}
+            <Route exact path="/payment" component={PaymentInsert} />
 
-      
-          
-          {/* Profile Routes */}
-          <Route exact path="/profile" component={Profile} />
+            {/* Main routes */}
+            <Route exact path="/home" component={Home} />
+
+        
+            
+            {/* Profile Routes */}
+            <Route exact path="/profile" component={Profile} />
  
-          
-          
-          {/* Catch-all redirect for unmatched routes */}
-          <Route render={() => <Redirect to="/home" />} />
+            
+            
+            {/* Catch-all redirect for unmatched routes */}
+            <Route render={() => <Redirect to="/home" />} />
 
-        </IonRouterOutlet>
-      </Suspense>
-    </IonReactRouter>
-  </IonApp>
-);
+          </IonRouterOutlet>
+        </Suspense>
+      </IonReactRouter>
+    </IonApp>
+  );
+};
 
 export default App;

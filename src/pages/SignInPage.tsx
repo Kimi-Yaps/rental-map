@@ -16,11 +16,10 @@ import {
   IonCardContent,
   IonSpinner,
   IonText,
-  IonImg,
-  isPlatform,
   IonSegment,
   IonSegmentButton,
-  IonLabel
+  IonLabel,
+  IonAlert
 } from '@ionic/react';
 
 import { 
@@ -30,54 +29,51 @@ import {
   eyeOffOutline, 
   logoGoogle,
   personOutline,
-  homeOutline,
   businessOutline
 } from 'ionicons/icons';
 import supabase from '../supabaseConfig';
-import { useLocation } from 'react-router-dom';
-import { Profile } from '../components/DbCrud';
+import { Profile, UserType } from '../components/DbCrud'; 
 import { GoogleAuth } from '@codetrix-studio/capacitor-google-auth';
 import { Session } from '@supabase/supabase-js';
 import './SignInPage.scss';
 
 interface SignInPageProps {}
 
-// Initialize Google Auth outside component
-if (isPlatform('android') || isPlatform('ios')) {
-  GoogleAuth.initialize({
-    clientId: import.meta.env.VITE_GOOGLE_ANDROID_CLIENT_ID,
-    scopes: ['profile', 'email'],
-  });
-} else {
-  GoogleAuth.initialize({
-    clientId: import.meta.env.VITE_GOOGLE_WEB_CLIENT_ID,
-    scopes: ['profile', 'email'],
-  });
-}
-
 const SignInPage: React.FC<SignInPageProps> = () => {
-  const location = useLocation<{ userType: 'admin' | 'tenant' }>();
   const ionRouter = useIonRouter();
-  
-  // State for user type switching
-  const [userType, setUserType] = useState<'admin' | 'tenant'>(
-    location.state?.userType || 'tenant'
-  );
   const [session, setSession] = useState<Session | null>(null);
+  const [userType, setUserType] = useState<UserType | null>({ type: 'tenant' });
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      setSession(data.session);
-      if (data.session) {
-        // Redirect if already logged in
-        if (userType === 'admin') {
-          ionRouter.push('/admin-home', 'forward');
-        } else {
-          ionRouter.push('/home', 'forward');
+    const fetchSessionAndProfile = async () => {
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError) {
+        console.error('Error fetching session:', sessionError);
+        return;
+      }
+      setSession(sessionData.session);
+
+      if (sessionData.session?.user) {
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('user_type')
+          .eq('id', sessionData.session.user.id)
+          .single();
+
+        if (profileError && profileError.code !== 'PGRST116') {
+          console.error('Error fetching profile:', profileError);
+        } else if (profileData && profileData.user_type) {
+          setUserType(profileData.user_type);
+          if (profileData.user_type.type === 'admin') {
+            ionRouter.push('/admin-home', 'forward');
+          } else {
+            ionRouter.push('/home', 'forward');
+          }
         }
       }
-    });
-  }, [userType, ionRouter]);
+    };
+    fetchSessionAndProfile();
+  }, [ionRouter]);
 
   const [selectedSegment, setSelectedSegment] = useState<'login' | 'signup'>('login');
   const [email, setEmail] = useState<string>('');
@@ -87,264 +83,239 @@ const SignInPage: React.FC<SignInPageProps> = () => {
   const [toastMessage, setToastMessage] = useState<string>('');
   const [showToast, setShowToast] = useState<boolean>(false);
   const [googleLoading, setGoogleLoading] = useState<boolean>(false);
-  const [backgroundImage, setBackgroundImage] = useState<string>('');
+  const [showAdminRequestAlert, setShowAdminRequestAlert] = useState<boolean>(false);
 
-
-  // Helper to upsert profile after login/signup
-  const upsertProfile = async (session: Session) => {
-    if (!session?.user) return;
-    const user = session.user;
-
-    if (userType === 'admin') {
-      const adminData = {
-        id: user.id,
-        full_name: user.user_metadata?.full_name || user.user_metadata?.name || user.email,
-        email: user.email,
-        phone_number: user.phone || '',
-        ic_number: '',
-        is_verified: false,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      };
-      
-      const { data: existingOwner, error: checkError } = await supabase
-        .from('property_owners')
-        .select('*')
-        .eq('id', user.id)
-        .maybeSingle();
-
-      if (checkError) {
-        console.error('Error checking existing owner:', checkError);
-        throw checkError;
-      }
-
-      if (!existingOwner) {
-        const { error: ownerError } = await supabase
-          .from('property_owners')
-          .insert([adminData]);
-        
-        if (ownerError) {
-          console.error('Error creating property owner:', ownerError);
-          throw ownerError;
-        }
-      } else {
-        // Update existing owner record
-        const { error: updateError } = await supabase
-          .from('property_owners')
-          .update({
-            full_name: user.user_metadata?.full_name || user.user_metadata?.name || existingOwner.full_name,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', user.id);
-        
-        if (updateError) {
-          console.error('Error updating property owner:', updateError);
-          throw updateError;
-        }
-      }
-    } else {
-      const profileData: Partial<Profile> = {
-        id: user.id,
-        user_id: user.id,
-        full_name: user.user_metadata?.full_name || user.user_metadata?.name || null,
-        avatar_url: user.user_metadata?.avatar_url || null,
-        nickname: user.user_metadata?.name || user.email,
-        user_type: { type: userType },
-        updated_at: new Date().toISOString()
-      };
-      
-      const { error: upsertError } = await supabase
-        .from('profiles')
-        .upsert(profileData, { onConflict: 'id' });
-      
-      if (upsertError) {
-        console.error('Error upserting profile:', upsertError);
-        throw upsertError;
+  const handleUserTypeChange = (value: string) => {
+    if (value === 'tenant' || value === 'admin') {
+      setUserType({ type: value });
+      if (value === 'admin') {
+        setSelectedSegment('login');
       }
     }
   };
 
-  useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        if (event === 'SIGNED_IN' && session) {
-          try {
-            await upsertProfile(session);
-          } catch (error) {
-            console.error('Error in onAuthStateChange profile handling:', error);
-          }
-          
-          if (userType === 'admin') {
-            ionRouter.push('/admin-home', 'forward');
-          } else {
-            ionRouter.push('/home', 'forward');
-          }
-        }
-      }
-    );
-    
-    return () => subscription.unsubscribe();
-  }, [userType, ionRouter]);
-
-  const handleEmailAuth = async () => {
-    if (!email || !password) {
-      setToastMessage('Please enter both email and password');
-      setShowToast(true);
-      return;
-    }
-    
-    setIsLoading(true);
-    
-    try {
-      let result;
-      if (selectedSegment === 'login') {
-        result = await supabase.auth.signInWithPassword({ email, password });
-      } else {
-        result = await supabase.auth.signUp({ 
-          email, 
-          password, 
-          options: { data: { user_type: userType } } 
-        });
-      }
-      
-      const { data, error: authError } = result;
-      
-      if (authError) {
-        if (selectedSegment === 'signup' && authError.message.includes('User already registered')) {
-          setToastMessage('An account with this email already exists. Please sign in.');
-        } else {
-          setToastMessage(authError.message);
-        }
-        setShowToast(true);
-      } else if (data.session) {
-        await upsertProfile(data.session);
-        if (userType === 'admin') {
-          ionRouter.push('/admin-home', 'forward');
-        } else {
-          ionRouter.push('/home', 'forward');
-        }
-      } else if (selectedSegment === 'signup' && data.user && !data.session) {
-        setToastMessage('Please check your email to confirm your account');
-        setShowToast(true);
-      }
-    } catch (error) {
-      setToastMessage('An unexpected error occurred. Please try again.');
-      setShowToast(true);
-    } finally {
-      setIsLoading(false);
-    }
+  const handleRequestAccess = (e: React.MouseEvent) => {
+    e.preventDefault();
+    // Here you would typically trigger a call to your backend to handle the request
+    // For now, we'll just show the alert.
+    setShowAdminRequestAlert(true);
   };
 
   const handleGoogleSignIn = async () => {
     setGoogleLoading(true);
-    
     try {
-      if (isPlatform('android') || isPlatform('ios')) {
-        const result = await GoogleAuth.signIn();
-        const { authentication } = result;
+      const googleUser = await GoogleAuth.signIn();
+      if (!googleUser) {
+        throw new Error('Google sign-in failed');
+      }
 
-        const { data, error } = await supabase.auth.signInWithIdToken({
-          provider: 'google',
-          token: authentication.idToken,
-        });
+      if (!googleUser.authentication || !googleUser.authentication.idToken) {
+        throw new Error('Google sign-in failed: No ID token received');
+      }
 
-        if (error) {
-          console.error('Native Google Auth error:', error.message);
-          setToastMessage(`Google Sign-In failed: ${error.message}`);
-          setShowToast(true);
-        } else if (data.session) {
-          await upsertProfile(data.session);
-          if (userType === 'admin') {
-            ionRouter.push('/admin-home', 'forward');
-          } else {
-            ionRouter.push('/home', 'forward');
+      const { data: sessionData, error: sessionError } = await supabase.auth.signInWithIdToken({
+        provider: 'google',
+        token: googleUser.authentication.idToken,
+      });
+
+      if (sessionError) {
+        throw sessionError;
+      }
+
+      if (sessionData.session?.user) {
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('id, user_type')
+          .eq('id', sessionData.session.user.id)
+          .single();
+
+        if (profileError && profileError.code !== 'PGRST116') {
+          throw profileError;
+        }
+
+        if (!profileData) {
+          if (!userType) {
+            throw new Error("User type not selected. Please select a user type before signing in.");
           }
+          const { error: insertError } = await supabase.from('profiles').insert([
+            {
+              id: sessionData.session.user.id,
+              user_id: sessionData.session.user.id,
+              user_type: userType,
+              full_name: googleUser.name,
+              avatar_url: googleUser.imageUrl,
+            },
+          ]);
+          if (insertError) {
+            throw insertError;
+          }
+        }
+        
+        const { data: finalProfileData } = await supabase
+          .from('profiles')
+          .select('user_type')
+          .eq('id', sessionData.session.user.id)
+          .single();
+
+        if (finalProfileData?.user_type?.type === 'admin') {
+          ionRouter.push('/admin-home', 'forward');
         } else {
-          setToastMessage('Failed to get user session after Google Sign-In.');
-          setShowToast(true);
+          ionRouter.push('/home', 'forward');
         }
       } else {
-        const { error } = await supabase.auth.signInWithOAuth({
-          provider: 'google',
-          options: {
-            redirectTo: window.location.origin + (userType === 'admin' ? '/admin-home' : '/home'),
-          },
-        });
-        
-        if (error) {
-          console.error('Web Google Auth error:', error.message);
-          setToastMessage(`Google Sign-In failed: ${error.message}`);
-          setShowToast(true);
-        }
+        setToastMessage('Login successful, but could not retrieve session.');
+        setShowToast(true);
       }
-    } catch (error) {
-      console.error('Google auth flow error:', error);
-      setToastMessage('An unexpected error occurred during Google Sign-In. Please try again.');
+
+    } catch (error: any) {
+      console.error('Google Sign-In Error:', error);
+      setToastMessage(`Google Sign-In failed: ${error.message}`);
       setShowToast(true);
     } finally {
       setGoogleLoading(false);
     }
   };
 
-  const handleBack = () => {
-    ionRouter.goBack();
-  };
+  const handleEmailAuth = async () => {
+    setIsLoading(true);
+    try {
+      if (selectedSegment === 'signup') {
+        if (userType?.type === 'admin') {
+            // This case should not happen due to the UI changes, but as a safeguard:
+            setToastMessage('Admin sign up is not allowed.');
+            setShowToast(true);
+            setIsLoading(false);
+            return;
+        }
+        if (!userType) {
+          setToastMessage('Please select a user type before signing up.');
+          setShowToast(true);
+          setIsLoading(false);
+          return;
+        }
+        const { data, error } = await supabase.auth.signUp({
+          email,
+          password,
+        });
+        if (error) {
+          throw error;
+        }
+        setToastMessage('Account created successfully. Please check your email to verify.');
+        setShowToast(true);
+        setSelectedSegment('login');
+        setEmail('');
+        setPassword('');
+        setIsLoading(false);
+        return;
+      } else { // login
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+        if (error) {
+          throw error;
+        }
 
-  const handleUserTypeChange = (value: string) => {
-    setUserType(value as 'admin' | 'tenant');
+        const sessionData = data.session;
+        if (!sessionData?.user) {
+          setToastMessage('Login failed. Please check your email and password.');
+          setShowToast(true);
+          setIsLoading(false);
+          return;
+        }
+
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('id, user_type')
+          .eq('id', sessionData.user.id)
+          .single();
+
+        if (profileError && profileError.code !== 'PGRST116') {
+          throw profileError;
+        }
+
+        if (!profileData) {
+          if (!userType) {
+            throw new Error("User type not selected. Please select a user type before signing in.");
+          }
+           if (userType.type === 'admin') {
+             throw new Error("Admin profile does not exist. Please request access.");
+           }
+          const { error: insertError } = await supabase.from('profiles').insert([
+            {
+              id: sessionData.user.id,
+              user_id: sessionData.user.id,
+              user_type: userType,
+            },
+          ]);
+          if (insertError) {
+            throw insertError;
+          }
+        }
+
+        const { data: finalProfileData } = await supabase
+          .from('profiles')
+          .select('user_type')
+          .eq('id', sessionData.user.id)
+          .single();
+
+        if (finalProfileData?.user_type?.type === 'admin') {
+          ionRouter.push('/admin-home', 'forward');
+        } else {
+          ionRouter.push('/home', 'forward');
+        }
+      }
+
+    } catch (error: any) {
+      console.error('Email Auth Error:', error);
+      setToastMessage(`Authentication failed: ${error.message}`);
+      setShowToast(true);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const getTitle = () => {
-    if (userType === 'admin') {
-      return selectedSegment === 'login' ? 'Welcome Back, Admin' : 'Join as Admin';
+    if (userType?.type === 'admin') {
+        return 'Admin Sign In';
     }
-    return selectedSegment === 'login' ? 'Welcome Back' : 'Start Your Journey';
+    if (selectedSegment === 'signup') {
+      return 'Create Account';
+    }
+    return 'Welcome Back';
   };
 
   const getSubtitle = () => {
-    if (userType === 'admin') {
-      return selectedSegment === 'login' 
-        ? 'Manage your properties with ease' 
-        : 'Create your admin account';
+    if (userType?.type === 'admin') {
+        return 'Enter your admin credentials';
     }
-    return selectedSegment === 'login' 
-      ? 'Find your perfect home today' 
-      : 'Discover amazing rental opportunities';
-  };
-
-  const getUserTypeIcon = () => {
-    return userType === 'admin' ? businessOutline : personOutline;
+    if (selectedSegment === 'signup') {
+      return 'Please fill in the information below';
+    }
+    return 'Sign in to access your account';
   };
 
   return (
     <IonPage className="login-page">
       <IonHeader className="login-header">
         <IonToolbar className="login-toolbar">
-          <IonButton onClick={handleBack} className='backButton'>
+          <IonButton onClick={() => ionRouter.goBack()} className='backButton'>
             <IonIcon icon={arrowBackOutline} />
           </IonButton>
         </IonToolbar>
       </IonHeader>
       
       <IonContent fullscreen className="login-content">
-        {/* Background Image Container */}
         <div className="background-container">
-          {backgroundImage && (
-            <IonImg 
-              src={backgroundImage} 
-              className="background-image"
-            />
-          )}
           <div className="background-overlay" />
         </div>
 
         <div className="portal-wrapper">
           <div className="login-container">
             
-            {/* User Type Switcher */}
             <div className="user-type-switcher">
               <IonSegment 
-                value={userType} 
+                value={userType?.type ?? ''}
                 onIonChange={e => handleUserTypeChange(e.detail.value!)}
                 className="user-type-segment"
               >
@@ -371,23 +342,23 @@ const SignInPage: React.FC<SignInPageProps> = () => {
                 </IonCardHeader>
                 
                 <IonCardContent className="login-card-content">
-                  {/* Auth Segments Toggle */}
-                  <div className="auth-segments">
+                  {userType?.type !== 'admin'  && <div className="auth-segments">
                     <button
                       className={`segment-button ${selectedSegment === 'login' ? 'active' : ''}`}
                       onClick={() => setSelectedSegment('login')}
                     >
                       Sign In
                     </button>
-                    <button
-                      className={`segment-button ${selectedSegment === 'signup' ? 'active' : ''}`}
-                      onClick={() => setSelectedSegment('signup')}
-                    >
-                      Sign Up
-                    </button>
-                  </div>
+                    
+                      <button
+                        className={`segment-button ${selectedSegment === 'signup' ? 'active' : ''}`}
+                        onClick={() => setSelectedSegment('signup')}
+                      >
+                        Sign Up
+                      </button>
+                    
+                  </div>}
 
-                  {/* Google OAuth Button */}
                   <div className="google-auth-section">
                     <IonButton 
                       expand="block" 
@@ -410,14 +381,12 @@ const SignInPage: React.FC<SignInPageProps> = () => {
                     </IonButton>
                   </div>
 
-                  {/* Divider */}
                   <div className="auth-divider">
                     <div className="divider-line"></div>
                     <IonText className="divider-text">or</IonText>
                     <div className="divider-line"></div>
                   </div>
 
-                  {/* Email Form */}
                   <form onSubmit={(e) => { e.preventDefault(); handleEmailAuth(); }} className="auth-form">
                     <div className="input-group">
                       <IonInput
@@ -475,11 +444,17 @@ const SignInPage: React.FC<SignInPageProps> = () => {
                         </>
                       )}
                     </IonButton>
+
+                    {userType?.type === 'admin' && selectedSegment === 'login' && (
+                     <div className="auth-links" style={{textAlign: 'center', marginBottom: '1rem'}}>
+                        <a href="#" onClick={handleRequestAccess} style={{ color: 'white' }}>Request admin access</a>
+                    </div>
+                  )}
+                  
                   </form>
 
-                  {/* Additional Links */}
                   <div className="auth-links">
-                    {selectedSegment === 'login' && (
+                    {selectedSegment === 'login' && userType?.type === 'tenant' && (
                       <IonText className="forgot-password">
                         Forgot your password?
                       </IonText>
@@ -499,6 +474,13 @@ const SignInPage: React.FC<SignInPageProps> = () => {
         duration={4000}
         position="top"
         className="auth-toast"
+      />
+      <IonAlert
+        isOpen={showAdminRequestAlert}
+        onDidDismiss={() => setShowAdminRequestAlert(false)}
+        header={'Request Sent'}
+        message={'Please check your email inbox (and spam folder) for a response.'}
+        buttons={['OK']}
       />
     </IonPage>
   );
