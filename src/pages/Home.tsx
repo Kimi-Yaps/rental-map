@@ -11,40 +11,11 @@ import {
   IonRouterLink,
   IonImg,
   useIonViewWillEnter,
-  IonButton
 } from "@ionic/react";
 import { Fragment, useState } from "react";
 import "../Main.scss";
 import supabase from "../supabaseConfig";
-import { storageService } from "../services/storage";
-
-export const getAssetUrls = () => ({
-  move: storageService.getPublicUrl('Asset/moving.webp'),
-  elips: storageService.getPublicUrl('Asset/ellipse_bg.webp'),
-  polygon: storageService.getPublicUrl('Asset/polygon_bg.webp'),
-  homeBackground: storageService.getPublicUrl('Asset/PulauHarimau09.webp')
-})
-
-export const Icons = {
-  cart: "public/cart.svg",
-  email:"public/email.svg",
-  facebook:"public/facebook.svg",
-  malayFlag:"public/flag-malaysia.svg",
-  instagram:"public/instagram.svg",
-  user: "public/profile-fill.svg",
-  tiktok:"public/tiktok-circle.svg",
-  whatsapp:"public/whatsapp-filled.svg",
-  home: "public/home.svg",
-};
-
-// Define the structure of an enhanced suggestion
-export interface EnhancedSuggestion {
-  text: string;
-  type: "recent" | "database" | "geocoded";
-  source: string;
-  property_type?: string;
-  HomeType?: string;
-}
+import { getAssetUrls, Icons } from "../utils/homeAssets";
 
 const Home: React.FC = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -68,19 +39,6 @@ const Home: React.FC = () => {
       <IonLabel aria-hidden="true">Book Your Place Now</IonLabel>
     </Fragment>
   ));
-  
-
-  const handleSignOut = async () => {
-    try {
-      const { error } = await supabase.auth.signOut();
-      if (error) {
-        throw error;
-      }
-      setIsLoggedIn(false);
-    } catch (error: any) {
-      console.error("Error signing out:", error.message);
-    }
-  };
 
   return (
     <IonPage id="main-content" style={{ '--background': 'rgba(246, 239, 229, 1)' }}>
@@ -128,9 +86,7 @@ const Home: React.FC = () => {
                 <IonText className="nav-SignIn ion-margin-end">Sign In</IonText>
               </IonRouterLink>
             )}
-            {isLoggedIn && (
-              <IonButton onClick={handleSignOut}>Sign Out</IonButton>
-            )}
+            
             <IonIcon src={Icons.tiktok} className="cust-icon"></IonIcon>
             <IonIcon src={Icons.whatsapp} className="cust-icon"></IonIcon>
             <IonIcon src={Icons.facebook} className="cust-icon"></IonIcon>

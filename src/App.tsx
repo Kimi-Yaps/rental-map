@@ -1,5 +1,5 @@
 import React, { Suspense } from 'react';
-import { Redirect, Route } from 'react-router-dom';
+import { Redirect, Route } from 'react-router-dom'; // Corrected import: back to react-router-dom
 import { 
   IonApp, 
   IonRouterOutlet, 

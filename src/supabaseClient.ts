@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient, Session } from '@supabase/supabase-js';
 
 // Supabase configuration
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
@@ -46,8 +46,8 @@ export interface Package {
   id: number;
   numberOfTenant?: number | null;
   location?: string | null;
-  Contact?: any; // jsonb
-  ammenities?: any; // jsonb
+  Contact?: Record<string, unknown>; // jsonb
+  ammenities?: Record<string, unknown>; // jsonb
   price?: number | null;
   description?: string | null;
   created_at: string;
@@ -205,11 +205,42 @@ export const dbService = {
   async signOut() {
     const { error } = await supabase.auth.signOut();
     return { error };
+  },
+
+  // New function to check login status
+  async isUserLoggedIn() {
+    const { data: { session }, error } = await supabase.auth.getSession();
+    if (error) {
+      console.error('Error checking session:', error);
+      return false;
+    }
+    return session !== null;
+  },
+
+  // Function to get profile if user is logged in and profile exists
+  async getProfileIfLoggedIn() {
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+    if (sessionError) {
+      console.error('Error getting session:', sessionError);
+      return { profile: null, error: sessionError };
+    }
+
+    if (!session?.user) {
+      return { profile: null, error: null }; // Not logged in
+    }
+
+    const { data: profile, error: profileError } = await dbService.getProfile(session.user.id);
+    if (profileError) {
+      console.error('Error getting profile:', profileError);
+      return { profile: null, error: profileError };
+    }
+
+    return { profile, error: null };
   }
 };
 
 // Auth state change listener helper
-export const onAuthStateChange = (callback: (event: string, session: any) => void) => {
+export const onAuthStateChange = (callback: (event: string, session: Session | null) => void) => {
   return supabase.auth.onAuthStateChange(callback);
 };
 
