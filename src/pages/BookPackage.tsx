@@ -4,9 +4,7 @@ import {
   IonPage,
   IonRow,
   IonCol,
-  IonText,
   IonIcon,
-  IonRouterLink,
   IonButton,
   IonImg,
 } from "@ionic/react";
@@ -49,24 +47,7 @@ interface TabButtonProps {
 const BookPackage: React.FC = () => {
   const history = useHistory(); // Get the history object
 
- const [isLoggedIn, setIsLoggedIn] = useState(false);
-
-  // Listen for authentication state changes
-  useEffect(() => {
-    const { data: authListener } = supabase.auth.onAuthStateChange((event) => { // Removed unused session parameter
-      if (event === 'SIGNED_IN' || event === 'USER_UPDATED') {
-        setIsLoggedIn(true);
-      } else if (event === 'SIGNED_OUT') {
-        setIsLoggedIn(false);
-      }
-    });
-
-    // Cleanup the listener when the component unmounts
-    return () => {
-      // Supabase auth state listener returns an object with an 'unsubscribe' method
-      authListener?.subscription?.unsubscribe(); // Corrected unsubscribe call
-    };
-  }, []);
+    
 
   const [packages, setPackages] = useState<Package[]>([]);
   const [selectedPackage, setSelectedPackage] = useState<Package | null>(null);
@@ -130,12 +111,6 @@ const BookPackage: React.FC = () => {
                   <IonIcon icon={arrowBackOutline} />
                 </IonButton>
               </IonCol>
-
-              {!isLoggedIn && (
-                <IonRouterLink routerLink="/SignIn" className="no-style-link">
-                  <IonText className="nav-SignIn ion-margin-end">Sign In</IonText>
-                </IonRouterLink>
-              )}
               
               <IonIcon src={Icons.malayFlag} className="cust-icon"></IonIcon>
               <IonIcon src={Icons.cart} className="cust-icon"></IonIcon>

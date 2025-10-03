@@ -3,38 +3,30 @@
   <head>
     <meta charset="utf-8" />
     <title>Ionic App</title>
+    <script>
+      if (window.trustedTypes && window.trustedTypes.createPolicy) {
+        window.trustedTypes.createPolicy('default', {
+          createHTML: (string) => string,
+          createScript: (string) => string,
+          createScriptURL: (string) => string,
+        });
+      }
+    </script>
     
     <base href="/" />
     
-    <!-- Updated Content Security Policy for Google Auth -->
-    <meta http-equiv="Content-Security-Policy" content="
-      default-src 'self';
-      script-src 'self' 'unsafe-inline' 'unsafe-eval' 
-        https://accounts.google.com 
-        https://apis.google.com 
-        https://www.gstatic.com 
-        https://*.supabase.co 
-        blob:;
-      frame-src 'self' 
-        https://accounts.google.com 
-        https://www.google.com;
-      connect-src 'self' 
-        https://accounts.google.com 
-        https://www.googleapis.com 
-        https://oauth2.googleapis.com 
-        https://*.supabase.co 
-        wss://*.supabase.co;
-      img-src 'self' 
-        data: 
-        https: 
-        blob:;
-      style-src 'self' 
-        'unsafe-inline' 
-        https://accounts.google.com 
-        https://fonts.googleapis.com;
-      font-src 'self' 
-        https://fonts.gstatic.com;
-    ">
+    <meta http-equiv="Content-Security-Policy"
+  content="
+    default-src 'self';
+    script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.gstatic.com https://*.googleapis.com https://accounts.google.com;
+    frame-src 'self' https://accounts.google.com https://accounts.google.com/gsi/;
+    connect-src 'self' https://*.googleapis.com https://accounts.google.com https://mowdotnxnhmekukoyjah.supabase.co;
+    style-src 'self' 'unsafe-inline';
+    img-src 'self' data: https://*.googleusercontent.com https://*.supabase.co;
+    font-src 'self' https://fonts.gstatic.com https://r2cdn.perplexity.ai;
+  ">
+
+
     
     <meta name="color-scheme" content="light dark" />
     <meta
@@ -53,11 +45,20 @@
     <meta name="apple-mobile-web-app-title" content="Ionic App" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black" />
     
-    <!-- Google Identity Services script -->
-    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <!-- Polyfill for process object in browser environment -->
+    <script>
+      window.process = {
+        env: {
+          NODE_ENV: 'production' // or 'development' based on your build setup
+        }
+      };
+    </script>
+
   </head>
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+    <!-- Google Identity Services library -->
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
   </body>
 </html>

@@ -1,4 +1,4 @@
-import React, { Suspense, useEffect } from 'react';
+import React, { Suspense } from 'react';
 import { Redirect, Route } from 'react-router-dom';
 import { 
   IonApp, 
@@ -10,7 +10,6 @@ import {
 } from '@ionic/react';
 
 import { IonReactRouter } from '@ionic/react-router';
-import { GoogleAuth } from '@codetrix-studio/capacitor-google-auth';
 
 /* Core CSS required for Ionic components to work properly */
 import '@ionic/react/css/core.css';
@@ -41,6 +40,7 @@ import '@ionic/react/css/palettes/dark.system.css';
 
 /* Theme variables */
 import './theme/variables.css';
+const BookPackage =  React.lazy(() => import('./pages/BookPackage'));
 const Home = React.lazy(() => import('./pages/Home'));
 const SignInPage = React.lazy(() => import('./pages/SignInPage'));
 const Profile = React.lazy(() => import('./pages/Profile'));
@@ -69,12 +69,6 @@ const LoadingFallback: React.FC = () => (
 );
 
 const App: React.FC = () => {
-  useEffect(() => {
-    GoogleAuth.initialize({
-      clientId: import.meta.env.VITE_GOOGLE_WEB_CLIENT_ID,
-      scopes: ['profile', 'email'],
-    });
-  }, []);
 
   return (
     <IonApp>
@@ -98,6 +92,7 @@ const App: React.FC = () => {
 
             {/* Main routes */}
             <Route exact path="/home" component={Home} />
+            <Route exact path="/bookpackage" component={BookPackage} />
 
         
             
