@@ -260,3 +260,9 @@
   min-width: auto; /* Adjust min-width if needed */
   height: auto; /* Adjust height if needed */
 }
+
+.drop-zone-active {
+  border: 2px dashed #007bff;
+  border-radius: 10px;
+  background-color: rgba(0, 123, 255, 0.1);
+}

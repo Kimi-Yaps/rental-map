@@ -30,9 +30,11 @@ export interface Package {
   Contact: any | null;
   ammenities: any | null;
   price: number | null;
-  description: string | null;
+  description: string | null; // This will hold the rich text content
   created_at: string;
   icon_url: string | null;
+  Title: string | null; // Added Title propertye
+  image_urls: string[]; // Added for multiple image URLs
 }
 
 // Window management interfaces (as provided in the prompt)

@@ -101,8 +101,6 @@ const App: React.FC = () => {
  
             
             
-            {/* Catch-all redirect for unmatched routes */}
-            <Route render={() => <Redirect to="/home" />} />
 
           </IonRouterOutlet>
         </Suspense>

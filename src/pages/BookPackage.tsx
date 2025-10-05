@@ -28,20 +28,11 @@ export const Icons = {
 };
 
 // Define the structure of an enhanced suggestion
-export interface EnhancedSuggestion {
-  text: string;
-  type: "recent" | "database" | "geocoded";
-  source: string;
-  property_type?: string;
-  HomeType?: string;
-}
+const isVideo = (url: string): boolean => {
+  const lowercasedUrl = url.toLowerCase();
+  return lowercasedUrl.endsWith('.mp4') || lowercasedUrl.endsWith('.mov');
+};
 
-// Define TabButtonProps interface at the top level
-interface TabButtonProps {
-  count?: number;
-  onClick?: () => void;
-  disabled?: boolean;
-}
 
 // Main component - removed the props that don't belong here
 const BookPackage: React.FC = () => {
@@ -52,6 +43,15 @@ const BookPackage: React.FC = () => {
   const [packages, setPackages] = useState<Package[]>([]);
   const [selectedPackage, setSelectedPackage] = useState<Package | null>(null);
   const [isWindowOpen, setIsWindowOpen] = useState(false);
+const [draggedOverPackageId, setDraggedOverPackageId] = useState<number | null>(null);
+// New states for icon dragging
+const [iconStates, setIconStates] = useState<WindowState[]>([]);
+const [draggingIconId, setDraggingIconId] = useState<number | null>(null);
+const [offset, setOffset] = useState({ x: 0, y: 0 });
+
+// State for editing package titles
+const [editingTitleId, setEditingTitleId] = useState<number | null>(null);
+const [editedTitle, setEditedTitle] = useState<string>('');
 
   const handleBack = () => {
     history.goBack(); // Use history.goBack()
@@ -65,7 +65,37 @@ const BookPackage: React.FC = () => {
       if (error) {
         console.error('Error fetching packages:', error);
       } else {
-        setPackages(data as Package[]);
+        // Explicitly type the data to ensure it conforms to Package interface
+        if (Array.isArray(data)) {
+          const fetchedPackages: Package[] = data.map((pkg: any) => ({
+            id: pkg.id,
+            numberOfTenant: pkg.numberOfTenant ?? null,
+            location: pkg.location ?? null,
+            Contact: pkg.Contact ?? null,
+            ammenities: pkg.ammenities ?? null,
+            price: pkg.price ?? null,
+            description: pkg.description ?? '', // Ensure description is a string
+            created_at: pkg.created_at,
+            icon_url: pkg.icon_url ?? null,
+            Title: pkg.Title ?? null,
+            pulauName: pkg.pulauName ?? null,
+            image_urls: pkg.image_urls ?? [],
+          }));
+          setPackages(fetchedPackages);
+          // Initialize iconStates
+          setIconStates(
+            fetchedPackages.map((pkg: Package, index: number) => ({
+              id: pkg.id,
+              position: { x: index * 100, y: index * 50 }, // Default positions
+              size: { width: 75, height: 75 }, // Increased icon size by 1.5x (50 * 1.5)
+              isMinimized: false,
+              isMaximized: false,
+              zIndex: index + 1,
+            }))
+          );
+        } else {
+          console.error('Fetched data is not an array:', data);
+        }
       }
     };
 
@@ -82,15 +112,185 @@ const BookPackage: React.FC = () => {
     setSelectedPackage(null);
   };
 
+  const handleSavePackage = (updatedPackage: Package) => {
+    setPackages(prevPackages =>
+        prevPackages.map(p =>
+            p.id === updatedPackage.id ? updatedPackage : p
+        )
+    );
+    if (selectedPackage && selectedPackage.id === updatedPackage.id) {
+        setSelectedPackage(updatedPackage);
+    }
+};
+
+const handleDragEnter = (e: React.DragEvent<HTMLDivElement>, pkgId: number) => {
+  e.preventDefault();
+  e.stopPropagation();
+  setDraggedOverPackageId(pkgId);
+};
+
+const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+  e.preventDefault();
+  e.stopPropagation();
+  setDraggedOverPackageId(null);
+};
+
+const handleIconDrop = async (e: React.DragEvent<HTMLDivElement>, pkg: Package) => {
+  e.preventDefault();
+  e.stopPropagation();
+  setDraggedOverPackageId(null);
+  const files = e.dataTransfer.files;
+  if (files && files.length > 0) {
+      const file = files[0];
+      // Check file type
+      const allowedTypes = ['image/jpeg', 'image/png', 'video/mp4', 'video/quicktime']; // Added video types
+      if (allowedTypes.includes(file.type)) {
+          await uploadIcon(file, pkg);
+      } else {
+          alert('Only JPG, PNG, MP4, and MOV files are allowed.'); // Updated alert message
+      }
+  }
+};
+
+const uploadIcon = async (file: File, pkg: Package) => {
+  const fileExt = file.name.split('.').pop();
+  // Extract filename without extension for the Title
+  const baseFileName = file.name.substring(0, file.name.lastIndexOf('.'));
+  // Use a unique name for storage to avoid conflicts
+  const uniqueFileName = `${Date.now()}.${fileExt}`;
+  const filePath = `public/packages/${pkg.id}/icon/${uniqueFileName}`;
+
+  const { error: uploadError } = await supabase.storage.from('imgvideo-bucket1').upload(filePath, file);
+
+  if (uploadError) {
+      console.error('Error uploading icon:', uploadError);
+      return;
+  }
+
+  const { data: publicUrlData } = supabase.storage.from('imgvideo-bucket1').getPublicUrl(filePath);
+  const newIconUrl = publicUrlData?.publicUrl;
+
+  if (newIconUrl) {
+      const { error: updateError } = await supabase
+          .from('Packages')
+          .update({ icon_url: newIconUrl, Title: baseFileName }) // Added Title update
+          .eq('id', pkg.id);
+
+      if (updateError) {
+          console.error('Error updating package icon_url or Title:', updateError);
+      } else {
+          setPackages(prevPackages =>
+              prevPackages.map(p =>
+                  p.id === pkg.id ? { ...p, icon_url: newIconUrl, Title: baseFileName } : p // Added Title update
+              )
+          );
+      }
+  }
+};
+
   // Handler for the tab button
   const handleTabButtonClick = () => {
     console.log("Tab button clicked");
     // Add your logic here
   };
 
+  // Handler for starting to drag an icon
+  const handleDragStart = (e: React.DragEvent<HTMLDivElement>, id: number) => {
+    e.dataTransfer.setData('text/plain', id.toString());
+    setDraggingIconId(id);
+
+    // Calculate offset from the mouse pointer to the element's top-left corner
+    const rect = e.currentTarget.getBoundingClientRect();
+    const offsetX = e.clientX - rect.left;
+    const offsetY = e.clientY - rect.top;
+    setOffset({ x: offsetX, y: offsetY });
+  };
+
+  // Handler for dragging over the canvas
+const handleCanvasDragOver = (e: React.DragEvent<HTMLIonContentElement>) => {
+  e.preventDefault();
+  e.stopPropagation();
+};
+
+// Handler for dropping the icon onto the canvas
+const handleCanvasDrop = (e: React.DragEvent<HTMLIonContentElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (draggingIconId === null) return;
+
+    const canvasRect = e.currentTarget.getBoundingClientRect();
+    const iconState = iconStates.find(state => state.id === draggingIconId);
+
+    if (!iconState) {
+      setDraggingIconId(null); // Reset if icon state not found
+      return;
+    }
+
+    // Calculate new position based on mouse position and offset
+    let newX = e.clientX - canvasRect.left - offset.x;
+    let newY = e.clientY - canvasRect.top - offset.y;
+
+    // Boundary checks
+    const iconWidth = iconState.size.width;
+    const iconHeight = iconState.size.height;
+
+    // Prevent icon from going off-screen left/top
+    newX = Math.max(0, newX);
+    newY = Math.max(0, newY);
+
+    // Prevent icon from going off-screen right/bottom
+    newX = Math.min(canvasRect.width - iconWidth, newX);
+    newY = Math.min(canvasRect.height - iconHeight, newY);
+
+    setIconStates(prevStates =>
+      prevStates.map(state =>
+        state.id === draggingIconId
+          ? {
+              ...state,
+              position: { x: newX, y: newY },
+              zIndex: Math.max(...prevStates.map(s => s.zIndex)) + 1, // Bring to front
+            }
+          : state
+      )
+    );
+    setDraggingIconId(null); // Reset dragging state
+  };
+
+  // Handler for starting title edit
+  const handleTitleEditStart = (pkg: Package) => {
+    setEditingTitleId(pkg.id);
+    setEditedTitle(pkg.Title || 'Untitled Package');
+  };
+
+  // Handler for saving title edit (on blur or Enter key)
+  const handleTitleBlur = async (pkgId: number) => {
+    if (editingTitleId === pkgId) {
+      // Update local state first
+      const updatedPackages = packages.map(p =>
+        p.id === pkgId ? { ...p, Title: editedTitle } : p
+      );
+      setPackages(updatedPackages);
+
+      // Update in Supabase
+      const { error } = await supabase
+        .from('Packages')
+        .update({ Title: editedTitle })
+        .eq('id', pkgId);
+
+      if (error) {
+        console.error('Error updating package title:', error);
+        // Optionally revert changes or show error message
+      }
+
+      setEditingTitleId(null); // Exit edit mode
+      setEditedTitle('');
+    }
+  };
+
   return (
     <IonPage id="main-content">
-        <IonContent className="content">
+        <IonContent className="content" onDragOver={handleCanvasDragOver} onDrop={handleCanvasDrop}>
           {/* Moved camera icon to be a sibling of background-noise */}
           <IonImg src={Icons.noise} className="background-noise"></IonImg>
           <IonImg src={Icons.camera} className="centered-icon"></IonImg>
@@ -139,30 +339,88 @@ const BookPackage: React.FC = () => {
 
         {isWindowOpen && selectedPackage && (
           <ResizableWindow
+            selectedPackage={selectedPackage}
             title="Package"
             onClose={handleCloseWindow}
-            content={
-              <div>
-                <h2>{selectedPackage.description}</h2>
-                <p>Price: {selectedPackage.price}</p>
-                <p>Location: {selectedPackage.location}</p>
-                <p>Number of Tenants: {selectedPackage.numberOfTenant}</p>
-                {/* Add more details as needed */}
-              </div>
-            }
+            onSavePackage={handleSavePackage}
           />
         )}
 
-        {/* Rest of your page content goes here */}
-        <IonGrid>
-          <IonRow>
-            {packages.map((pkg) => (
-              <IonCol key={pkg.id} size="auto" onClick={() => handleIconClick(pkg)}>
-                {pkg.icon_url && <IonImg src={pkg.icon_url} style={{ width: '50px', height: '50px', cursor: 'pointer' }} />}
-              </IonCol>
-            ))}
-          </IonRow>
-        </IonGrid>
+        {/* Canvas for draggable icons */}
+        <div
+          style={{
+            position: 'relative',
+            width: '100%',
+            height: '100%', // Ensure it takes up available space
+            overflow: 'hidden', // To keep icons within bounds visually
+          }}
+        >
+          {packages.map((pkg) => {
+            const state = iconStates.find(s => s.id === pkg.id);
+            if (!state) return null;
+
+            return (
+              <div
+                key={pkg.id}
+                style={{
+                  position: 'absolute',
+                  left: `${state.position.x}px`,
+                  top: `${state.position.y}px`,
+                  width: `${state.size.width}px`,
+                  height: `${state.size.height}px`,
+                  cursor: 'grab',
+                  zIndex: state.zIndex,
+                  // Visual feedback for file drop target on the icon itself
+                  border: draggedOverPackageId === pkg.id ? '2px dashed blue' : 'none',
+                  display: 'flex', // To center content if needed
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  flexDirection: 'column', // Stack icon and title vertically
+                  textAlign: 'center', // Center text
+                }}
+                draggable="true"
+                onDragStart={(e) => handleDragStart(e, pkg.id)}
+                onClick={() => handleIconClick(pkg)}
+                onDrop={(e) => handleIconDrop(e, pkg)}
+                onDragEnter={(e) => handleDragEnter(e, pkg.id)}
+                onDragLeave={(e) => handleDragLeave(e)}
+              >
+                {/* Icon/Video */}
+                <div style={{ width: '100%', height: '80%', overflow: 'hidden' }}> {/* Allocate space for icon */}
+                  {pkg.icon_url && (
+                    isVideo(pkg.icon_url) ? (
+                      <video src={pkg.icon_url} style={{ width: '100%', height: '100%', cursor: 'pointer' }} autoPlay loop muted />
+                    ) : (
+                      <IonImg src={pkg.icon_url} style={{ width: '100%', height: '100%', cursor: 'pointer' }} />
+                    )
+                  )}
+                </div>
+                {/* Title */}
+                {editingTitleId === pkg.id ? (
+                  <input
+                    type="text"
+                    value={editedTitle}
+                    onChange={(e) => setEditedTitle(e.target.value)}
+                    onBlur={() => handleTitleBlur(pkg.id)} // Save on blur
+                    onKeyPress={(e) => {
+                      if (e.key === 'Enter') {
+                        handleTitleBlur(pkg.id); // Save on Enter key
+                      }
+                    }}
+                    style={{ width: '100%', height: '20%', textAlign: 'center', color: 'black', backgroundColor: 'white', border: 'none', outline: 'none' }} // Basic styling for input
+                  />
+                ) : (
+                  <div
+                    style={{ width: '100%', height: '20%', cursor: 'pointer', color: 'black' }} // Changed color to black as requested
+                    onClick={() => handleTitleEditStart(pkg)}
+                  >
+                    {pkg.Title || 'Untitled Package'}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
 
       </IonContent>
     </IonPage>
