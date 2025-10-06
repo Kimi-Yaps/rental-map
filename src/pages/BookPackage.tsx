@@ -8,15 +8,23 @@ import {
   IonButton,
   IonImg,
 } from "@ionic/react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react"; // Import useRef
 import { useHistory } from "react-router"; // Import useHistory
 import "./BookPage.scss";
 import ResizableWindow from '../components/ResizableWindow';
 import supabase from "../supabaseConfig";
-import { Package } from "../interfaces/Booking"; // Import the Package interface
-import { 
-  arrowBackOutline, 
+import { Package, WindowState } from "../interfaces/Booking"; // Import the Package and WindowState interfaces
+import {
+  arrowBackOutline,
 } from 'ionicons/icons';
+
+// Define Tab interface locally for now
+interface Tab {
+  id: number;
+  title: string;
+  isActive: boolean;
+  isMinimized: boolean;
+}
 
 export const Icons = {
   camera: "public/camera.svg",
@@ -38,20 +46,26 @@ const isVideo = (url: string): boolean => {
 const BookPackage: React.FC = () => {
   const history = useHistory(); // Get the history object
 
-    
-
   const [packages, setPackages] = useState<Package[]>([]);
   const [selectedPackage, setSelectedPackage] = useState<Package | null>(null);
   const [isWindowOpen, setIsWindowOpen] = useState(false);
-const [draggedOverPackageId, setDraggedOverPackageId] = useState<number | null>(null);
-// New states for icon dragging
-const [iconStates, setIconStates] = useState<WindowState[]>([]);
-const [draggingIconId, setDraggingIconId] = useState<number | null>(null);
-const [offset, setOffset] = useState({ x: 0, y: 0 });
+  const [draggedOverPackageId, setDraggedOverPackageId] = useState<number | null>(null);
+  // New states for icon dragging
+  const [iconStates, setIconStates] = useState<WindowState[]>([]);
+  const [draggingIconId, setDraggingIconId] = useState<number | null>(null);
+  const [offset, setOffset] = useState({ x: 0, y: 0 });
 
-// State for editing package titles
-const [editingTitleId, setEditingTitleId] = useState<number | null>(null);
-const [editedTitle, setEditedTitle] = useState<string>('');
+  // State for editing package titles
+  const [editingTitleId, setEditingTitleId] = useState<number | null>(null);
+  const [editedTitle, setEditedTitle] = useState<string>('');
+
+  // Ref for the save layout timeout
+  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // State for tab management
+  const [tabs, setTabs] = useState<Tab[]>([]);
+  const [activeTabId, setActiveTabId] = useState<number | null>(null);
+
 
   const handleBack = () => {
     history.goBack(); // Use history.goBack()
@@ -67,30 +81,32 @@ const [editedTitle, setEditedTitle] = useState<string>('');
       } else {
         // Explicitly type the data to ensure it conforms to Package interface
         if (Array.isArray(data)) {
-          const fetchedPackages: Package[] = data.map((pkg: any) => ({
-            id: pkg.id,
-            numberOfTenant: pkg.numberOfTenant ?? null,
-            location: pkg.location ?? null,
-            Contact: pkg.Contact ?? null,
-            ammenities: pkg.ammenities ?? null,
-            price: pkg.price ?? null,
-            description: pkg.description ?? '', // Ensure description is a string
-            created_at: pkg.created_at,
-            icon_url: pkg.icon_url ?? null,
-            Title: pkg.Title ?? null,
-            pulauName: pkg.pulauName ?? null,
-            image_urls: pkg.image_urls ?? [],
-          }));
-          setPackages(fetchedPackages);
-          // Initialize iconStates
-          setIconStates(
-            fetchedPackages.map((pkg: Package, index: number) => ({
+            const fetchedPackages: Package[] = data.map((pkg: any) => ({
               id: pkg.id,
-              position: { x: index * 100, y: index * 50 }, // Default positions
+              numberOfTenant: pkg.numberOfTenant ?? null,
+              location: pkg.location ?? null,
+      Contact: pkg.Contact ?? null as any,
+              ammenities: pkg.ammenities ?? null,
+              price: pkg.price ?? null,
+              description: pkg.description ?? '' as string, // Explicitly cast to string to satisfy type checker
+              created_at: pkg.created_at,
+              icon_url: pkg.icon_url ?? null,
+              Title: pkg.Title ?? null,
+              pulauName: pkg.pulauName ?? null,
+              image_urls: pkg.image_urls ?? [],
+              // Initialize icon_style from fetched data or default
+              icon_style: pkg.icon_style || { position: { x: Math.random() * 500, y: Math.random() * 300 }, zIndex: pkg.id },
+            }));
+          setPackages(fetchedPackages);
+          // Initialize iconStates based on fetched packages and their icon_style
+          setIconStates(
+            fetchedPackages.map((pkg: Package) => ({
+              id: pkg.id,
+              position: pkg.icon_style?.position || { x: Math.random() * 500, y: Math.random() * 300 }, // Use fetched or random position
               size: { width: 75, height: 75 }, // Increased icon size by 1.5x (50 * 1.5)
               isMinimized: false,
               isMaximized: false,
-              zIndex: index + 1,
+              zIndex: pkg.icon_style?.zIndex || pkg.id, // Use fetched or pkg.id as zIndex
             }))
           );
         } else {
@@ -105,11 +121,14 @@ const [editedTitle, setEditedTitle] = useState<string>('');
   const handleIconClick = (pkg: Package) => {
     setSelectedPackage(pkg);
     setIsWindowOpen(true);
+    // Potentially open a new tab or activate an existing one for this package
+    // For now, just opening the window. Tab management logic will follow.
   };
 
   const handleCloseWindow = () => {
     setIsWindowOpen(false);
     setSelectedPackage(null);
+    // Potentially close the associated tab if it exists
   };
 
   const handleSavePackage = (updatedPackage: Package) => {
@@ -191,7 +210,6 @@ const uploadIcon = async (file: File, pkg: Package) => {
   // Handler for the tab button
   const handleTabButtonClick = () => {
     console.log("Tab button clicked");
-    // Add your logic here
   };
 
   // Handler for starting to drag an icon
@@ -243,8 +261,9 @@ const handleCanvasDrop = (e: React.DragEvent<HTMLIonContentElement>) => {
     newX = Math.min(canvasRect.width - iconWidth, newX);
     newY = Math.min(canvasRect.height - iconHeight, newY);
 
-    setIconStates(prevStates =>
-      prevStates.map(state =>
+    // Update iconStates and set a timeout to save the layout
+    setIconStates(prevStates => {
+      const updatedStates = prevStates.map(state =>
         state.id === draggingIconId
           ? {
               ...state,
@@ -252,8 +271,21 @@ const handleCanvasDrop = (e: React.DragEvent<HTMLIonContentElement>) => {
               zIndex: Math.max(...prevStates.map(s => s.zIndex)) + 1, // Bring to front
             }
           : state
-      )
-    );
+      );
+
+      // Clear any existing timeout to avoid multiple saves
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+
+      // Set a new timeout to save the layout
+      saveTimeoutRef.current = setTimeout(() => {
+        saveLayout(updatedStates); // Pass updatedStates to saveLayout
+      }, 1000); // 1 second delay
+
+      return updatedStates;
+    });
+
     setDraggingIconId(null); // Reset dragging state
   };
 
@@ -288,6 +320,37 @@ const handleCanvasDrop = (e: React.DragEvent<HTMLIonContentElement>) => {
     }
   };
 
+  // Function to save the layout of icons
+  // Modified to accept updatedIconStates and remove alerts
+  const saveLayout = async (currentIconStates: WindowState[]) => {
+    try {
+      // Prepare data for bulk update
+      const updates = currentIconStates.map(state => ({
+        id: state.id,
+        icon_style: {
+          position: state.position,
+          zIndex: state.zIndex,
+        },
+      }));
+
+      // Perform bulk update in Supabase
+      const { error } = await supabase.from('Packages').upsert(updates, {
+        onConflict: 'id', // Specify the conflict resolution strategy
+      });
+
+      if (error) {
+        console.error('Error saving layout:', error);
+        // Removed alert
+      } else {
+        console.log('Layout saved successfully!');
+        // Removed alert
+      }
+    } catch (error) {
+      console.error('Error saving layout:', error);
+      // Removed alert
+    }
+  };
+
   return (
     <IonPage id="main-content">
         <IonContent className="content" onDragOver={handleCanvasDragOver} onDrop={handleCanvasDrop}>
@@ -297,7 +360,7 @@ const handleCanvasDrop = (e: React.DragEvent<HTMLIonContentElement>) => {
 
           <IonGrid className="booking-nav-container">
           <IonRow className="booking-nav">
-            
+
             {/* Empty column for spacing if needed */}
             <IonCol size="auto">
               {/* Add logo or other elements here if needed */}
@@ -311,11 +374,11 @@ const handleCanvasDrop = (e: React.DragEvent<HTMLIonContentElement>) => {
                   <IonIcon icon={arrowBackOutline} />
                 </IonButton>
               </IonCol>
-              
+
               <IonIcon src={Icons.malayFlag} className="cust-icon"></IonIcon>
               <IonIcon src={Icons.cart} className="cust-icon"></IonIcon>
               <IonIcon src={Icons.user} className="cust-icon"></IonIcon>
-              
+
               {/* Tab Button */}
               <IonButton
                 fill="clear"
@@ -325,15 +388,15 @@ const handleCanvasDrop = (e: React.DragEvent<HTMLIonContentElement>) => {
               >
                 {/* top accent strip */}
                 <div className="tab-accent-strip" />
-                
+
                 {/* counter */}
                 <span className="tab-counter">
-                  0
+                  {tabs.length} {/* Display the count of open tabs */}
                 </span>
               </IonButton>
-              
+
             </IonCol>
-            
+
           </IonRow>
         </IonGrid>
 
@@ -355,6 +418,10 @@ const handleCanvasDrop = (e: React.DragEvent<HTMLIonContentElement>) => {
             overflow: 'hidden', // To keep icons within bounds visually
           }}
         >
+          {/* Save Layout Button - Removed as saving is now automatic */}
+          {/* <div className="save-layout-button-container">
+            <IonButton onClick={saveLayout} color="primary">Save Layout</IonButton>
+          </div> */}
           {packages.map((pkg) => {
             const state = iconStates.find(s => s.id === pkg.id);
             if (!state) return null;

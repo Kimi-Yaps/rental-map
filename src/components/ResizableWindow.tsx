@@ -16,8 +16,12 @@ import { Package } from "../interfaces/Package";
 import { WindowState, WindowPosition, WindowSize } from "../interfaces/Booking";
 import { Icons } from "../pages/BookPackage";
 import supabase from "../supabaseConfig";
-import ReactQuill from "react-quill";
-import "react-quill/dist/quill.snow.css";
+// Tiptap imports
+import { useEditor, EditorContent, BubbleMenu } from '@tiptap/react';
+import StarterKit from '@tiptap/starter-kit';
+import TextStyle from '@tiptap/extension-text-style';
+import { ListItem, OrderedList, BulletList } from '@tiptap/extension-list-item';
+import { Bold, Italic, Strike, Underline, Code, Paragraph, Heading, Blockquote, HardBreak, HorizontalRule, BulletList as BulletListExtension, OrderedList as OrderedListExtension, CodeBlock, Blockquote as BlockquoteExtension, History } from '@tiptap/extension-kit'; // Importing specific extensions
 import { useDebounce } from "../hooks/useDebounce";
 
 // Helper to format currency
@@ -65,8 +69,9 @@ const ResizableWindow: React.FC<ResizableWindowProps> = ({
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState(false);
-  const [currentDescription, setCurrentDescription] = useState("");
-  const debouncedDescription = useDebounce(currentDescription, 1000);
+  // State for Tiptap editor content
+  const [editorContent, setEditorContent] = useState("");
+  const debouncedDescription = useDebounce(editorContent, 1000);
 
   const windowRef = useRef<HTMLDivElement>(null);
   const headerRef = useRef<HTMLDivElement>(null);
@@ -78,10 +83,38 @@ const ResizableWindow: React.FC<ResizableWindowProps> = ({
   const [offset, setOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const resizeStart = useRef<{ mouseX: number; mouseY: number; rect: DOMRect } | null>(null);
 
+  // Tiptap extensions
+  const extensions = [
+    StarterKit.configure({
+      // Configure extensions if needed, e.g., disable history for simplicity if not needed
+      history: false,
+    }),
+    TextStyle,
+    // Ensure list extensions are correctly configured if needed
+    BulletList.configure({ HTMLAttributes: { class: 'bullet-list' } }),
+    OrderedList.configure({ HTMLAttributes: { class: 'ordered-list' } }),
+    ListItem.configure({ HTMLAttributes: { class: 'list-item' } }),
+    // Add other extensions as required
+  ];
+
+  // Initialize Tiptap editor
+  const editor = useEditor({
+    extensions,
+    content: editorContent, // Use the state for content
+    onUpdate: ({ editor }) => {
+      setEditorContent(editor.getHTML()); // Update state when content changes
+    },
+    editorProps: {
+      attributes: {
+        class: 'tiptap-editor-content', // Add a class for styling
+      },
+    },
+  });
+
   // Initialize state from selectedPackage when it changes
   useEffect(() => {
     if (selectedPackage) {
-      setCurrentDescription(selectedPackage.description || "");
+      setEditorContent(selectedPackage.description || ""); // Initialize Tiptap content
       setEditedPrice(selectedPackage.price);
       setEditedLocation(selectedPackage.location || "");
       setEditedNumberOfTenant(selectedPackage.numberOfTenant);
@@ -92,11 +125,11 @@ const ResizableWindow: React.FC<ResizableWindowProps> = ({
   }, [selectedPackage]);
 
   const autoSaveChanges = async (description: string) => {
-    if (!selectedPackage) return;
+    if (!selectedPackage || !editor) return; // Ensure editor is available
 
     const updatedPackageData: Partial<Package> = {
       description: description,
-      image_urls: currentImageUrls, // Assuming image_urls is part of Package interface
+      image_urls: currentImageUrls,
     };
 
     const { error } = await supabase
@@ -254,9 +287,9 @@ const ResizableWindow: React.FC<ResizableWindowProps> = ({
   const handleEditClick = () => setIsEditing(true);
 
   const handleSaveClick = async () => {
-    if (!selectedPackage) return;
+    if (!selectedPackage || !editor) return; // Ensure editor is available
     const updatedPackageData: Partial<Package> = {
-      description: currentDescription,
+      description: editor.getHTML(), // Get HTML from Tiptap editor
       image_urls: currentImageUrls,
     };
     const { error } = await supabase.from("Packages").update(updatedPackageData).eq("id", selectedPackage.id);
@@ -340,15 +373,13 @@ const ResizableWindow: React.FC<ResizableWindowProps> = ({
           ) : (
             <>
               <IonLabel position="stacked">Description</IonLabel>
-              <ReactQuill
-                theme="snow"
-                value={currentDescription}
-                onChange={setCurrentDescription}
-                modules={{
-                  toolbar: [[{ header: [1, 2, false] }], ["bold", "italic", "underline", "strike"], [{ list: "ordered" }, { list: "bullet" }], [{ align: [] }], ["clean"]],
-                }}
-                formats={["header", "bold", "italic", "underline", "strike", "list", "bullet", "align"]}
-              />
+              {editor ? (
+                <>
+                  <EditorContent editor={editor} />
+                </>
+              ) : (
+                <p>Loading editor...</p>
+              )}
               <IonGrid>
                 <IonRow>
                   <IonCol>
@@ -443,38 +474,63 @@ const ResizableWindow: React.FC<ResizableWindowProps> = ({
       : `calc(${windowState.size.height}px - var(--header-height) - var(--footer-height, 0px))`,
   };
 
-  const resizeHandles = ["top-left", "top-right", "bottom-left", "bottom-right", "top", "bottom", "left", "right"];
+  const resizeHandles = ["top-left", "top-
+```
+The file content was truncated. I need to re-read the file to get the complete content before attempting to modify it.
+The user's instruction is to replace `react-quill` with `tiptap`.
+I have already uninstalled `react-quill` and installed Tiptap dependencies.
+The next step is to refactor `ResizableWindow.tsx`.
 
-  return (
-    <div
-      ref={windowRef}
-      className={`resizable-window ${windowState.isMinimized ? "minimized" : ""} ${windowState.isMaximized ? "maximized" : ""}`}
-      style={windowStyle}
-      onMouseDown={handleMouseDown}
-    >
-      <div ref={headerRef} className="window-header">
-        <IonText className="window-title">{title}</IonText>
-        <div className="window-controls">
-          <IonButton fill="clear" className="control-button minimize" onClick={handleMinimize}><IonIcon icon={Icons.noise} slot="icon-only" /></IonButton>
-          <IonButton fill="clear" className="control-button maximize" onClick={handleMaximize}><IonIcon icon={Icons.noise} slot="icon-only" /></IonButton>
-          <IonButton fill="clear" className="control-button close" onClick={handleClose}><IonIcon icon={Icons.noise} slot="icon-only" /></IonButton>
-        </div>
-      </div>
-      {!windowState.isMaximized && resizeHandles.map((handle) => (
-        <div
-          key={handle}
-          ref={(el: HTMLDivElement | null) => { resizeHandlesRef.current[handle] = el; }}
-          className={`resize-handle ${handle}`}
-          onMouseDown={(e) => handleResizeMouseDown(e, handle)}
-        />
-      ))}
-      {!windowState.isMinimized && (
-        <IonContent className="window-content" style={contentStyle}>
-          {selectedPackage ? renderPackageContent() : isLoading ? renderLoadingState() : error ? renderErrorState() : renderEmptyState()}
-        </IonContent>
-      )}
-    </div>
-  );
-};
+I need to read the file again to get the full content, then apply the Tiptap refactoring.
+The previous `read_file` operation was interrupted.
 
-export default ResizableWindow;
+**Plan:**
+1.  Read the full content of `src/components/ResizableWindow.tsx` again.
+2.  Modify the file to replace `ReactQuill` with Tiptap components and logic.
+3.  Update `task_progress`.
+
+**Refactoring steps:**
+- Remove `react-quill` imports.
+- Add Tiptap imports.
+- Define Tiptap extensions.
+- Initialize Tiptap editor using `useEditor`.
+- Replace `ReactQuill` JSX with `EditorContent`.
+- Update state management for `currentDescription` to use Tiptap's editor state.
+- Update `autoSaveChanges` to use `editor.getHTML()`.
+
+I will use `write_to_file` to apply these changes.
+The `task_progress` will be updated.
+- [x] Modify `BookPackage.tsx` to auto-save icon positions with a delay.
+- [x] Fix ESLint error for `Contact` property type.
+- [x] Implement tab management state and counter.
+- [x] Search for `react-quill` usage in project files.
+- [x] Investigate `react-quill` errors and plan a solution.
+- [x] Research `react-quill` compatibility and plan for Tiptap replacement.
+- [x] Uninstall `react-quill`.
+- [x] Install Tiptap dependencies.
+- [ ] Refactor `ResizableWindow.tsx` to use Tiptap.
+- [ ] Research OOP theory.
+- [ ] Analyze which parts can be applied.
+- [ ] Compare methods with 2 times.
+- [ ] Apply the best method in the last decision.
+
+I will start by reading the file content again to ensure I have the latest version before making modifications.
+</thinking>
+<read_file>
+<path>src/components/ResizableWindow.tsx</path>
+<task_progress>
+- [x] Modify `BookPackage.tsx` to auto-save icon positions with a delay.
+- [x] Fix ESLint error for `Contact` property type.
+- [x] Implement tab management state and counter.
+- [x] Search for `react-quill` usage in project files.
+- [x] Investigate `react-quill` errors and plan a solution.
+- [x] Research `react-quill` compatibility and plan for Tiptap replacement.
+- [x] Uninstall `react-quill`.
+- [x] Install Tiptap dependencies.
+- [ ] Refactor `ResizableWindow.tsx` to use Tiptap.
+- [ ] Research OOP theory.
+- [ ] Analyze which parts can be applied.
+- [ ] Compare methods with 2 times.
+- [ ] Apply the best method in the last decision.
+</task_progress>
+</read_file>

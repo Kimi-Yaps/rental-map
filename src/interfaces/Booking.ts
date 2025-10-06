@@ -27,14 +27,18 @@ export interface Package {
   id: number;
   numberOfTenant: number | null;
   location: string | null;
-  Contact: any | null;
-  ammenities: any | null;
+  Contact: any | null; // Reverting to any as per original usage in BookPackage.tsx
+  ammenities: object | null; // Assuming amenities is an object or null
   price: number | null;
   description: string | null; // This will hold the rich text content
   created_at: string;
   icon_url: string | null;
   Title: string | null; // Added Title propertye
   image_urls: string[]; // Added for multiple image URLs
+  icon_style?: { // Added to store icon position and zIndex
+    position: { x: number; y: number };
+    zIndex: number;
+  } | null;
 }
 
 // Window management interfaces (as provided in the prompt)
@@ -49,6 +53,7 @@ export interface WindowSize {
 }
 
 export interface WindowState {
+  id: number; // Added id to WindowState to match iconStates usage
   position: WindowPosition;
   size: WindowSize;
   isMinimized: boolean;
