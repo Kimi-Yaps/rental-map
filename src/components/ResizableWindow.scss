@@ -306,5 +306,38 @@
   }
 }
 
+/* Tiptap Editor Styles */
+.tiptap-editor-content {
+  border: 1px solid #ccc;
+  padding: 10px;
+  min-height: 150px;
+  background-color: #fff;
+}
+
+.tiptap-editor-content:focus {
+  outline: none;
+  border-color: var(--ion-color-primary, #3880ff);
+}
+
+/* Bubble Menu Styles */
+.tippy-box {
+  background-color: #333;
+  color: white;
+  border-radius: 4px;
+  padding: 4px;
+}
+
+.tippy-box button {
+  background: none;
+  border: none;
+  color: white;
+  padding: 4px 8px;
+  cursor: pointer;
+}
+
+.tippy-box button.is-active {
+  background-color: #555;
+}
+
 /* Responsive grid for booking cards */
 /* Ionic grid classes (sizeXs, sizeMd, sizeLg) handle responsiveness */

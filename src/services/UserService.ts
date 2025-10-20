@@ -1,7 +1,7 @@
 import supabase from '../supabaseConfig';
-import { Profile } from '../components/DbCrud'; // Import the Profile interface
+import { User } from '@supabase/supabase-js';
 
-export async function upsertUserProfile(user: any, userType: 'property_owner' | 'tenant' | 'admin' | null) {
+export async function upsertUserProfile(user: User, userType: 'property_owner' | 'visitor' | 'admin' | null) {
   const { data, error } = await supabase
     .from('profiles') // Assuming your profiles table is named 'profiles'
     .upsert({

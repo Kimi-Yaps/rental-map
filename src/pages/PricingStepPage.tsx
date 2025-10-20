@@ -35,8 +35,15 @@ import {
 import supabase from '../supabaseConfig';
 import Stepper from '../components/Stepper';
 import NavigationButtons from '../components/NavigationButtons';
+import { Elements } from '@stripe/react-stripe-js';
+import { loadStripe } from '@stripe/stripe-js';
+import StripeService from '../services/StripeService';
+import StripePaymentForm from '../components/StripePaymentForm';
 
 import { PriceType } from '../components/DbCrud';
+
+// Load Stripe with your publishable key
+const stripePromise = loadStripe('YOUR_STRIPE_PUBLISHABLE_KEY');
 
 // Helper to get or initialize a rental draft from localStorage
 const getProperty = (): any => {
@@ -62,17 +69,20 @@ const getProperty = (): any => {
 
 const PricingStepPage: React.FC = () => {
   const ionRouter = useIonRouter();
-  const [pricing, setPricing] = useState<PricingDetails[]>([]);
+  const [pricing, setPricing] = useState<any[]>([]);
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const [showBackAlert, setShowBackAlert] = useState(false);
+  const [clientSecret, setClientSecret] = useState<string | null>(null);
+  const [showPaymentForm, setShowPaymentForm] = useState(false);
 
   useEffect(() => {
     const draft = getProperty();
     setPricing(draft.pricing || []);
+    StripeService.initialize();
   }, []);
 
-  const savePricingToDraft = async (updatedPricing: PricingDetails[]) => {
+  const savePricingToDraft = async (updatedPricing: any[]) => {
     const draft = getProperty();
     const updatedDraft = {
       ...draft,
@@ -86,7 +96,7 @@ const PricingStepPage: React.FC = () => {
     setShowToast(true);
   };
 
-  const handlePricingChange = (index: number, key: keyof PricingDetails, value: any) => {
+  const handlePricingChange = (index: number, key: keyof any, value: any) => {
     setPricing(prevPricing => {
       const newPricing = [...prevPricing];
       if (newPricing[index]) {
@@ -98,7 +108,7 @@ const PricingStepPage: React.FC = () => {
   };
 
   const handleAddPrice = () => {
-    const newPrice: PricingDetails = {
+    const newPrice = {
       price_type: 'monthly_rent',
       amount: 0,
       currency: 'MYR',
@@ -130,6 +140,24 @@ const PricingStepPage: React.FC = () => {
 
   const cancelBack = () => {
     setShowBackAlert(false);
+  };
+
+  const handleProceedToPayment = async () => {
+    const totalAmount = pricing.reduce((acc, item) => acc + item.amount, 0) * 100; // Amount in cents
+    if (totalAmount > 0) {
+      try {
+        const secret = await StripeService.createPaymentIntent(totalAmount);
+        setClientSecret(secret);
+        setShowPaymentForm(true);
+      } catch (error) {
+        console.error('Failed to create PaymentIntent:', error);
+        setToastMessage('Failed to start payment process. Please try again.');
+        setShowToast(true);
+      }
+    } else {
+      setToastMessage('Please add a price before proceeding to payment.');
+      setShowToast(true);
+    }
   };
 
   return (
@@ -246,7 +274,25 @@ const PricingStepPage: React.FC = () => {
             </IonCol>
           </IonRow>
 
-          </IonGrid>
+          {showPaymentForm && clientSecret ? (
+            <IonRow className="ion-justify-content-center">
+              <IonCol size-xs="12" size-md="8" size-lg="6">
+                <Elements stripe={stripePromise} options={{ clientSecret }}>
+                  <StripePaymentForm clientSecret={clientSecret} />
+                </Elements>
+              </IonCol>
+            </IonRow>
+          ) : (
+            <IonRow className="ion-justify-content-center">
+              <IonCol size-xs="12" size-md="8" size-lg="6">
+                <IonButton expand="block" onClick={handleProceedToPayment} className="ion-margin-top">
+                  Proceed to Payment
+                </IonButton>
+              </IonCol>
+            </IonRow>
+          )}
+
+        </IonGrid>
       </IonContent>
       <NavigationButtons
         onNext={handleNext}
@@ -254,31 +300,31 @@ const PricingStepPage: React.FC = () => {
         backPath="/rooms"
         nextPath="/photos"
       />
-        <IonAlert
-          isOpen={showBackAlert}
-          onDidDismiss={cancelBack}
-          header="Go Back?"
-          message="Are you sure you want to go back? Your changes on this page will not be saved."
-          buttons={[
-            {
-              text: 'Cancel',
-              role: 'cancel',
-              handler: cancelBack
-            },
-            {
-              text: 'Yes, Go Back',
-              role: 'confirm',
-              handler: confirmBack
-            }
-          ]}
-        />
+      <IonAlert
+        isOpen={showBackAlert}
+        onDidDismiss={cancelBack}
+        header="Go Back?"
+        message="Are you sure you want to go back? Your changes on this page will not be saved."
+        buttons={[
+          {
+            text: 'Cancel',
+            role: 'cancel',
+            handler: cancelBack
+          },
+          {
+            text: 'Yes, Go Back',
+            role: 'confirm',
+            handler: confirmBack
+          }
+        ]}
+      />
 
-        <IonToast
-          isOpen={showToast}
-          onDidDismiss={() => setShowToast(false)}
-          message={toastMessage}
-          duration={2000}
-        />
+      <IonToast
+        isOpen={showToast}
+        onDidDismiss={() => setShowToast(false)}
+        message={toastMessage}
+        duration={2000}
+      />
     </IonPage>
   );
 };

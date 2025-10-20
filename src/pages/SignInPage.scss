@@ -1,44 +1,471 @@
+// SignInPage.scss - Matching Main.scss color scheme
+
+:root {
+  --brand-primary-color: #503216;
+  --brand-beige: rgba(246, 239, 229, 1);
+  --brand-beige-dark: rgb(231, 223, 213);
+}
+
 .sign-in-container {
+  --background: var(--brand-beige);
+  height: 100vh;
+  overflow: hidden;
+}
+
+.main-grid {
+  height: 100%;
+  padding: 0;
+  margin: 0;
+}
+
+.main-row {
+  height: 100%;
+  margin: 0;
+}
+
+// Left Column - Login Form
+.login-form-column {
+  background: var(--brand-beige);
+  color: var(--brand-primary-color);
+  padding: 3rem 2rem;
   display: flex;
   flex-direction: column;
-  align-items: center;
+  justify-content: center;
+  height: 100%;
+  overflow-y: auto;
+
+  @media (min-width: 768px) {
+    padding: 4rem 5rem;
+  }
+
+  .form-content {
+    max-width: 450px;
+    margin: 0 auto;
+    width: 100%;
+  }
+
+  .brand-section {
+    margin-bottom: 2.5rem;
+    text-align: center;
+  }
 
   h1 {
-    font-size: 2rem;
+    font-family: 'Kaisei Tokumin', serif;
+    font-size: 3rem;
+    font-weight: 700;
     margin-bottom: 0.5rem;
+    color: var(--brand-primary-color);
+    letter-spacing: 2px;
+
+    @media (max-width: 767px) {
+      font-size: 2.5rem;
+    }
   }
 
   p {
+    font-family: 'Kaisei Tokumin', serif;
+    font-size: 1rem;
+    color: #6b4423;
+    margin-bottom: 0;
+  }
+
+  h2 {
+    font-family: 'Kaisei Tokumin', serif;
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin: 2rem 0 0.5rem;
+    color: var(--brand-primary-color);
+    text-align: center;
+  }
+
+  .section-description {
+    font-family: 'Kaisei Tokumin', serif;
+    font-size: 0.9rem;
+    color: #8b6239;
     margin-bottom: 1.5rem;
+    text-align: center;
   }
+}
 
-  .user-type-selection {
-    margin-bottom: 2rem;
-  }
+// User Type Selection
+.user-type-selection {
+  margin-bottom: 2rem;
 
-  .admin-signin-form,
-  .tenant-signin-section {
-    display: flex;
-    flex-direction: column;
-    width: 100%;
-    max-width: 400px;
-    gap: 1rem;
+  ion-button {
+    font-family: 'Kaisei Tokumin', serif;
+    font-weight: 600;
+    text-transform: none;
+    font-size: 1rem;
+    height: 48px;
+    --border-radius: 1em;
+    transition: all 0.3s ease;
 
-    h2 {
-      text-align: center;
+    &[color="medium"] {
+      --background: var(--brand-beige-dark);
+      --background-hover: #d4c5b3;
+      --color: var(--brand-primary-color);
     }
 
-    #googleSignInButton {
-      width: 100%;
-      display: flex;
-      justify-content: center;
+    &.active {
+      --background: var(--brand-primary-color);
+      --background-hover: #6b4423;
+      --color: #ffffff;
     }
   }
 }
 
-/* Mobile responsiveness */
+// Admin Sign-In Form
+.admin-signin-form {
+  margin-top: 1rem;
+
+  .styled-input {
+    --background: #ffffff;
+    --color: var(--brand-primary-color);
+    --placeholder-color: #8b6239;
+    --padding-start: 16px;
+    --padding-end: 16px;
+    border: 2px solid var(--brand-beige-dark);
+    border-radius: 1em;
+    margin-bottom: 1rem;
+    font-family: 'Kaisei Tokumin', serif;
+    font-size: 1rem;
+    min-height: 50px;
+    transition: all 0.3s ease;
+
+    &:focus-within {
+      border-color: var(--brand-primary-color);
+      --background: #fefefe;
+    }
+  }
+
+  .primary-button {
+    margin-top: 1rem;
+    height: 50px;
+    font-family: 'Kaisei Tokumin', serif;
+    font-weight: 600;
+    text-transform: none;
+    font-size: 1rem;
+    --border-radius: 1em;
+    --background: var(--brand-primary-color);
+    --color: #ffffff;
+    --background-hover: #6b4423;
+    transition: all 0.3s ease;
+
+    &:hover:not([disabled]) {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(80, 50, 22, 0.3);
+    }
+
+    ion-spinner {
+      margin-right: 0;
+      --color: #ffffff;
+    }
+  }
+
+  .error-message {
+    display: block;
+    margin-top: 0.5rem;
+    font-size: 0.9rem;
+    text-align: center;
+    
+    p {
+      margin: 0;
+      color: #c44536;
+      font-family: 'Kaisei Tokumin', serif;
+    }
+  }
+}
+
+// Tenant Sign-In Section
+.tenant-signin-section {
+  margin-top: 1rem;
+
+  .social-buttons {
+    margin-bottom: 1.5rem;
+  }
+
+  .social-button {
+    height: 50px;
+    font-family: 'Kaisei Tokumin', serif;
+    font-weight: 600;
+    text-transform: none;
+    font-size: 1rem;
+    --border-radius: 1em;
+    transition: all 0.3s ease;
+    margin-bottom: 0.75rem;
+
+    &:hover:not([disabled]) {
+      transform: translateY(-2px);
+    }
+
+    ion-icon {
+      font-size: 1.5rem;
+      margin-right: 8px;
+    }
+
+    ion-spinner {
+      --color: var(--brand-primary-color);
+    }
+  }
+
+  .google-button {
+    --background: #ffffff;
+    --color: var(--brand-primary-color);
+    --background-hover: var(--brand-beige-dark);
+    border: 2px solid var(--brand-beige-dark);
+    box-shadow: 0 2px 8px rgba(80, 50, 22, 0.1);
+
+    &:hover:not([disabled]) {
+      box-shadow: 0 4px 12px rgba(80, 50, 22, 0.2);
+      border-color: var(--brand-primary-color);
+    }
+  }
+
+  .apple-button {
+    --background: #ffffff;
+    --color: var(--brand-primary-color);
+    --background-hover: var(--brand-beige-dark);
+    border: 2px solid var(--brand-beige-dark);
+    box-shadow: 0 2px 8px rgba(80, 50, 22, 0.1);
+
+    &:hover:not([disabled]) {
+      box-shadow: 0 4px 12px rgba(80, 50, 22, 0.2);
+      border-color: var(--brand-primary-color);
+    }
+  }
+
+  .divider {
+    display: flex;
+    align-items: center;
+    text-align: center;
+    margin: 2rem 0;
+    color: #8b6239;
+    font-family: 'Kaisei Tokumin', serif;
+    font-size: 0.9rem;
+
+    &::before,
+    &::after {
+      content: '';
+      flex: 1;
+      border-bottom: 1px solid var(--brand-beige-dark);
+    }
+
+    span {
+      padding: 0 1rem;
+      font-weight: 500;
+    }
+  }
+
+  .email-signin {
+    .styled-input {
+      --background: #ffffff;
+      --color: var(--brand-primary-color);
+      --placeholder-color: #8b6239;
+      --padding-start: 16px;
+      --padding-end: 16px;
+      border: 2px solid var(--brand-beige-dark);
+      border-radius: 1em;
+      margin-bottom: 1rem;
+      font-family: 'Kaisei Tokumin', serif;
+      font-size: 1rem;
+      min-height: 50px;
+      transition: all 0.3s ease;
+
+      &:focus-within {
+        border-color: var(--brand-primary-color);
+        --background: #fefefe;
+      }
+    }
+
+    .primary-button {
+      height: 50px;
+      font-family: 'Kaisei Tokumin', serif;
+      font-weight: 600;
+      text-transform: none;
+      font-size: 1rem;
+      --border-radius: 1em;
+      --background: var(--brand-primary-color);
+      --color: #ffffff;
+      --background-hover: #6b4423;
+      margin-top: 0.5rem;
+      margin-bottom: 1rem;
+      transition: all 0.3s ease;
+
+      &:hover:not([disabled]) {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(80, 50, 22, 0.3);
+      }
+    }
+  }
+
+  .footer-links {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.5rem;
+    font-family: 'Kaisei Tokumin', serif;
+    font-size: 0.9rem;
+
+    .link {
+      color: var(--brand-primary-color);
+      text-decoration: none;
+      transition: color 0.3s ease;
+
+      &:hover {
+        color: #6b4423;
+        text-decoration: underline;
+      }
+    }
+
+    .separator {
+      color: #8b6239;
+    }
+  }
+
+  .error-message {
+    display: block;
+    margin-top: 1rem;
+    font-size: 0.9rem;
+    text-align: center;
+    
+    p {
+      margin: 0;
+      color: #c44536;
+      font-family: 'Kaisei Tokumin', serif;
+    }
+  }
+}
+
+// Right Column - Image with brand colors
+.image-column {
+  background: linear-gradient(135deg, var(--brand-beige-dark) 0%, #c4b5a3 50%, #b3a28f 100%);
+  position: relative;
+  overflow: hidden;
+  display: none;
+  height: 100%;
+
+  @media (min-width: 768px) {
+    display: block;
+  }
+
+  .image-content {
+    position: relative;
+    width: 100%;
+    height: 100%;
+  }
+
+  .gradient-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: url('/public/TiktokStudy.jpg') center/cover;
+    opacity: 0.6;
+
+  }
+
+  .decorative-elements {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+
+    .circle {
+      position: absolute;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(80, 50, 22, 0.08) 0%, transparent 70%);
+      filter: blur(60px);
+      animation: float 20s ease-in-out infinite;
+
+      &.circle-1 {
+        width: 400px;
+        height: 400px;
+        top: 20%;
+        left: 10%;
+        animation-delay: 0s;
+      }
+
+      &.circle-2 {
+        width: 300px;
+        height: 300px;
+        bottom: 20%;
+        right: 15%;
+        animation-delay: 7s;
+      }
+
+      &.circle-3 {
+        width: 250px;
+        height: 250px;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        animation-delay: 14s;
+      }
+    }
+  }
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translate(0, 0) scale(1);
+  }
+  33% {
+    transform: translate(30px, -30px) scale(1.1);
+  }
+  66% {
+    transform: translate(-20px, 20px) scale(0.9);
+  }
+}
+
+// Disable default Ionic header styling
+ion-header {
+  display: none;
+}
+
+// Loading state
+ion-spinner {
+  margin-right: 8px;
+}
+
+// Responsive adjustments
 @media (max-width: 767px) {
-  .sign-in-container h1 {
-    font-size: 1.5rem;
+  .login-form-column {
+    padding: 2rem 1.5rem;
+  }
+
+  .user-type-selection {
+    ion-col {
+      padding: 0.25rem;
+    }
+  }
+}
+
+// Welcome message
+.welcome-message {
+  text-align: center;
+  padding: 3rem 1rem;
+
+  .hint-text {
+    p {
+      color: #8b6239;
+      font-family: 'Kaisei Tokumin', serif;
+      font-size: 1rem;
+    }
+  }
+}
+
+// Smooth animations
+* {
+  transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+// Input focus states
+ion-input {
+  &::part(native) {
+    &:focus {
+      outline: none;
+    }
   }
 }

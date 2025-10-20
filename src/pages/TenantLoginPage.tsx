@@ -10,12 +10,12 @@ import {
   IonIcon
 } from '@ionic/react';
 import { logoGoogle } from 'ionicons/icons';
-import { supabase } from '../supabaseClient';
+import supabase from '../supabaseClient';
 import { Session } from '@supabase/supabase-js';
 import { useIonRouter, isPlatform } from '@ionic/react';
 import { GoogleAuth } from '@codetrix-studio/capacitor-google-auth';
 
-const TenantLoginPage: React.FC = () => {
+const VisitorLoginPage: React.FC = () => {
   const ionRouter = useIonRouter();
   const [session, setSession] = useState<Session | null>(null);
 
@@ -34,14 +34,18 @@ const TenantLoginPage: React.FC = () => {
       setSession(session);
     });
 
+    // Define the handler with explicit types
+    const handleAuthStateChange = (event: import('@supabase/supabase-js').AuthChangeEvent, session: Session | null) => {
+      setSession(session);
+    };
+
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-    });
+    } = supabase.auth.onAuthStateChange(handleAuthStateChange);
 
     return () => subscription.unsubscribe();
   }, []);
+>>>>>>> 74074...
 
   const handleGoogleSignIn = async () => {
     if (isPlatform('android') || isPlatform('ios')) {
@@ -130,4 +134,4 @@ const TenantLoginPage: React.FC = () => {
   );
 };
 
-export default TenantLoginPage;
+export default VisitorLoginPage;

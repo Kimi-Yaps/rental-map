@@ -19,18 +19,54 @@ import { getAssetUrls, Icons } from "../utils/homeAssets";
 
 const Home: React.FC = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [userType, setUserType] = useState<string | null>(null); // e.g., 'admin', 'tenant'
 
   useIonViewWillEnter(() => {
-    const checkLoginStatus = async () => {
+    const checkLoginStatusAndProfile = async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession();
-        setIsLoggedIn(!!session);
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        if (sessionError) throw sessionError;
+
+        if (session) {
+          setIsLoggedIn(true);
+          const { data: profileData, error: profileError } = await supabase
+            .from('profiles')
+            .select('user_type')
+            .eq('id', session.user.id)
+            .single();
+
+          if (profileError) throw profileError;
+
+          let currentUserType = null; // Declare currentUserType here
+
+          if (profileData && profileData.user_type && profileData.user_type.type) {
+            currentUserType = profileData.user_type.type;
+          } else {
+            // Default to 'tenant' if user_type is not set or missing in profile
+            // Ensure user_type is set in Supabase
+            currentUserType = 'tenant';
+            try { // Add try-catch for the update operation
+              await supabase
+                .from('profiles')
+                .update({ user_type: { type: 'tenant' } })
+                .eq('id', session.user.id);
+            } catch (updateError) {
+              console.error("Error updating user_type in profiles:", updateError);
+              // Optionally, handle this error more gracefully, e.g., show a message to the user
+            }
+          }
+          setUserType(currentUserType); // Set the state after determining the type
+        } else {
+          setIsLoggedIn(false);
+          setUserType(null); // Logged out
+        }
       } catch (error) {
-        console.error("Error checking login status:", error);
+        console.error("Error checking login status or profile:", error);
         setIsLoggedIn(false);
+        setUserType(null);
       }
     };
-    checkLoginStatus();
+    checkLoginStatusAndProfile();
   });
 
   const scrollItems = Array.from({ length: 7 }, (_, i) => (
@@ -55,11 +91,13 @@ const Home: React.FC = () => {
             {/* Left Navigation Items */}
             <IonCol size="auto" className="ion-no-padding">
               <div className="nav-items-container">
-                <IonText className="nav-text ion-margin-end">Book</IonText>
-                <IonRouterLink routerLink="/bookPackage" className="no-style-link">
-                   <IonText className="nav-text ion-margin-end">Packages</IonText>
+                <IonRouterLink routerLink="/booking" className="no-style-link">
+                  <IonText className="nav-text ion-margin-end">Book</IonText>
                 </IonRouterLink>
-               
+                {/* New link for visitor packages */}
+                <IonRouterLink routerLink="/visitorPackages" className="no-style-link">
+                  <IonText className="nav-text ion-margin-end">Explore Packages</IonText>
+                </IonRouterLink>
                 <IonText className="nav-text">Event</IonText>
               </div>
             </IonCol>

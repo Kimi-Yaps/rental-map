@@ -12,51 +12,37 @@ import {
   IonLabel,
 } from "@ionic/react";
 import "./ResizableWindow.scss";
-import { Package } from "../interfaces/Package";
-import { WindowState, WindowPosition, WindowSize } from "../interfaces/Booking";
+import { Package, OpenWindowState } from "../interfaces/Booking";
 import { Icons } from "../pages/BookPackage";
 import supabase from "../supabaseConfig";
-// Tiptap imports
-import { useEditor, EditorContent, BubbleMenu } from '@tiptap/react';
+import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
-import TextStyle from '@tiptap/extension-text-style';
-import { ListItem, OrderedList, BulletList } from '@tiptap/extension-list-item';
-import { Bold, Italic, Strike, Underline, Code, Paragraph, Heading, Blockquote, HardBreak, HorizontalRule, BulletList as BulletListExtension, OrderedList as OrderedListExtension, CodeBlock, Blockquote as BlockquoteExtension, History } from '@tiptap/extension-kit'; // Importing specific extensions
 import { useDebounce } from "../hooks/useDebounce";
 
-// Helper to format currency
 const formatCurrency = (amount: number | null): string => {
   if (amount === null) return "N/A";
-  return new Intl.NumberFormat("en-US", {
+  return new Intl.NumberFormat("en-MY", {
     style: "currency",
-    currency: "USD",
+    currency: "MYR",
   }).format(amount);
 };
 
 interface ResizableWindowProps {
-  initialPosition?: WindowPosition;
-  initialSize?: WindowSize;
-  title?: string;
-  onClose?: () => void;
-  selectedPackage: Package | null;
+  windowState: OpenWindowState;
+  onClose: () => void;
   onSavePackage: (updatedPackage: Package) => void;
+  onFocus: () => void;
+  onStateChange: (newState: Partial<OpenWindowState>) => void;
 }
 
 const ResizableWindow: React.FC<ResizableWindowProps> = ({
-  initialPosition = { x: 0, y: 0 },
-  initialSize = { width: 600, height: 400 },
-  title = "Package Details",
+  windowState,
   onClose,
-  selectedPackage,
   onSavePackage,
+  onFocus,
+  onStateChange,
 }) => {
-  const [windowState, setWindowState] = useState<WindowState>({
-    position: initialPosition,
-    size: initialSize,
-    isMinimized: false,
-    isMaximized: false,
-    zIndex: 1,
-  });
+  const { pkg, position, size, isMinimized, isMaximized, zIndex } = windowState;
 
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -69,13 +55,11 @@ const ResizableWindow: React.FC<ResizableWindowProps> = ({
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState(false);
-  // State for Tiptap editor content
   const [editorContent, setEditorContent] = useState("");
   const debouncedDescription = useDebounce(editorContent, 1000);
 
   const windowRef = useRef<HTMLDivElement>(null);
   const headerRef = useRef<HTMLDivElement>(null);
-  const resizeHandlesRef = useRef<{ [key: string]: HTMLDivElement | null }>({});
 
   const [isDragging, setIsDragging] = useState(false);
   const [isResizing, setIsResizing] = useState(false);
@@ -83,49 +67,39 @@ const ResizableWindow: React.FC<ResizableWindowProps> = ({
   const [offset, setOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const resizeStart = useRef<{ mouseX: number; mouseY: number; rect: DOMRect } | null>(null);
 
-  // Tiptap extensions
-  const extensions = [
-    StarterKit.configure({
-      // Configure extensions if needed, e.g., disable history for simplicity if not needed
-      history: false,
-    }),
-    TextStyle,
-    // Ensure list extensions are correctly configured if needed
-    BulletList.configure({ HTMLAttributes: { class: 'bullet-list' } }),
-    OrderedList.configure({ HTMLAttributes: { class: 'ordered-list' } }),
-    ListItem.configure({ HTMLAttributes: { class: 'list-item' } }),
-    // Add other extensions as required
-  ];
+  const extensions = [StarterKit];
 
-  // Initialize Tiptap editor
   const editor = useEditor({
     extensions,
-    content: editorContent, // Use the state for content
+    content: editorContent,
     onUpdate: ({ editor }) => {
-      setEditorContent(editor.getHTML()); // Update state when content changes
+      setEditorContent(editor.getHTML());
     },
     editorProps: {
       attributes: {
-        class: 'tiptap-editor-content', // Add a class for styling
+        class: 'tiptap-editor-content',
       },
     },
   });
 
-  // Initialize state from selectedPackage when it changes
   useEffect(() => {
-    if (selectedPackage) {
-      setEditorContent(selectedPackage.description || ""); // Initialize Tiptap content
-      setEditedPrice(selectedPackage.price);
-      setEditedLocation(selectedPackage.location || "");
-      setEditedNumberOfTenant(selectedPackage.numberOfTenant);
-      setEditedAmenities(selectedPackage.ammenities || {});
-      setCurrentImageUrls(selectedPackage.image_urls || []);
+    if (pkg) {
+      const newContent = pkg.description || "";
+      setEditorContent(newContent);
+      if (editor && editor.commands) {
+          editor.commands.setContent(newContent);
+      }
+      setEditedPrice(pkg.price);
+      setEditedLocation(pkg.location || "");
+      setEditedNumberOfTenant(pkg.numberOfTenant);
+      setEditedAmenities(pkg.ammenities || {});
+      setCurrentImageUrls(pkg.image_urls || []);
       setIsEditing(false);
     }
-  }, [selectedPackage]);
+  }, [pkg, editor]);
 
   const autoSaveChanges = async (description: string) => {
-    if (!selectedPackage || !editor) return; // Ensure editor is available
+    if (!pkg || !editor) return;
 
     const updatedPackageData: Partial<Package> = {
       description: description,
@@ -135,58 +109,33 @@ const ResizableWindow: React.FC<ResizableWindowProps> = ({
     const { error } = await supabase
       .from("Packages")
       .update(updatedPackageData)
-      .eq("id", selectedPackage.id);
+      .eq("id", pkg.id);
 
     if (error) {
       console.error("Error auto-saving package:", error);
     } else {
       console.log("Package auto-saved successfully!");
       if (onSavePackage) {
-        onSavePackage({ ...selectedPackage, ...updatedPackageData } as Package);
+        onSavePackage({ ...pkg, ...updatedPackageData } as Package);
       }
     }
   };
 
   useEffect(() => {
-    if (isEditing && selectedPackage && debouncedDescription !== selectedPackage.description) {
+    if (isEditing && pkg && debouncedDescription !== pkg.description) {
       autoSaveChanges(debouncedDescription);
     }
-  }, [debouncedDescription, isEditing, selectedPackage]);
+  }, [debouncedDescription, isEditing, pkg]);
 
-  // Centering the window on mount
-  useEffect(() => {
-    if (!windowRef.current) return;
-
-    const screenWidth = window.innerWidth;
-    const screenHeight = window.innerHeight;
-    const currentWidth = initialSize.width;
-    const currentHeight = initialSize.height;
-
-    const centeredPosition = {
-      x: Math.max(0, (screenWidth - currentWidth) / 2),
-      y: Math.max(0, (screenHeight - currentHeight) / 2),
-    };
-
-    setWindowState((prevState) => ({
-      ...prevState,
-      position: centeredPosition,
-      size: {
-        width: Math.min(initialSize.width, screenWidth * 0.9),
-        height: Math.min(initialSize.height, screenHeight * 0.9),
-      },
-    }));
-  }, [initialSize.width, initialSize.height]);
-
-  // Dragging logic
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    onFocus();
     if (!headerRef.current || !windowRef.current) return;
     if (headerRef.current.contains(e.target as Node)) {
       setIsDragging(true);
       const rect = windowRef.current.getBoundingClientRect();
       setOffset({ x: e.clientX - rect.left, y: e.clientY - rect.top });
-      setWindowState((prevState) => ({ ...prevState, zIndex: prevState.zIndex + 1 }));
     }
-  }, []);
+  }, [onFocus]);
 
   const handleMouseMove = useCallback((e: MouseEvent) => {
     if (!isDragging || !windowRef.current) return;
@@ -194,23 +143,23 @@ const ResizableWindow: React.FC<ResizableWindowProps> = ({
     const screenHeight = window.innerHeight;
     let newX = e.clientX - offset.x;
     let newY = e.clientY - offset.y;
-    newX = Math.max(0, Math.min(newX, screenWidth - windowState.size.width));
-    newY = Math.max(0, Math.min(newY, screenHeight - windowState.size.height));
-    setWindowState((prevState) => ({ ...prevState, position: { x: newX, y: newY } }));
-  }, [isDragging, offset, windowState.size.width, windowState.size.height]);
+    newX = Math.max(0, Math.min(newX, screenWidth - size.width));
+    newY = Math.max(0, Math.min(newY, screenHeight - size.height));
+    onStateChange({ position: { x: newX, y: newY } });
+  }, [isDragging, offset, size.width, size.height, onStateChange]);
 
   const handleMouseUp = useCallback(() => setIsDragging(false), []);
 
-  // Resizing logic
   const handleResizeMouseDown = useCallback((e: React.MouseEvent, handleName: string) => {
     e.preventDefault();
     e.stopPropagation();
+    onFocus();
     if (!windowRef.current) return;
     const rect = windowRef.current.getBoundingClientRect();
     setIsResizing(true);
     setResizeHandle(handleName);
     resizeStart.current = { mouseX: e.clientX, mouseY: e.clientY, rect };
-  }, []);
+  }, [onFocus]);
 
   const handleResizeMouseMove = useCallback((e: MouseEvent) => {
     if (!isResizing || !resizeHandle || !resizeStart.current) return;
@@ -243,8 +192,8 @@ const ResizableWindow: React.FC<ResizableWindowProps> = ({
     newX = Math.max(0, Math.min(newX, screenWidth - newWidth));
     newY = Math.max(0, Math.min(newY, screenHeight - newHeight));
 
-    setWindowState((prev) => ({ ...prev, position: { x: newX, y: newY }, size: { width: newWidth, height: newHeight } }));
-  }, [isResizing, resizeHandle]);
+    onStateChange({ position: { x: newX, y: newY }, size: { width: newWidth, height: newHeight } });
+  }, [isResizing, resizeHandle, onStateChange]);
 
   const handleResizeMouseUp = useCallback(() => {
     setIsResizing(false);
@@ -280,32 +229,32 @@ const ResizableWindow: React.FC<ResizableWindowProps> = ({
     };
   }, [isResizing, resizeHandle, handleResizeMouseMove, handleResizeMouseUp]);
 
-  const handleMinimize = () => setWindowState((prevState) => ({ ...prevState, isMinimized: !prevState.isMinimized }));
-  const handleMaximize = () => setWindowState((prevState) => ({ ...prevState, isMaximized: !prevState.isMaximized }));
-  const handleClose = () => { if (onClose) onClose(); console.log("Close button clicked"); };
+  const handleMinimize = () => onStateChange({ isMinimized: !isMinimized });
+  const handleMaximize = () => onStateChange({ isMaximized: !isMaximized });
+  const handleClose = () => onClose();
 
   const handleEditClick = () => setIsEditing(true);
 
   const handleSaveClick = async () => {
-    if (!selectedPackage || !editor) return; // Ensure editor is available
+    if (!pkg || !editor) return;
     const updatedPackageData: Partial<Package> = {
-      description: editor.getHTML(), // Get HTML from Tiptap editor
+      description: editor.getHTML(),
       image_urls: currentImageUrls,
     };
-    const { error } = await supabase.from("Packages").update(updatedPackageData).eq("id", selectedPackage.id);
+    const { error } = await supabase.from("Packages").update(updatedPackageData).eq("id", pkg.id);
     if (error) {
       console.error("Error saving package:", error);
     } else {
       console.log("Package saved successfully!");
       setIsEditing(false);
       if (onSavePackage) {
-        onSavePackage({ ...selectedPackage, ...updatedPackageData } as Package);
+        onSavePackage({ ...pkg, ...updatedPackageData } as Package);
       }
     }
   };
 
   const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    if (!selectedPackage || !event.target.files || event.target.files.length === 0) return;
+    if (!pkg || !event.target.files || event.target.files.length === 0) return;
     setUploading(true); setUploadError(null);
     const files = Array.from(event.target.files);
     try {
@@ -313,7 +262,7 @@ const ResizableWindow: React.FC<ResizableWindowProps> = ({
       for (const file of files) {
         const fileExt = file.name.split(".").pop();
         const fileName = `${Date.now()}.${fileExt}`;
-        const filePath = `public/packages/${selectedPackage.id}/${fileName}`;
+        const filePath = `public/packages/${pkg.id}/${fileName}`;
         const { data, error } = await supabase.storage.from("imgvideo-bucket1").upload(filePath, file);
         if (error) throw error;
         const { data: publicUrlData } = supabase.storage.from("imgvideo-bucket1").getPublicUrl(filePath);
@@ -331,12 +280,12 @@ const ResizableWindow: React.FC<ResizableWindowProps> = ({
   };
 
   const renderPackageContent = () => {
-    if (!selectedPackage) return null;
+    if (!pkg) return null;
     return (
       <div className="package-details-content">
         <div className="package-header">
-          {selectedPackage.icon_url && <IonImg src={selectedPackage.icon_url} alt="Package Icon" className="card-package-icon" />}
-          <IonText className="window-title">{title}</IonText>
+          {pkg.icon_url && <IonImg src={pkg.icon_url} alt="Package Icon" className="card-package-icon" />}
+          <IonText className="window-title">{pkg.Title}</IonText>
           <IonButton onClick={handleEditClick} disabled={isEditing}>Edit</IonButton>
           <IonButton onClick={handleSaveClick} disabled={!isEditing}>Save</IonButton>
         </div>
@@ -344,13 +293,13 @@ const ResizableWindow: React.FC<ResizableWindowProps> = ({
           {!isEditing ? (
             <>
               <p><strong>Description:</strong></p>
-              <div dangerouslySetInnerHTML={{ __html: currentDescription }} />
-              <p><strong>Price:</strong> {formatCurrency(selectedPackage.price)}</p>
-              <p><strong>Location:</strong> {selectedPackage.location || "N/A"}</p>
-              <p><strong>Number of Tenants:</strong> {selectedPackage.numberOfTenant || "N/A"}</p>
-              {selectedPackage.ammenities && typeof selectedPackage.ammenities === "object" && Object.keys(selectedPackage.ammenities).length > 0 && (
+              <div dangerouslySetInnerHTML={{ __html: pkg.description || "" }} />
+              <p><strong>Price:</strong> {formatCurrency(pkg.price)}</p>
+              <p><strong>Location:</strong> {pkg.location || "N/A"}</p>
+              <p><strong>Number of Tenants:</strong> {pkg.numberOfTenant || "N/A"}</p>
+              {pkg.ammenities && typeof pkg.ammenities === "object" && Object.keys(pkg.ammenities).length > 0 && (
                 <div className="amenity-icons">
-                  {Object.entries(selectedPackage.ammenities).map(([key, value]) => (
+                  {Object.entries(pkg.ammenities).map(([key, value]) => (
                     <IonImg key={key} src={String(value)} alt={`Amenity: ${key}`} className="amenity-icon" />
                   ))}
                 </div>
@@ -460,77 +409,57 @@ const ResizableWindow: React.FC<ResizableWindowProps> = ({
 
   const windowStyle: React.CSSProperties = {
     position: "absolute",
-    left: `${windowState.position.x}px`,
-    top: `${windowState.position.y}px`,
-    width: windowState.isMaximized ? "90vw" : `${windowState.size.width}px`,
-    height: windowState.isMaximized ? "90vh" : `${windowState.size.height}px`,
-    zIndex: windowState.zIndex,
-    transform: windowState.isMaximized ? "translate(-45vw, -45vh)" : "none",
+    left: `${position.x}px`,
+    top: `${position.y}px`,
+    width: isMaximized ? "90vw" : `${size.width}px`,
+    height: isMaximized ? "90vh" : `${size.height}px`,
+    zIndex: zIndex,
+    transform: isMaximized ? "translate(-45vw, -45vh)" : "none",
   };
 
   const contentStyle: React.CSSProperties = {
-    height: windowState.isMaximized
+    height: isMaximized
       ? "calc(90vh - var(--header-height) - var(--footer-height, 0px))"
-      : `calc(${windowState.size.height}px - var(--header-height) - var(--footer-height, 0px))`,
+      : `calc(${size.height}px - var(--header-height) - var(--footer-height, 0px))`,
   };
 
-  const resizeHandles = ["top-left", "top-
-```
-The file content was truncated. I need to re-read the file to get the complete content before attempting to modify it.
-The user's instruction is to replace `react-quill` with `tiptap`.
-I have already uninstalled `react-quill` and installed Tiptap dependencies.
-The next step is to refactor `ResizableWindow.tsx`.
+  const resizeHandles = ["top-left", "top-right", "bottom-left", "bottom-right", "top", "bottom", "left", "right"];
 
-I need to read the file again to get the full content, then apply the Tiptap refactoring.
-The previous `read_file` operation was interrupted.
+  return (
+    <div
+      ref={windowRef}
+      className={`resizable-window ${isMinimized ? "minimized" : ""} ${isMaximized ? "maximized" : ""}`}
+      style={windowStyle}
+      onMouseDown={handleMouseDown}
+    >
+      <div ref={headerRef} className="window-header">
+        <IonText className="window-title">{pkg.Title}</IonText>
+        <div className="window-controls">
+          <IonButton fill="clear" className="control-button" onClick={handleMinimize}>
+            <IonIcon icon={Icons.mini} />
+          </IonButton>
+          <IonButton fill="clear" className="control-button" onClick={handleMaximize}>
+            <IonIcon icon={Icons.max} />
+          </IonButton>
+          <IonButton fill="clear" className="control-button close" onClick={handleClose}>
+            <IonIcon icon={Icons.destroy} />
+          </IonButton>
+        </div>
+      </div>
+      {!isMinimized && (
+        <IonContent style={contentStyle} className="window-content">
+          {isLoading ? renderLoadingState() : error ? renderErrorState() : pkg ? renderPackageContent() : renderEmptyState()}
+        </IonContent>
+      )}
+      {resizeHandles.map((handle) => (
+        <div
+          key={handle}
+          className={`resize-handle ${handle}`}
+          onMouseDown={(e) => handleResizeMouseDown(e, handle)}
+        />
+      ))}
+    </div>
+  );
+};
 
-**Plan:**
-1.  Read the full content of `src/components/ResizableWindow.tsx` again.
-2.  Modify the file to replace `ReactQuill` with Tiptap components and logic.
-3.  Update `task_progress`.
-
-**Refactoring steps:**
-- Remove `react-quill` imports.
-- Add Tiptap imports.
-- Define Tiptap extensions.
-- Initialize Tiptap editor using `useEditor`.
-- Replace `ReactQuill` JSX with `EditorContent`.
-- Update state management for `currentDescription` to use Tiptap's editor state.
-- Update `autoSaveChanges` to use `editor.getHTML()`.
-
-I will use `write_to_file` to apply these changes.
-The `task_progress` will be updated.
-- [x] Modify `BookPackage.tsx` to auto-save icon positions with a delay.
-- [x] Fix ESLint error for `Contact` property type.
-- [x] Implement tab management state and counter.
-- [x] Search for `react-quill` usage in project files.
-- [x] Investigate `react-quill` errors and plan a solution.
-- [x] Research `react-quill` compatibility and plan for Tiptap replacement.
-- [x] Uninstall `react-quill`.
-- [x] Install Tiptap dependencies.
-- [ ] Refactor `ResizableWindow.tsx` to use Tiptap.
-- [ ] Research OOP theory.
-- [ ] Analyze which parts can be applied.
-- [ ] Compare methods with 2 times.
-- [ ] Apply the best method in the last decision.
-
-I will start by reading the file content again to ensure I have the latest version before making modifications.
-</thinking>
-<read_file>
-<path>src/components/ResizableWindow.tsx</path>
-<task_progress>
-- [x] Modify `BookPackage.tsx` to auto-save icon positions with a delay.
-- [x] Fix ESLint error for `Contact` property type.
-- [x] Implement tab management state and counter.
-- [x] Search for `react-quill` usage in project files.
-- [x] Investigate `react-quill` errors and plan a solution.
-- [x] Research `react-quill` compatibility and plan for Tiptap replacement.
-- [x] Uninstall `react-quill`.
-- [x] Install Tiptap dependencies.
-- [ ] Refactor `ResizableWindow.tsx` to use Tiptap.
-- [ ] Research OOP theory.
-- [ ] Analyze which parts can be applied.
-- [ ] Compare methods with 2 times.
-- [ ] Apply the best method in the last decision.
-</task_progress>
-</read_file>
+export default ResizableWindow;

@@ -8,21 +8,23 @@ import {
   IonButton,
   IonImg,
 } from "@ionic/react";
-import { useState, useEffect, useRef } from "react"; // Import useRef
-import { useHistory } from "react-router"; // Import useHistory
+import { useState, useEffect, useRef } from "react";
+import { useHistory } from "react-router";
 import "./BookPage.scss";
 import ResizableWindow from '../components/ResizableWindow';
 import supabase from "../supabaseConfig";
-import { Package, WindowState } from "../interfaces/Booking"; // Import the Package and WindowState interfaces
+import { Package, WindowState } from "../interfaces/Booking";
 import {
   arrowBackOutline,
 } from 'ionicons/icons';
 
 // Define Tab interface locally for now
-interface Tab {
+interface OpenWindowState {
   id: number;
-  title: string;
-  isActive: boolean;
+  pkg: Package;
+  position: { x: number; y: number };
+  size: { width: number; height: number };
+  zIndex: number;
   isMinimized: boolean;
 }
 
@@ -33,45 +35,33 @@ export const Icons = {
   browsePage: "public/browsepage.svg",
   malayFlag: "public/flag-malaysia.svg",
   user: "public/profile-fill.svg",
+  destroy: "public/destroy.svg",
+  max: "public/max.svg",
+  mini: "public/mini.svg",
 };
 
-// Define the structure of an enhanced suggestion
 const isVideo = (url: string): boolean => {
   const lowercasedUrl = url.toLowerCase();
   return lowercasedUrl.endsWith('.mp4') || lowercasedUrl.endsWith('.mov');
 };
 
-
-// Main component - removed the props that don't belong here
 const BookPackage: React.FC = () => {
-  const history = useHistory(); // Get the history object
+  const history = useHistory();
 
   const [packages, setPackages] = useState<Package[]>([]);
-  const [selectedPackage, setSelectedPackage] = useState<Package | null>(null);
-  const [isWindowOpen, setIsWindowOpen] = useState(false);
-  const [draggedOverPackageId, setDraggedOverPackageId] = useState<number | null>(null);
-  // New states for icon dragging
   const [iconStates, setIconStates] = useState<WindowState[]>([]);
   const [draggingIconId, setDraggingIconId] = useState<number | null>(null);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
-
-  // State for editing package titles
   const [editingTitleId, setEditingTitleId] = useState<number | null>(null);
   const [editedTitle, setEditedTitle] = useState<string>('');
-
-  // Ref for the save layout timeout
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const [draggedOverPackageId, setDraggedOverPackageId] = useState<number | null>(null);
 
-  // State for tab management
-  const [tabs, setTabs] = useState<Tab[]>([]);
-  const [activeTabId, setActiveTabId] = useState<number | null>(null);
-
+  const [openWindows, setOpenWindows] = useState<OpenWindowState[]>([]);
 
   const handleBack = () => {
-    history.goBack(); // Use history.goBack()
+    history.goBack();
   };
-
-  // Removed unused useEffect for isDesktop
 
   useEffect(() => {
     const fetchPackages = async () => {
@@ -79,7 +69,6 @@ const BookPackage: React.FC = () => {
       if (error) {
         console.error('Error fetching packages:', error);
       } else {
-        // Explicitly type the data to ensure it conforms to Package interface
         if (Array.isArray(data)) {
             const fetchedPackages: Package[] = data.map((pkg: any) => ({
               id: pkg.id,
@@ -88,25 +77,23 @@ const BookPackage: React.FC = () => {
       Contact: pkg.Contact ?? null as any,
               ammenities: pkg.ammenities ?? null,
               price: pkg.price ?? null,
-              description: pkg.description ?? '' as string, // Explicitly cast to string to satisfy type checker
+              description: pkg.description ?? '',
               created_at: pkg.created_at,
               icon_url: pkg.icon_url ?? null,
               Title: pkg.Title ?? null,
               pulauName: pkg.pulauName ?? null,
               image_urls: pkg.image_urls ?? [],
-              // Initialize icon_style from fetched data or default
               icon_style: pkg.icon_style || { position: { x: Math.random() * 500, y: Math.random() * 300 }, zIndex: pkg.id },
             }));
           setPackages(fetchedPackages);
-          // Initialize iconStates based on fetched packages and their icon_style
           setIconStates(
             fetchedPackages.map((pkg: Package) => ({
               id: pkg.id,
-              position: pkg.icon_style?.position || { x: Math.random() * 500, y: Math.random() * 300 }, // Use fetched or random position
-              size: { width: 75, height: 75 }, // Increased icon size by 1.5x (50 * 1.5)
+              position: pkg.icon_style?.position || { x: Math.random() * 500, y: Math.random() * 300 },
+              size: { width: 75, height: 75 },
               isMinimized: false,
               isMaximized: false,
-              zIndex: pkg.icon_style?.zIndex || pkg.id, // Use fetched or pkg.id as zIndex
+              zIndex: pkg.icon_style?.zIndex || pkg.id,
             }))
           );
         } else {
@@ -118,18 +105,40 @@ const BookPackage: React.FC = () => {
     fetchPackages();
   }, []);
 
-  const handleIconClick = (pkg: Package) => {
-    setSelectedPackage(pkg);
-    setIsWindowOpen(true);
-    // Potentially open a new tab or activate an existing one for this package
-    // For now, just opening the window. Tab management logic will follow.
+  const bringToFront = (id: number) => {
+    setOpenWindows(currentWindows => {
+      const maxZIndex = Math.max(...currentWindows.map(w => w.zIndex));
+      return currentWindows.map(w => 
+        w.id === id ? { ...w, zIndex: maxZIndex + 1 } : w
+      );
+    });
   };
 
-  const handleCloseWindow = () => {
-    setIsWindowOpen(false);
-    setSelectedPackage(null);
-    // Potentially close the associated tab if it exists
+  const handleIconClick = (pkg: Package) => {
+    const existingWindow = openWindows.find(w => w.id === pkg.id);
+    if (existingWindow) {
+      bringToFront(pkg.id);
+    } else {
+      const maxZIndex = openWindows.length > 0 ? Math.max(...openWindows.map(w => w.zIndex)) : 100;
+      const newWindow: OpenWindowState = {
+        id: pkg.id,
+        pkg: pkg,
+        position: { x: 100 + openWindows.length * 20, y: 100 + openWindows.length * 20 },
+        size: { width: 600, height: 400 },
+        zIndex: maxZIndex + 1,
+        isMinimized: false,
+      };
+      setOpenWindows([...openWindows, newWindow]);
+    }
   };
+
+  const closeWindow = (id: number) => {
+    setOpenWindows(openWindows.filter(w => w.id !== id));
+  };
+
+  const updateWindowState = (id: number, newPosition: {x: number, y: number}, newSize: {width: number, height: number}) => {
+    setOpenWindows(openWindows.map(w => w.id === id ? {...w, position: newPosition, size: newSize} : w));
+  }
 
   const handleSavePackage = (updatedPackage: Package) => {
     setPackages(prevPackages =>
@@ -137,9 +146,11 @@ const BookPackage: React.FC = () => {
             p.id === updatedPackage.id ? updatedPackage : p
         )
     );
-    if (selectedPackage && selectedPackage.id === updatedPackage.id) {
-        setSelectedPackage(updatedPackage);
-    }
+    setOpenWindows(prevWindows => 
+        prevWindows.map(w => 
+            w.id === updatedPackage.id ? { ...w, pkg: updatedPackage } : w
+        )
+    );
 };
 
 const handleDragEnter = (e: React.DragEvent<HTMLDivElement>, pkgId: number) => {
@@ -161,21 +172,18 @@ const handleIconDrop = async (e: React.DragEvent<HTMLDivElement>, pkg: Package) 
   const files = e.dataTransfer.files;
   if (files && files.length > 0) {
       const file = files[0];
-      // Check file type
-      const allowedTypes = ['image/jpeg', 'image/png', 'video/mp4', 'video/quicktime']; // Added video types
+      const allowedTypes = ['image/jpeg', 'image/png', 'video/mp4', 'video/quicktime'];
       if (allowedTypes.includes(file.type)) {
           await uploadIcon(file, pkg);
       } else {
-          alert('Only JPG, PNG, MP4, and MOV files are allowed.'); // Updated alert message
+          alert('Only JPG, PNG, MP4, and MOV files are allowed.');
       }
   }
 };
 
 const uploadIcon = async (file: File, pkg: Package) => {
   const fileExt = file.name.split('.').pop();
-  // Extract filename without extension for the Title
   const baseFileName = file.name.substring(0, file.name.lastIndexOf('.'));
-  // Use a unique name for storage to avoid conflicts
   const uniqueFileName = `${Date.now()}.${fileExt}`;
   const filePath = `public/packages/${pkg.id}/icon/${uniqueFileName}`;
 
@@ -192,7 +200,7 @@ const uploadIcon = async (file: File, pkg: Package) => {
   if (newIconUrl) {
       const { error: updateError } = await supabase
           .from('Packages')
-          .update({ icon_url: newIconUrl, Title: baseFileName }) // Added Title update
+          .update({ icon_url: newIconUrl, Title: baseFileName })
           .eq('id', pkg.id);
 
       if (updateError) {
@@ -200,37 +208,32 @@ const uploadIcon = async (file: File, pkg: Package) => {
       } else {
           setPackages(prevPackages =>
               prevPackages.map(p =>
-                  p.id === pkg.id ? { ...p, icon_url: newIconUrl, Title: baseFileName } : p // Added Title update
+                  p.id === pkg.id ? { ...p, icon_url: newIconUrl, Title: baseFileName } : p
               )
           );
       }
   }
 };
 
-  // Handler for the tab button
   const handleTabButtonClick = () => {
     console.log("Tab button clicked");
   };
 
-  // Handler for starting to drag an icon
   const handleDragStart = (e: React.DragEvent<HTMLDivElement>, id: number) => {
     e.dataTransfer.setData('text/plain', id.toString());
     setDraggingIconId(id);
 
-    // Calculate offset from the mouse pointer to the element's top-left corner
     const rect = e.currentTarget.getBoundingClientRect();
     const offsetX = e.clientX - rect.left;
     const offsetY = e.clientY - rect.top;
     setOffset({ x: offsetX, y: offsetY });
   };
 
-  // Handler for dragging over the canvas
 const handleCanvasDragOver = (e: React.DragEvent<HTMLIonContentElement>) => {
   e.preventDefault();
   e.stopPropagation();
 };
 
-// Handler for dropping the icon onto the canvas
 const handleCanvasDrop = (e: React.DragEvent<HTMLIonContentElement>) => {
     e.preventDefault();
     e.stopPropagation();
@@ -241,70 +244,59 @@ const handleCanvasDrop = (e: React.DragEvent<HTMLIonContentElement>) => {
     const iconState = iconStates.find(state => state.id === draggingIconId);
 
     if (!iconState) {
-      setDraggingIconId(null); // Reset if icon state not found
+      setDraggingIconId(null);
       return;
     }
 
-    // Calculate new position based on mouse position and offset
     let newX = e.clientX - canvasRect.left - offset.x;
     let newY = e.clientY - canvasRect.top - offset.y;
 
-    // Boundary checks
     const iconWidth = iconState.size.width;
     const iconHeight = iconState.size.height;
 
-    // Prevent icon from going off-screen left/top
     newX = Math.max(0, newX);
     newY = Math.max(0, newY);
 
-    // Prevent icon from going off-screen right/bottom
     newX = Math.min(canvasRect.width - iconWidth, newX);
     newY = Math.min(canvasRect.height - iconHeight, newY);
 
-    // Update iconStates and set a timeout to save the layout
     setIconStates(prevStates => {
       const updatedStates = prevStates.map(state =>
         state.id === draggingIconId
           ? {
               ...state,
               position: { x: newX, y: newY },
-              zIndex: Math.max(...prevStates.map(s => s.zIndex)) + 1, // Bring to front
+              zIndex: Math.max(...prevStates.map(s => s.zIndex)) + 1,
             }
           : state
       );
 
-      // Clear any existing timeout to avoid multiple saves
       if (saveTimeoutRef.current) {
         clearTimeout(saveTimeoutRef.current);
       }
 
-      // Set a new timeout to save the layout
       saveTimeoutRef.current = setTimeout(() => {
-        saveLayout(updatedStates); // Pass updatedStates to saveLayout
-      }, 1000); // 1 second delay
+        saveLayout(updatedStates);
+      }, 1000);
 
       return updatedStates;
     });
 
-    setDraggingIconId(null); // Reset dragging state
+    setDraggingIconId(null);
   };
 
-  // Handler for starting title edit
   const handleTitleEditStart = (pkg: Package) => {
     setEditingTitleId(pkg.id);
     setEditedTitle(pkg.Title || 'Untitled Package');
   };
 
-  // Handler for saving title edit (on blur or Enter key)
   const handleTitleBlur = async (pkgId: number) => {
     if (editingTitleId === pkgId) {
-      // Update local state first
       const updatedPackages = packages.map(p =>
         p.id === pkgId ? { ...p, Title: editedTitle } : p
       );
       setPackages(updatedPackages);
 
-      // Update in Supabase
       const { error } = await supabase
         .from('Packages')
         .update({ Title: editedTitle })
@@ -312,19 +304,15 @@ const handleCanvasDrop = (e: React.DragEvent<HTMLIonContentElement>) => {
 
       if (error) {
         console.error('Error updating package title:', error);
-        // Optionally revert changes or show error message
       }
 
-      setEditingTitleId(null); // Exit edit mode
+      setEditingTitleId(null);
       setEditedTitle('');
     }
   };
 
-  // Function to save the layout of icons
-  // Modified to accept updatedIconStates and remove alerts
   const saveLayout = async (currentIconStates: WindowState[]) => {
     try {
-      // Prepare data for bulk update
       const updates = currentIconStates.map(state => ({
         id: state.id,
         icon_style: {
@@ -333,40 +321,32 @@ const handleCanvasDrop = (e: React.DragEvent<HTMLIonContentElement>) => {
         },
       }));
 
-      // Perform bulk update in Supabase
       const { error } = await supabase.from('Packages').upsert(updates, {
-        onConflict: 'id', // Specify the conflict resolution strategy
+        onConflict: 'id',
       });
 
       if (error) {
         console.error('Error saving layout:', error);
-        // Removed alert
       } else {
         console.log('Layout saved successfully!');
-        // Removed alert
       }
     } catch (error) {
       console.error('Error saving layout:', error);
-      // Removed alert
     }
   };
 
   return (
     <IonPage id="main-content">
         <IonContent className="content" onDragOver={handleCanvasDragOver} onDrop={handleCanvasDrop}>
-          {/* Moved camera icon to be a sibling of background-noise */}
           <IonImg src={Icons.noise} className="background-noise"></IonImg>
           <IonImg src={Icons.camera} className="centered-icon"></IonImg>
 
           <IonGrid className="booking-nav-container">
           <IonRow className="booking-nav">
 
-            {/* Empty column for spacing if needed */}
             <IonCol size="auto">
-              {/* Add logo or other elements here if needed */}
             </IonCol>
 
-            {/* Main navigation icons */}
             <IonCol className="icon-list">
 
               <IonCol>
@@ -379,19 +359,15 @@ const handleCanvasDrop = (e: React.DragEvent<HTMLIonContentElement>) => {
               <IonIcon src={Icons.cart} className="cust-icon"></IonIcon>
               <IonIcon src={Icons.user} className="cust-icon"></IonIcon>
 
-              {/* Tab Button */}
               <IonButton
                 fill="clear"
                 className="custom-tab-button"
                 onClick={handleTabButtonClick}
                 disabled={false}
               >
-                {/* top accent strip */}
                 <div className="tab-accent-strip" />
-
-                {/* counter */}
                 <span className="tab-counter">
-                  {tabs.length} {/* Display the count of open tabs */}
+                  {openWindows.length}
                 </span>
               </IonButton>
 
@@ -400,28 +376,28 @@ const handleCanvasDrop = (e: React.DragEvent<HTMLIonContentElement>) => {
           </IonRow>
         </IonGrid>
 
-        {isWindowOpen && selectedPackage && (
+        {openWindows.map(win => (
           <ResizableWindow
-            selectedPackage={selectedPackage}
-            title="Package"
-            onClose={handleCloseWindow}
+            key={win.id}
+            windowState={win}
+            onClose={() => closeWindow(win.id)}
             onSavePackage={handleSavePackage}
+            onFocus={() => bringToFront(win.id)}
+            onStateChange={(newState) => {
+              const newWindows = openWindows.map(w => w.id === win.id ? {...w, ...newState} : w);
+              setOpenWindows(newWindows);
+            }}
           />
-        )}
+        ))}
 
-        {/* Canvas for draggable icons */}
         <div
           style={{
             position: 'relative',
             width: '100%',
-            height: '100%', // Ensure it takes up available space
-            overflow: 'hidden', // To keep icons within bounds visually
+            height: '100%',
+            overflow: 'hidden',
           }}
         >
-          {/* Save Layout Button - Removed as saving is now automatic */}
-          {/* <div className="save-layout-button-container">
-            <IonButton onClick={saveLayout} color="primary">Save Layout</IonButton>
-          </div> */}
           {packages.map((pkg) => {
             const state = iconStates.find(s => s.id === pkg.id);
             if (!state) return null;
@@ -437,13 +413,12 @@ const handleCanvasDrop = (e: React.DragEvent<HTMLIonContentElement>) => {
                   height: `${state.size.height}px`,
                   cursor: 'grab',
                   zIndex: state.zIndex,
-                  // Visual feedback for file drop target on the icon itself
                   border: draggedOverPackageId === pkg.id ? '2px dashed blue' : 'none',
-                  display: 'flex', // To center content if needed
+                  display: 'flex',
                   justifyContent: 'center',
                   alignItems: 'center',
-                  flexDirection: 'column', // Stack icon and title vertically
-                  textAlign: 'center', // Center text
+                  flexDirection: 'column',
+                  textAlign: 'center',
                 }}
                 draggable="true"
                 onDragStart={(e) => handleDragStart(e, pkg.id)}
@@ -452,8 +427,7 @@ const handleCanvasDrop = (e: React.DragEvent<HTMLIonContentElement>) => {
                 onDragEnter={(e) => handleDragEnter(e, pkg.id)}
                 onDragLeave={(e) => handleDragLeave(e)}
               >
-                {/* Icon/Video */}
-                <div style={{ width: '100%', height: '80%', overflow: 'hidden' }}> {/* Allocate space for icon */}
+                <div style={{ width: '100%', height: '80%', overflow: 'hidden' }}>
                   {pkg.icon_url && (
                     isVideo(pkg.icon_url) ? (
                       <video src={pkg.icon_url} style={{ width: '100%', height: '100%', cursor: 'pointer' }} autoPlay loop muted />
@@ -462,23 +436,22 @@ const handleCanvasDrop = (e: React.DragEvent<HTMLIonContentElement>) => {
                     )
                   )}
                 </div>
-                {/* Title */}
                 {editingTitleId === pkg.id ? (
                   <input
                     type="text"
                     value={editedTitle}
                     onChange={(e) => setEditedTitle(e.target.value)}
-                    onBlur={() => handleTitleBlur(pkg.id)} // Save on blur
+                    onBlur={() => handleTitleBlur(pkg.id)}
                     onKeyPress={(e) => {
                       if (e.key === 'Enter') {
-                        handleTitleBlur(pkg.id); // Save on Enter key
+                        handleTitleBlur(pkg.id);
                       }
                     }}
-                    style={{ width: '100%', height: '20%', textAlign: 'center', color: 'black', backgroundColor: 'white', border: 'none', outline: 'none' }} // Basic styling for input
+                    style={{ width: '100%', height: '20%', textAlign: 'center', color: 'black', backgroundColor: 'white', border: 'none', outline: 'none' }}
                   />
                 ) : (
                   <div
-                    style={{ width: '100%', height: '20%', cursor: 'pointer', color: 'black' }} // Changed color to black as requested
+                    style={{ width: '100%', height: '20%', cursor: 'pointer', color: 'black' }}
                     onClick={() => handleTitleEditStart(pkg)}
                   >
                     {pkg.Title || 'Untitled Package'}

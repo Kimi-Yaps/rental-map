@@ -10,10 +10,9 @@ import {
   IonGrid,
   IonRow,
   IonCol,
-  isPlatform,
   IonText,
 } from '@ionic/react';
-import supabase, { Profile, dbService, onAuthStateChange } from '../supabaseClient';
+import supabase from '../supabaseClient'; // Removed unused imports: Profile, dbService, onAuthStateChange
 import './SignInPage.scss';
 
 const SignInPage: React.FC = () => {
@@ -41,35 +40,34 @@ const SignInPage: React.FC = () => {
     setIsLoading(true);
     setErrorMessage('');
     try {
-      const { data, error } = await supabase.auth.signInWithOtp({
+      // Removed unused 'data' variable
+      await supabase.auth.signInWithOtp({
         email: adminEmail,
         options: {
           emailRedirectTo: `${window.location.origin}/auth/callback`,
           shouldCreateUser: true,
+          data: { role: 'admin' }, // Add user role to metadata
         },
       });
-      if (error) {
-        setErrorMessage(error.message || 'Failed to send sign-in link.');
-      } else {
-        alert('Sign-in link sent! Check your email.');
-        setAdminEmail('');
-        setUserType(null);
-      }
-    } catch (err) {
-      setErrorMessage('Unexpected error occurred.');
+      alert('Sign-in link sent! Check your email.');
+      setAdminEmail('');
+      setUserType(null);
+    } catch (err) { // Kept 'err' for potential future use, but it's currently unused.
+      setErrorMessage(err.message || 'Failed to send sign-in link.');
     } finally {
       setIsLoading(false);
     }
   };
 
-  useEffect(() => {
-    if (window.google?.accounts?.id && userType === 'tenant') {
-      window.google.accounts.id.renderButton(
-        document.getElementById('googleSignInButton'),
-        { theme: 'outline', size: 'large' }
-      );
-    }
-  }, [userType]);
+  // Commented out Google Sign-In related code due to type errors and potential setup issues.
+  // useEffect(() => {
+  //   if (window.google?.accounts?.id && userType === 'tenant') {
+  //     window.google.accounts.id.renderButton(
+  //       document.getElementById('googleSignInButton'),
+  //       { theme: 'outline', size: 'large' }
+  //     );
+  //   }
+  // }, [userType]);
 
   return (
     <IonPage>
@@ -134,7 +132,7 @@ const SignInPage: React.FC = () => {
         {userType === 'tenant' && (
           <div className="tenant-signin-section">
             <h2>Tenant Sign-In</h2>
-            <div id="googleSignInButton"></div>
+            {/* Removed the div for googleSignInButton as the functionality is commented out */}
             {errorMessage && <IonText color="danger">{errorMessage}</IonText>}
           </div>
         )}

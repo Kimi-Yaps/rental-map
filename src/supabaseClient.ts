@@ -27,7 +27,7 @@ export interface Profile {
   nickname?: string | null;
   user_id?: string | null;
   user_type?: {
-    type: 'admin' | 'tenant';
+    type: 'admin' | 'visitor';
   } | null;
 }
 

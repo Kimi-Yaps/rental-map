@@ -1,8 +1,7 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 import { config as dotenvConfig } from 'dotenv';
 
-dotenvConfig();
-dotenvConfig({ path: '.env.local', override: true });
+dotenvConfig({ path: 'rental-map/.env' });
 
 const config: CapacitorConfig = {
   appId: 'your.app.id',

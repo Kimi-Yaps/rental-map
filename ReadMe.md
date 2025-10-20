@@ -24,7 +24,7 @@ A cross-platform property rental app built with React, Ionic, and Supabase. User
 
 ## 🚀 Tech Stack
 
-- **Frontend:** React, Ionic, TypeScript, Leaflet
+- **Frontend:** React, Ionic, TypeScript
 - **Backend:** Supabase
 - **Testing:** Cypress, Vitest
 - **Build Tool:** Vite
@@ -39,7 +39,6 @@ To get a local copy up and running, follow these simple steps.
 
 - Node.js and npm
 - A Supabase account and project
-- A Geoapify account and API key
 
 ### Installation
 
@@ -57,25 +56,13 @@ To get a local copy up and running, follow these simple steps.
 
 3.  **Set up environment variables:**
 
-    Create a `.env.local` & `.env.development` file in the root of the project and add your Supabase project credentials and your Geoapify API key:
+    Create a `.env.local` & `.env.development` file in the root of the project and add your Supabase project credentials:
 
     ```env
     # Your Supabase project URL
     VITE_SUPABASE_URL=your-supabase-url
     # Your Supabase project anonymous key
     VITE_SUPABASE_ANON_KEY=your-supabase-anon-key
-
-    # Base URL for the Geoapify Autocomplete API. The API key will be appended by the application.
-    AUTOCOMPLETE_BASE_URL=https://api.geoapify.com/v1/geocode/autocomplete
-
-    # Base URL for the Geoapify Reverse Geocoding API. The API key will be appended by the application.
-    REVERSE_GEOCODING_BASE_URL=https://api.geoapify.com/v1/geocode/reverse
-
-    # Base URL for the Geoapify Geocoding API. The API key will be appended by the application.
-    GEOCODING_BASE_URL=https://api.geoapify.com/v1/geocode/search
-
-    # Your Geoapify API key
-    VITE_GEOAPIFY_API_KEY=your-geoapify-api-key
     ```
 
 ### Running the App
@@ -111,10 +98,6 @@ src/
   ├── main.tsx               # React entry point
   ├── pages/                 # Application pages
   │   ├── Home.tsx             # Main search and recommendations page
-  │   ├── HomeSearched.tsx     # Search results and property list
-  │   ├── landlordHome.tsx     # Landlord dashboard and entry point
-  │   ├── PropertyType.tsx     # Property type selection page
-  │   ├── HomeBestFIt.tsx      # Home type selection page
   │   ├── LocationStepPage.tsx # Step 1 of property creation (Location)
   │   ├── AmenitiesStepPage.tsx# Step 2 of property creation (Amenities)
   │   └── FinalReviewPage.tsx  # Final step of property creation (Review)

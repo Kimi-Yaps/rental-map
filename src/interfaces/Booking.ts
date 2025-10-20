@@ -2,7 +2,7 @@ export interface Booking {
   id: number;
   property_id: string;
   owner_id: string;
-  tenant_id: string;
+  visitor_id: string;
   booking_status: {
     current_status: 'pending' | 'confirmed' | 'cancelled' | 'completed';
     payment_status: 'unpaid' | 'paid' | 'refunded' | 'overdue';
@@ -25,9 +25,9 @@ export interface Booking {
 
 export interface Package {
   id: number;
-  numberOfTenant: number | null;
+  numberOfVisitor: number | null;
   location: string | null;
-  Contact: any | null; // Reverting to any as per original usage in BookPackage.tsx
+  Contact: string | null; // Assuming contact information is a string or null
   ammenities: object | null; // Assuming amenities is an object or null
   price: number | null;
   description: string | null; // This will hold the rich text content
@@ -59,4 +59,8 @@ export interface WindowState {
   isMinimized: boolean;
   isMaximized: boolean;
   zIndex: number;
+}
+
+export interface OpenWindowState extends WindowState {
+  pkg: Package;
 }
