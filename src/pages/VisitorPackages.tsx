@@ -8,74 +8,104 @@ import {
   IonText,
   IonIcon,
   IonButton,
-  IonImg,
-  IonCard,
-  IonCardHeader,
-  IonCardContent,
-  IonCardTitle,
-  IonCardSubtitle,
   IonRouterLink,
+  IonChip,
+  IonLabel,
+  IonBadge,
+  IonSearchbar,
+  IonPopover,
 } from "@ionic/react";
-import { useHistory } from "react-router";
+import { useHistory, useLocation } from "react-router";
+import {
+  homeOutline,
+  mapOutline,
+  cubeOutline,
+  calendarOutline,
+  callOutline,
+  informationCircleOutline,
+  sunnyOutline,
+  searchOutline,
+  personCircleOutline,
+  cartOutline,
+} from "ionicons/icons";
+import { Icons } from "../utils/visitorUtils";
 import "../pages/VisitorPackages.scss";
-import { arrowBackOutline } from "ionicons/icons";
-import { Icons, formatCurrency } from "../utils/visitorUtils";
 
-// ✅ Static Tourism Packages (example data)
-const staticPackages = [
-  {
-    id: 1,
-    Title: "Mersing Island Hopping Adventure",
-    description:
-      "Explore the pristine islands of Mersing with a guided boat tour. Visit Pulau Rawa, Pulau Besar, and Pulau Tinggi while snorkeling in crystal-clear waters.",
-    price: 280.0,
-    location: "Mersing Jetty, Johor",
-    image_urls: ["public/mersing-island.jpg"],
-    numberOfVisitor: 2,
-  },
-  {
-    id: 2,
-    Title: "Mersing Eco Waterfall Retreat",
-    description:
-      "Unwind with nature at a serene eco-resort surrounded by lush rainforest and a natural waterfall. Includes breakfast and jungle walk.",
-    price: 350.0,
-    location: "Air Papan, Mersing",
-    image_urls: ["public/waterfall-retreat.jpg"],
-    numberOfVisitor: 4,
-  },
-  {
-    id: 3,
-    Title: "Sunset Kayaking & Seafood Dinner",
-    description:
-      "Enjoy an evening paddle along the coast followed by a local seafood feast at Mersing town's best restaurant.",
-    price: 180.0,
-    location: "Mersing Beach",
-    image_urls: ["public/kayak-sunset.jpg"],
-    numberOfVisitor: 2,
-  },
-];
-
-const VisitorPackages: React.FC = () => {
+const ImprovedNavigation: React.FC = () => {
   const history = useHistory();
-  const handleBack = () => history.goBack();
-  const [isLoggedIn, setIsLoggedIn] = useState(true); // Set to true by default to ensure the profile link is shown. setIsLoggedIn is unused for now.
+  const location = useLocation();
+  const [isLoggedIn, setIsLoggedIn] = useState(true);
+  const [showSearch, setShowSearch] = useState(false);
+
+  // Navigation items with descriptions for better UX
+  const navItems = [
+    {
+      path: "/home",
+      label: "Home",
+      icon: homeOutline,
+    },
+    {
+      path: "/booking",
+      label: "Book Now",
+      icon: mapOutline,
+    },
+    {
+      path: "/visitorPackages",
+      label: "Tour Packages",
+      icon: cubeOutline,
+    },
+    {
+      path: "/events",
+      label: "Events",
+      icon: calendarOutline,
+    },
+  ];
+
+  // Quick info items
+  const quickInfo = [
+    { icon: callOutline, label: "Emergency", value: "+60 7-799 1234" },
+    { icon: informationCircleOutline, label: "Info Center", value: "8AM-6PM" },
+    { icon: sunnyOutline, label: "Ferry Status", value: "Check Schedule" },
+  ];
+
+  const isActivePage = (path: string) => location.pathname === path;
 
   return (
-    <IonPage id="main-content">
-      <IonContent className="content visitor-packages">
-        {/* --- Top Navigation Bar --- */}
-        <IonGrid> {/* Removed booking-nav-container */}
-          <IonRow className="nav-row ion-justify-content-between ion-align-items-center"> {/* Changed class names */}
-            {/* Back Button */}
-            <IonCol size="auto">
-              <IonButton onClick={handleBack} className="backButton" style={{ '--background': 'transparent', '--color': 'var(--brand-primary-color)' }}>
-                <IonIcon icon={arrowBackOutline} />
+    <>
+      {/* Top Info Bar */}
+      <IonGrid className="info-bar">
+        <IonRow className="ion-align-items-center ion-justify-content-between">
+          <IonCol size="auto">
+            <div className="quick-info-container">
+              {quickInfo.map((info, idx) => (
+                <IonChip key={idx} className="info-chip" outline>
+                  <IonIcon icon={info.icon} />
+                  <IonLabel>
+                    <span className="info-label">{info.label}:</span>
+                    <strong>{info.value}</strong>
+                  </IonLabel>
+                </IonChip>
+              ))}
+            </div>
+          </IonCol>
+          <IonCol size="auto">
+            <div className="help-section">
+              <IonText className="help-text">Need help planning?</IonText>
+              <IonButton size="small" className="contact-btn" fill="solid">
+                Contact Us
               </IonButton>
-            </IonCol>
+            </div>
+          </IonCol>
+        </IonRow>
+      </IonGrid>
 
-            {/* Brand Logo */}
-            <IonCol size="auto">
-              <div className="brand-container ion-text-center">
+      {/* Main Navigation */}
+      <IonGrid className="main-nav">
+        <IonRow className="ion-align-items-center ion-justify-content-between">
+          {/* Logo */}
+          <IonCol size="12" sizeMd="auto">
+            <IonRouterLink routerLink="/home" className="no-style-link">
+              <div className="brand-container">
                 <IonText className="brand-text">
                   <span className="brand-visit">Visit</span>
                   <span className="brand-center">
@@ -85,68 +115,125 @@ const VisitorPackages: React.FC = () => {
                   <span className="brand-location">Mersing</span>
                 </IonText>
               </div>
-            </IonCol>
+            </IonRouterLink>
+          </IonCol>
 
-            {/* Right Icons */}
-            <IonCol size="auto" className="icon-row">
-              <IonIcon src={Icons.tiktok} className="cust-icon"></IonIcon>
-              <IonIcon src={Icons.whatsapp} className="cust-icon"></IonIcon>
-              <IonIcon src={Icons.facebook} className="cust-icon"></IonIcon>
-              <IonIcon src={Icons.email} className="cust-icon"></IonIcon>
-              {isLoggedIn && (
-                <IonRouterLink routerLink="/profile" className="no-style-link">
-                  <IonIcon src={Icons.user} className="cust-icon"></IonIcon>
-                </IonRouterLink>
-              )}
-              <IonIcon src={Icons.malayFlag} className="cust-icon"></IonIcon>
-              <IonIcon src={Icons.cart} className="cust-icon"></IonIcon>
-            </IonCol>
-          </IonRow>
-        </IonGrid>
-
-        {/* --- Section Title --- */}
-        <div className="section-header">
-          <IonText color="var(--brand-primary-color)"> {/* Changed color to brown */}
-            <h2>Discover Amazing Stays & Adventures in Mersing</h2>
-          </IonText>
-          <p>Handpicked packages for your next getaway</p>
-        </div>
-
-        {/* --- Package Cards --- */}
-        <IonGrid className="package-grid">
-          <IonRow>
-            {staticPackages.map((pkg) => (
-              <IonCol key={pkg.id} size="12" sizeMd="4" sizeLg="4">
-                <IonCard className="package-card">
-                  <IonImg
-                    src={pkg.image_urls[0]}
-                    alt={pkg.Title}
-                    className="package-image"
-                  />
-                  <IonCardHeader>
-                    <IonCardTitle>{pkg.Title}</IonCardTitle>
-                    <IonCardSubtitle>{pkg.location}</IonCardSubtitle>
-                  </IonCardHeader>
-                  <IonCardContent>
-                    <p className="pkg-desc">{pkg.description}</p>
-                    <div className="pkg-meta">
-                      <IonText color="dark">
-                        <strong>{formatCurrency(pkg.price)}</strong> / package
+          {/* Navigation Items */}
+          <IonCol size="12" sizeMd="auto" className="ion-hide-md-down">
+            <div className="nav-items-enhanced">
+              {navItems.map((item) => (
+                <IonRouterLink
+                  key={item.path}
+                  routerLink={item.path}
+                  className="no-style-link"
+                >
+                  <div
+                    className={`nav-item-card ${
+                      isActivePage(item.path) ? "active" : ""
+                    }`}
+                  >
+                    <IonIcon icon={item.icon} className="nav-icon" />
+                    <div className="nav-text-group">
+                      <IonText className="nav-label">{item.label}</IonText>
+                      <IonText className="nav-description">
+                        {item.description}
                       </IonText>
-                      <p>{pkg.numberOfVisitor} Visitors</p>
                     </div>
-                    <IonButton expand="block" className="book-now-btn">
-                      View Details
-                    </IonButton>
-                  </IonCardContent>
-                </IonCard>
-              </IonCol>
-            ))}
+                    {isActivePage(item.path) && (
+                      <IonBadge className="active-badge">Current</IonBadge>
+                    )}
+                  </div>
+                </IonRouterLink>
+              ))}
+            </div>
+          </IonCol>
+
+          {/* Right Side Icons */}
+          <IonCol size="auto" className="icon-row">
+            {/* Search */}
+            <IonButton
+              fill="clear"
+              className="icon-button"
+              onClick={() => setShowSearch(!showSearch)}
+            >
+              <IonIcon slot="icon-only" icon={searchOutline} />
+            </IonButton>
+
+            {/* Social Icons */}
+            <IonButton fill="clear" className="icon-button">
+              <IonIcon slot="icon-only" src={Icons.whatsapp} />
+            </IonButton>
+            <IonButton fill="clear" className="icon-button">
+              <IonIcon slot="icon-only" src={Icons.facebook} />
+            </IonButton>
+
+            {/* User Profile or Sign In */}
+            {isLoggedIn ? (
+              <IonRouterLink routerLink="/profile" className="no-style-link">
+                <IonButton fill="clear" className="icon-button">
+                  <IonIcon slot="icon-only" icon={personCircleOutline} />
+                </IonButton>
+              </IonRouterLink>
+            ) : (
+              <IonRouterLink routerLink="/SignIn" className="no-style-link">
+                <IonButton fill="solid" size="small" className="signin-btn">
+                  Sign In
+                </IonButton>
+              </IonRouterLink>
+            )}
+
+            {/* Language Selector */}
+            <IonButton fill="clear" className="icon-button">
+              <IonIcon slot="icon-only" src={Icons.malayFlag} />
+            </IonButton>
+
+            {/* Cart */}
+            <IonButton fill="clear" className="icon-button cart-button">
+              <IonIcon slot="icon-only" icon={cartOutline} />
+              <IonBadge className="cart-badge">0</IonBadge>
+            </IonButton>
+          </IonCol>
+        </IonRow>
+
+        {/* Search Bar (Collapsible) */}
+        {showSearch && (
+          <IonRow className="search-row">
+            <IonCol>
+              <IonSearchbar
+                placeholder="Search packages, locations, activities..."
+                className="custom-searchbar"
+                animated
+              />
+            </IonCol>
           </IonRow>
-        </IonGrid>
-      </IonContent>
-    </IonPage>
+        )}
+
+        {/* Mobile Navigation */}
+        <IonRow className="ion-hide-md-up mobile-nav-row">
+          <IonCol>
+            <div className="mobile-nav-items">
+              {navItems.map((item) => (
+                <IonRouterLink
+                  key={item.path}
+                  routerLink={item.path}
+                  className="no-style-link"
+                >
+                  <div
+                    className={`mobile-nav-item ${
+                      isActivePage(item.path) ? "active" : ""
+                    }`}
+                  >
+                    <IonIcon icon={item.icon} />
+                    <IonText>{item.label}</IonText>
+                  </div>
+                </IonRouterLink>
+              ))}
+            </div>
+          </IonCol>
+        </IonRow>
+      </IonGrid>
+    </>
   );
 };
 
-export default VisitorPackages;
+export default ImprovedNavigation;

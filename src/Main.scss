@@ -14,6 +14,8 @@
 .nav-row {
   padding: var(--ion-safe-area-top, 0) 24px 16px 24px;
   min-height: 80px;
+  flex-direction: row; /* Changed from column to row */
+  gap: 16px; /* Kept gap, might need adjustment */
 }
 
 /* Navigation items container */
@@ -114,9 +116,9 @@
 /* Responsive design using Ionic breakpoints */
 @media (max-width: 768px) {
   .nav-row {
-    flex-direction: column;
-    gap: 16px;
-    padding: var(--ion-safe-area-top, 0) 16px 16px 16px;
+    flex-direction: row; /* Changed from column to row */
+    gap: 8px; /* Reduced gap */
+    padding: var(--ion-safe-area-top, 0) 12px 12px 12px; /* Reduced padding */
   }
   
   .nav-items-container {
