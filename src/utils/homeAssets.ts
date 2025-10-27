@@ -17,6 +17,7 @@ export const Icons = {
   tiktok:"public/tiktok-circle.svg",
   whatsapp:"public/whatsapp-filled.svg",
   home: "public/home.svg",
+  arrowForward: "public/arrow-forward.svg",
 };
 
 // Define the structure of an enhanced suggestion

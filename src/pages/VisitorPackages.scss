@@ -1,165 +1,3 @@
-
-
-// Disable dark theme by setting a light background
-page.visitor-packages {
-  --background: #f6efd5; // Using a similar warm beige as Home.tsx
-}
-
-.visitor-packages { // Targeting the content class from VisitorPackages.tsx
-  --background: #f6efd5; // Explicitly set light background
-
-  .section-header {
-    padding: 24px;
-    text-align: center;
-    h2 {
-      font-family: 'Kaisei Tokumin', serif; // Assuming this font from main.scss
-      color: var(--brand-primary-color);
-      font-size: 2.5em; // Example size
-      margin-bottom: 8px;
-    }
-    p {
-      font-family: 'Inter', sans-serif; // Assuming this font from main.scss
-      color: #666; // A neutral dark grey
-      font-size: 1.1em;
-    }
-  }
-
-  .package-grid {
-    padding: 0 16px; // Padding for the grid itself
-
-    .package-card {
-      display: flex; // Enable flexbox
-      flex-direction: column; // Stack children vertically
-      height: 100%; // Ensure card takes full height of its parent column
-      background-color: #fff; // White background for cards
-      border-radius: 1em; // Rounded corners
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); // Subtle shadow
-      margin-bottom: 24px; // Space between cards
-      overflow: hidden; // Ensure content stays within rounded corners
-
-      .package-image {
-        height: 200px; // Fixed height for images, adjust as needed
-        object-fit: cover; // Ensure images cover the area without distortion
-      }
-
-      ion-card-header {
-        padding-bottom: 0;
-        ion-card-title {
-          font-family: 'Kaisei Tokumin', serif;
-          color: var(--brand-primary-color);
-          font-size: 1.4em;
-          margin-bottom: 4px;
-        }
-        ion-card-subtitle {
-          font-family: 'Inter', sans-serif;
-          color: #888; // Lighter grey for subtitle
-          font-size: 0.9em;
-        }
-      }
-
-      ion-card-content {
-        padding-top: 16px;
-        flex-grow: 1; // Allow content to grow and fill available space
-        display: flex;
-        flex-direction: column;
-        justify-content: space-between; // Push content to top and bottom if needed
-
-        p.pkg-desc {
-          font-family: 'Inter', sans-serif;
-          color: #555;
-          font-size: 0.95em;
-          line-height: 1.6;
-          margin-bottom: 16px;
-          flex-grow: 1; // Allow description to take available space
-        }
-        .pkg-meta {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          margin-bottom: 20px;
-          margin-top: auto; // Push meta to the bottom if content varies
-          ion-text strong {
-            font-family: 'Kaisei Tokumin', serif;
-            color: var(--brand-primary-color);
-            font-size: 1.2em;
-          }
-          p {
-            font-family: 'Inter', sans-serif;
-            color: #777;
-            font-size: 0.9em;
-          }
-        }
-        .book-now-btn {
-          --background: var(--brand-primary-color); // Use brand primary color for button
-          --background-hover: #704a2a; // Darker shade for hover
-          --color: white;
-          font-family: 'Kaisei Tokumin', serif;
-          font-weight: bold;
-          border-radius: 0.8em;
-          padding: 12px 0;
-          text-transform: none; // Prevent uppercase
-        }
-      }
-    }
-  }
-
-  // Responsive adjustments
-  @media (max-width: 768px) { // Tablet and smaller
-    .section-header h2 {
-      font-size: 2em;
-    }
-    .package-grid {
-      padding: 0 12px;
-      .package-card {
-        margin-bottom: 16px;
-      }
-    }
-  }
-
-  @media (max-width: 480px) { // Mobile
-    .section-header {
-      padding: 16px;
-      h2 {
-        font-size: 1.8em;
-      }
-      p {
-        font-size: 1em;
-      }
-    }
-    .package-grid {
-      padding: 0 8px;
-      .package-card {
-        margin-bottom: 12px;
-      }
-      ion-card-content {
-        .pkg-meta {
-          flex-direction: column;
-          align-items: flex-start;
-          gap: 8px;
-          ion-text strong {
-            font-size: 1.1em;
-          }
-        }
-      }
-    }
-  }
-
-  .booking-nav {
-    .backButton {
-      --background: transparent; // Remove background
-      --color: var(--brand-primary-color); // Set color to brown
-      transform-origin: center left; // Adjust origin if needed, default is center
-      // Adjusting padding to compensate for scaling if necessary
-      padding: 0; // Reset padding if scaling affects it too much
-      display: flex; // Ensure it behaves like a block element for transform
-      justify-content: center; // Center the icon within the scaled button
-      align-items: center;
-      width: 4em; // Give it a fixed size to ensure scaling is consistent
-      height: 4em;
-    }
-  }
-}
-
 :root {
   --brand-primary-color: #503216;
   --brand-secondary-color: var(--ion-color-medium);
@@ -169,13 +7,15 @@ page.visitor-packages {
 
 /* Main page styling using Ionic CSS variables and classes */
 #main-content {
-  --background: var(--ion-color-light);
+  --background: rgba(246, 239, 229, 1);
 }
 
 /* Navigation row styling */
 .nav-row {
   padding: var(--ion-safe-area-top, 0) 24px 16px 24px;
   min-height: 80px;
+  flex-direction: row; /* Changed from column to row */
+  gap: 16px; /* Kept gap, might need adjustment */
 }
 
 /* Navigation items container */
@@ -204,22 +44,29 @@ page.visitor-packages {
   background-color: rgb(231, 223, 213);
 }
 
-.nav-SignIn:hover
-{
-  border-radius: 1em;
-  cursor: pointer;
-  user-select: none;
-  font-family: 'Kaisei Tokumin', serif;
-  background-color: rgb(231, 223, 213);
+.no-style-link {
+  text-decoration: none;
+  color: inherit; /* Changed from #503216 to inherit */
+  
+  &:hover {
+    text-decoration: none;
+    
+    .nav-SignIn {
+      color: var(--brand-primary-color); /* Sets color on hover */
+      opacity: 0.7;
+    }
+  }
 }
 
-.nav-SignIn
-{
+.nav-SignIn {
   user-select: none;
   font-family: 'Kaisei Tokumin', serif;
-  font-size: 18px;
-  padding-block: 0.6em;
-  padding-inline: 1.4em;
+  font-size: 16px; /* Changed from 18px to 16px */
+  color: var(--brand-primary-color); /* Explicit color */
+  font-weight: 500; /* Added font-weight to match BookPackage.tsx */
+  transition: opacity 0.2s ease; /* Added transition to match BookPackage.tsx */
+  padding-block: 0.6em; /* Kept padding, but might need adjustment */
+  padding-inline: 1.4em; /* Kept padding, but might need adjustment */
 }
 
 .nav-text span {
@@ -269,9 +116,9 @@ page.visitor-packages {
 /* Responsive design using Ionic breakpoints */
 @media (max-width: 768px) {
   .nav-row {
-    flex-direction: column;
-    gap: 16px;
-    padding: var(--ion-safe-area-top, 0) 16px 16px 16px;
+    flex-direction: row; /* Changed from column to row */
+    gap: 8px; /* Reduced gap */
+    padding: var(--ion-safe-area-top, 0) 12px 12px 12px; /* Reduced padding */
   }
   
   .nav-items-container {
@@ -333,10 +180,6 @@ page.visitor-packages {
 
 /* Custom CSS variables for consistent theming */
 
-:root {
-  --background-color: #1a1a1a; /* Define the background color for the sign-in page */
-}
-
 .brand-text {
   display: flex;
   align-items: center;        /* vertically align */
@@ -357,17 +200,17 @@ page.visitor-packages {
 
 .brand-visit,
 .brand-location {
-  font-size: 32px;
+  font-size: 40px;
   letter-spacing: 2px;
   line-height: 1.2;
 }
 
 .brand-ampersand {
-  font-size: 16px;
+  font-size: 24px;
 }
 
 .brand-travel {
-  font-size: 18px;
+  font-size: 24px;
   letter-spacing: 1.2px;
 }
 
@@ -547,4 +390,56 @@ body {
 .no-style-link {
   text-decoration: none;
   color: #503216;
+}
+
+/* New CSS for icon alignment */
+.icon-row {
+  display: flex;
+  justify-content: center; /* Centers the icons */
+  align-items: center;     /* Aligns icons vertically in the center */
+  gap: 16px;               /* Adds space between icons */
+}
+
+.image-placeholder {
+  background-color: white;
+  border-radius: 10px; /* Changed from 50% to 10px for rounded corners */
+  width: 100px; /* Example width, can be adjusted */
+  height: 100px; /* Example height, can be adjusted */
+  margin: 10px; /* Add some spacing */
+  display: flex; /* To center content if any is added later */
+  justify-content: center;
+  align-items: center;
+}
+
+.package-card {
+  padding: 20px; /* Increase padding */
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Add a subtle shadow for depth */
+  border-radius: 10px; /* Add some rounded corners to the card itself */
+  background-color: white; /* Ensure cards have a white background */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  height: 100%; /* Ensure cards fill the column height */
+  justify-content: space-between; /* Distribute space if content varies */
+}
+
+.package-card img { /* Targeting IonImg within package-card */
+  max-width: 100%;
+  height: 150px; /* Set a fixed height for images, adjust as needed */
+  object-fit: cover; /* Ensure image covers the area without distortion */
+  border-radius: 8px; /* Rounded corners for the image */
+  margin-bottom: 15px; /* Space between image and title */
+}
+
+.package-title {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 1.2em; /* Make title slightly larger */
+  font-weight: bold;
+}
+
+.package-price {
+  font-size: 1em;
+  color: var(--brand-primary-color);
 }

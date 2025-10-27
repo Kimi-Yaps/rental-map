@@ -1,4 +1,3 @@
-import React, { useState } from "react";
 import {
   IonContent,
   IonGrid,
@@ -6,234 +5,248 @@ import {
   IonRow,
   IonCol,
   IonText,
-  IonIcon,
-  IonButton,
-  IonRouterLink,
-  IonChip,
   IonLabel,
-  IonBadge,
-  IonSearchbar,
-  IonPopover,
+  IonImg,
+  useIonViewWillEnter,
+  IonItem, // Added
+  IonIcon, // Added
+  IonRouterLink, // Added
 } from "@ionic/react";
-import { useHistory, useLocation } from "react-router";
-import {
-  homeOutline,
-  mapOutline,
-  cubeOutline,
-  calendarOutline,
-  callOutline,
-  informationCircleOutline,
-  sunnyOutline,
-  searchOutline,
-  personCircleOutline,
-  cartOutline,
-} from "ionicons/icons";
-import { Icons } from "../utils/visitorUtils";
+import { Fragment, useState } from "react";
+import "../Main.scss"; // Added from Home.tsx
 import "../pages/VisitorPackages.scss";
+import supabase from "../supabaseConfig";
+import { getAssetUrls, Icons } from "../utils/homeAssets"; // Added Icons
 
-const ImprovedNavigation: React.FC = () => {
-  const history = useHistory();
-  const location = useLocation();
-  const [isLoggedIn, setIsLoggedIn] = useState(true);
-  const [showSearch, setShowSearch] = useState(false);
+const VisitorPackage: React.FC = () => {
+  // State for authentication and user role (from original VisitorPackages.tsx)
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  // Removed userType as it's not used and causing ESLint warnings.
+  // const [userType, setUserType] = useState<string | null>(null); // e.g., 'admin', 'tenant'
 
-  // Navigation items with descriptions for better UX
-  const navItems = [
-    {
-      path: "/home",
-      label: "Home",
-      icon: homeOutline,
-    },
-    {
-      path: "/booking",
-      label: "Book Now",
-      icon: mapOutline,
-    },
-    {
-      path: "/visitorPackages",
-      label: "Tour Packages",
-      icon: cubeOutline,
-    },
-    {
-      path: "/events",
-      label: "Events",
-      icon: calendarOutline,
-    },
-  ];
+  useIonViewWillEnter(() => {
+    const checkLoginStatusAndProfile = async () => {
+      try {
+        // Get current session
+        const {
+          data: { session },
+          error: sessionError,
+        } = await supabase.auth.getSession();
 
-  // Quick info items
-  const quickInfo = [
-    { icon: callOutline, label: "Emergency", value: "+60 7-799 1234" },
-    { icon: informationCircleOutline, label: "Info Center", value: "8AM-6PM" },
-    { icon: sunnyOutline, label: "Ferry Status", value: "Check Schedule" },
-  ];
+        if (sessionError) throw sessionError;
 
-  const isActivePage = (path: string) => location.pathname === path;
+        if (session) {
+          setIsLoggedIn(true);
+
+          // Fetch user profile
+          const { error: profileError } = await supabase
+            .from("profiles")
+            .select("user_type")
+            .eq("id", session.user.id)
+            .single();
+
+          if (profileError) throw profileError;
+        } else {
+          // Handle not logged in state
+          setIsLoggedIn(false);
+          // setUserType(null);
+        }
+      } catch (error) {
+        console.error("Error checking login status or profile:", error);
+        setIsLoggedIn(false);
+        // setUserType(null);
+      }
+    };
+
+    checkLoginStatusAndProfile();
+  });
+
+  // Example scrolling items (static content) - from original VisitorPackages.tsx
+  const scrollItems = Array.from({ length: 7 }, (_, i) => (
+    <Fragment key={i}>
+      <IonImg className="home-move" src={getAssetUrls().move}></IonImg>
+      <IonLabel aria-hidden="true">Book Your Place Now</IonLabel>
+    </Fragment>
+  ));
+
+  // Mock data for travel/tourism packages - from original VisitorPackages.tsx
+  const packages = Array.from({ length: 4 }, (_, i) => ({
+    id: i + 1,
+    imageUrl: null, // Placeholder left empty for now
+    title: "Pulau Hujung",
+    price: "RM260 per Night",
+  }));
+
+  // Mock data for local services - from original VisitorPackages.tsx
+  const services = Array.from({ length: 4 }, (_, i) => ({
+    id: i + 5,
+    imageUrl: null, // Placeholder left empty for now
+    title: "Pulau Hujung",
+    price: "RM260 per Night",
+  }));
 
   return (
-    <>
-      {/* Top Info Bar */}
-      <IonGrid className="info-bar">
-        <IonRow className="ion-align-items-center ion-justify-content-between">
-          <IonCol size="auto">
-            <div className="quick-info-container">
-              {quickInfo.map((info, idx) => (
-                <IonChip key={idx} className="info-chip" outline>
-                  <IonIcon icon={info.icon} />
-                  <IonLabel>
-                    <span className="info-label">{info.label}:</span>
-                    <strong>{info.value}</strong>
-                  </IonLabel>
-                </IonChip>
-              ))}
-            </div>
-          </IonCol>
-          <IonCol size="auto">
-            <div className="help-section">
-              <IonText className="help-text">Need help planning?</IonText>
-              <IonButton size="small" className="contact-btn" fill="solid">
-                Contact Us
-              </IonButton>
-            </div>
-          </IonCol>
-        </IonRow>
-      </IonGrid>
+    <IonPage
+      id="main-content"
+      style={{ "--background": "rgba(246, 239, 229, 1)" }} // Applied from Home.tsx
+    >
+      <IonContent style={{ "--background": "rgba(246, 239, 229, 1)" }}>
+        {" "}
+        {/* Applied from Home.tsx */}
+        <IonGrid>
+          {/* Infinite Scroll Section - from Home.tsx */}
+          <IonItem
+            lines="none"
+            className="infinite-scroll"
+            style={{ "--background": "rgb(231, 223, 213)" }}
+          >
+            <div className="scroll-content">{scrollItems}</div>
+          </IonItem>
 
-      {/* Main Navigation */}
-      <IonGrid className="main-nav">
-        <IonRow className="ion-align-items-center ion-justify-content-between">
-          {/* Logo */}
-          <IonCol size="12" sizeMd="auto">
-            <IonRouterLink routerLink="/home" className="no-style-link">
-              <div className="brand-container">
-                <IonText className="brand-text">
-                  <span className="brand-visit">Visit</span>
-                  <span className="brand-center">
-                    <span className="brand-ampersand">&</span>
-                    <span className="brand-travel">Travel</span>
-                  </span>
-                  <span className="brand-location">Mersing</span>
-                </IonText>
-              </div>
-            </IonRouterLink>
-          </IonCol>
-
-          {/* Navigation Items */}
-          <IonCol size="12" sizeMd="auto" className="ion-hide-md-down">
-            <div className="nav-items-enhanced">
-              {navItems.map((item) => (
+          {/* Navigation Row - from Home.tsx */}
+          <IonRow className="ion-justify-content-between ion-align-items-center nav-row">
+            {/* Left Navigation Items */}
+            <IonCol size="auto" className="ion-no-padding">
+              <div className="nav-items-container">
+                {/* New link for visitor packages */}
                 <IonRouterLink
-                  key={item.path}
-                  routerLink={item.path}
+                  routerLink="/visitorPackages"
                   className="no-style-link"
                 >
-                  <div
-                    className={`nav-item-card ${
-                      isActivePage(item.path) ? "active" : ""
-                    }`}
-                  >
-                    <IonIcon icon={item.icon} className="nav-icon" />
-                    <div className="nav-text-group">
-                      <IonText className="nav-label">{item.label}</IonText>
-                      <IonText className="nav-description">
-                        {item.description}
-                      </IonText>
-                    </div>
-                    {isActivePage(item.path) && (
-                      <IonBadge className="active-badge">Current</IonBadge>
-                    )}
-                  </div>
+                  <IonText className="nav-text ion-margin-end">
+                    Explore Packages
+                  </IonText>
                 </IonRouterLink>
-              ))}
-            </div>
-          </IonCol>
+                {/* Link to the Event page itself. */}
+                <IonRouterLink routerLink="/event" className="no-style-link">
+                  <IonText className="nav-text">Event</IonText>
+                </IonRouterLink>
+              </div>
+            </IonCol>
 
-          {/* Right Side Icons */}
-          <IonCol size="auto" className="icon-row">
-            {/* Search */}
-            <IonButton
-              fill="clear"
-              className="icon-button"
-              onClick={() => setShowSearch(!showSearch)}
-            >
-              <IonIcon slot="icon-only" icon={searchOutline} />
-            </IonButton>
+            <IonRouterLink routerLink="/Home" className="no-style-link">
+              <IonCol size="auto">
+                <div className="brand-container ion-text-center">
+                  <IonText className="brand-text">
+                    <span className="brand-visit">Visit</span>
 
-            {/* Social Icons */}
-            <IonButton fill="clear" className="icon-button">
-              <IonIcon slot="icon-only" src={Icons.whatsapp} />
-            </IonButton>
-            <IonButton fill="clear" className="icon-button">
-              <IonIcon slot="icon-only" src={Icons.facebook} />
-            </IonButton>
+                    {/* Group & + Travel */}
+                    <span className="brand-center">
+                      <span className="brand-ampersand">&</span>
+                      <span className="brand-travel">Travel</span>
+                    </span>
 
-            {/* User Profile or Sign In */}
-            {isLoggedIn ? (
-              <IonRouterLink routerLink="/profile" className="no-style-link">
-                <IonButton fill="clear" className="icon-button">
-                  <IonIcon slot="icon-only" icon={personCircleOutline} />
-                </IonButton>
-              </IonRouterLink>
-            ) : (
-              <IonRouterLink routerLink="/SignIn" className="no-style-link">
-                <IonButton fill="solid" size="small" className="signin-btn">
-                  Sign In
-                </IonButton>
-              </IonRouterLink>
-            )}
+                    <span className="brand-location">Mersing</span>
+                  </IonText>
+                </div>
+              </IonCol>
+            </IonRouterLink>
 
-            {/* Language Selector */}
-            <IonButton fill="clear" className="icon-button">
-              <IonIcon slot="icon-only" src={Icons.malayFlag} />
-            </IonButton>
+            <IonCol size="auto" className="icon-row">
+              {!isLoggedIn && (
+                <IonRouterLink routerLink="/SignIn" className="no-style-link">
+                  <IonText className="nav-SignIn ion-margin-end">
+                    Sign In
+                  </IonText>
+                </IonRouterLink>
+              )}
 
-            {/* Cart */}
-            <IonButton fill="clear" className="icon-button cart-button">
-              <IonIcon slot="icon-only" icon={cartOutline} />
-              <IonBadge className="cart-badge">0</IonBadge>
-            </IonButton>
-          </IonCol>
-        </IonRow>
+              <IonIcon src={Icons.tiktok} className="cust-icon"></IonIcon>
+              <IonIcon src={Icons.whatsapp} className="cust-icon"></IonIcon>
+              <IonIcon src={Icons.facebook} className="cust-icon"></IonIcon>
+              <IonIcon src={Icons.email} className="cust-icon"></IonIcon>
 
-        {/* Search Bar (Collapsible) */}
-        {showSearch && (
-          <IonRow className="search-row">
-            <IonCol>
-              <IonSearchbar
-                placeholder="Search packages, locations, activities..."
-                className="custom-searchbar"
-                animated
-              />
+              {isLoggedIn && (
+                <IonRouterLink routerLink="/profile" className="no-style-link">
+                  <IonIcon src={Icons.user} className="cust-icon"></IonIcon>
+                </IonRouterLink>
+              )}
+
+              <IonIcon src={Icons.malayFlag} className="cust-icon"></IonIcon>
+              <IonIcon src={Icons.cart} className="cust-icon"></IonIcon>
             </IonCol>
           </IonRow>
-        )}
+        </IonGrid>
+        {/* New Title and Paragraph */}
+        <IonGrid className="ion-text-center ion-padding-top ion-padding-bottom" 
+         style={{marginBottom: '2em' }}>
+          <IonRow>
+            <IonCol size="12">
+              <IonText
+                style={{
+                  fontFamily: "'Kaisei Tokumin', serif",
+                  fontSize: "1.8em",
+                  fontWeight: "bold",
+                }}
+              >
+                Explore, Stay, and Discover
+              </IonText>
+            </IonCol>
+          </IonRow>
+          <IonRow>
+            <IonCol size="12">
+              <IonText
+                style={{ fontFamily: "'Inter', sans-serif", fontSize: "1.1em"}}
+              >
+                Plan your perfect getaway with Visit Mersing. We offer complete
+                tourism Mersing packages, specializing in exhilarating Island
+                Hopping adventures to stunning destinations
+              </IonText>
+            </IonCol>
+          </IonRow>
+        </IonGrid>
+        {/* Original Content Sections from VisitorPackages.tsx */}
+        {/* Section: Available In Mersing */}
+        <IonGrid>
+          <IonRow>
+            <IonCol size="12">
+              <IonText className="section-title">Available In Mersing </IonText>
+            </IonCol>
+          </IonRow>
 
-        {/* Mobile Navigation */}
-        <IonRow className="ion-hide-md-up mobile-nav-row">
-          <IonCol>
-            <div className="mobile-nav-items">
-              {navItems.map((item) => (
-                <IonRouterLink
-                  key={item.path}
-                  routerLink={item.path}
-                  className="no-style-link"
-                >
-                  <div
-                    className={`mobile-nav-item ${
-                      isActivePage(item.path) ? "active" : ""
-                    }`}
-                  >
-                    <IonIcon icon={item.icon} />
-                    <IonText>{item.label}</IonText>
-                  </div>
-                </IonRouterLink>
-              ))}
-            </div>
-          </IonCol>
-        </IonRow>
-      </IonGrid>
-    </>
+          <IonRow>
+            {packages.map((pkg) => (
+              <IonCol size="12" size-sm="6" size-md="3" key={pkg.id}>
+                <div className="package-card">
+                  {pkg.imageUrl ? (
+                    <IonImg src={pkg.imageUrl} alt={pkg.title} />
+                  ) : (
+                    <div className="image-placeholder"></div>
+                  )}
+                  <IonText className="package-title">{pkg.title}</IonText>
+                  <IonText className="package-price">{pkg.price}</IonText>
+                </div>
+              </IonCol>
+            ))}
+          </IonRow>
+        </IonGrid>
+        {/* Section: Available Services */}
+        <IonGrid>
+          <IonRow>
+            <IonCol size="12">
+              <IonText className="section-title">Available Services </IonText>
+            </IonCol>
+          </IonRow>
+
+          <IonRow>
+            {services.map((service) => (
+              <IonCol size="12" size-sm="6" size-md="3" key={service.id}>
+                <div className="package-card">
+                  {service.imageUrl ? (
+                    <IonImg src={service.imageUrl} alt={service.title} />
+                  ) : (
+                    <div className="image-placeholder"></div>
+                  )}
+                  <IonText className="package-title">{service.title}</IonText>
+                  <IonText className="package-price">{service.price}</IonText>
+                </div>
+              </IonCol>
+            ))}
+          </IonRow>
+        </IonGrid>
+      </IonContent>
+    </IonPage>
   );
 };
 
-export default ImprovedNavigation;
+export default VisitorPackage;

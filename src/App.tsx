@@ -50,7 +50,8 @@ const VisitorPackages = React.lazy(() => import('./pages/VisitorPackages'));
 // Direct import for AuthCallback to potentially resolve context issue
 import AuthCallback from './pages/AuthCallback';
 
-// Removed unused supabase import
+// Import the new EventPage component
+import EventPage from './pages/Event';
 
 // Enhanced setup with better performance
 setupIonicReact({
@@ -109,8 +110,9 @@ const App: React.FC = () => {
 
             {/* Visitor Packages Route */}
             <Route exact path="/visitorPackages" component={VisitorPackages} />
-            
-            
+
+            {/* Event Route */}
+            <Route exact path="/event" component={EventPage} />
 
           </IonRouterOutlet>
         </IonReactRouter>

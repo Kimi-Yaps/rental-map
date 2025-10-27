@@ -392,6 +392,110 @@ body {
   color: #503216;
 }
 
+/* Event page specific styles */
+.events-grid {
+  margin-top: 2em;
+}
+
+.event-card {
+  background: white;
+  border-radius: 12px;
+  margin-bottom: 1.5em;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+/* Date column styling - controls spacing between date components */
+.event-date-column {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: rgba(246, 239, 229, 1);
+  padding: 2em;
+}
+
+.event-date {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5em; /* Controls the spacing between date components */
+}
+
+.date-day {
+  font-size: 2.5em;
+  font-weight: bold;
+  color: var(--brand-primary-color);
+}
+
+.date-month {
+  font-size: 1.2em;
+  text-transform: uppercase;
+  color: var(--brand-primary-color);
+  margin: 0.3em 0; /* Adds specific spacing around the month */
+}
+
+.date-year {
+  font-size: 1.2em;
+  color: var(--brand-primary-color);
+}
+
+/* Details column styling - brings content closer to date */
+.event-details-column {
+  padding: 2em;
+  margin-left: -2em; /* This brings the content closer to the date column */
+}
+
+.event-content {
+  padding-left: 1em;
+}
+
+.event-card-title {
+  font-size: 1.5em;
+  color: var(--brand-primary-color);
+  margin-bottom: 0.5em;
+}
+
+.event-card-description {
+  color: #666;
+  line-height: 1.5;
+  margin-bottom: 1em;
+}
+
+/* Event page hero section */
+.event-hero {
+  text-align: center;
+  padding: 3em 0;
+}
+
+.event-title {
+  font-size: 2.5em;
+  color: var(--brand-primary-color);
+  margin-bottom: 0.5em;
+}
+
+.event-subtitle {
+  font-size: 1.2em;
+  color: #666;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .event-details-column {
+    margin-left: 0;
+    padding: 1.5em;
+  }
+
+  .event-date-column {
+    padding: 1.5em;
+  }
+
+  .event-content {
+    padding-left: 0;
+  }
+}
+
 /* New CSS for icon alignment */
 .icon-row {
   display: flex;
