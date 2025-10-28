@@ -47,6 +47,7 @@ const ResizableWindow: React.FC<ResizableWindowProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const [editedTitle, setEditedTitle] = useState<string>("");
   const [editedPrice, setEditedPrice] = useState<number | null>(null);
   const [editedLocation, setEditedLocation] = useState<string>("");
   const [editedNumberOfTenant, setEditedNumberOfTenant] = useState<number | null>(null);
@@ -89,6 +90,7 @@ const ResizableWindow: React.FC<ResizableWindowProps> = ({
       if (editor && editor.commands) {
           editor.commands.setContent(newContent);
       }
+      setEditedTitle(pkg.Title || "");
       setEditedPrice(pkg.price);
       setEditedLocation(pkg.location || "");
       setEditedNumberOfTenant(pkg.numberOfTenant);
@@ -101,10 +103,11 @@ const ResizableWindow: React.FC<ResizableWindowProps> = ({
   const autoSaveChanges = async (description: string) => {
     if (!pkg || !editor) return;
 
-    const updatedPackageData: Partial<Package> = {
-      description: description,
-      image_urls: currentImageUrls,
-    };
+      const updatedPackageData: Partial<Package> = {
+        Title: editedTitle,
+        description: description,
+        image_urls: currentImageUrls,
+      };
 
     const { error } = await supabase
       .from("Packages")
@@ -161,13 +164,13 @@ const ResizableWindow: React.FC<ResizableWindowProps> = ({
     resizeStart.current = { mouseX: e.clientX, mouseY: e.clientY, rect };
   }, [onFocus]);
 
-  const handleResizeMouseMove = useCallback((e: MouseEvent) => {
+    const handleResizeMouseMove = useCallback((e: MouseEvent) => {
     if (!isResizing || !resizeHandle || !resizeStart.current) return;
     const screenWidth = window.innerWidth;
     const screenHeight = window.innerHeight;
     const dx = e.clientX - resizeStart.current.mouseX;
     const dy = e.clientY - resizeStart.current.mouseY;
-    let { width, height, left, top } = resizeStart.current.rect;
+    const { width, height, left, top } = resizeStart.current.rect;
     let newWidth = width;
     let newHeight = height;
     let newX = left - window.scrollX;
@@ -237,10 +240,11 @@ const ResizableWindow: React.FC<ResizableWindowProps> = ({
 
   const handleSaveClick = async () => {
     if (!pkg || !editor) return;
-    const updatedPackageData: Partial<Package> = {
-      description: editor.getHTML(),
-      image_urls: currentImageUrls,
-    };
+      const updatedPackageData: Partial<Package> = {
+        Title: editedTitle,
+        description: editor.getHTML(),
+        image_urls: currentImageUrls,
+      };
     const { error } = await supabase.from("Packages").update(updatedPackageData).eq("id", pkg.id);
     if (error) {
       console.error("Error saving package:", error);
@@ -263,16 +267,21 @@ const ResizableWindow: React.FC<ResizableWindowProps> = ({
         const fileExt = file.name.split(".").pop();
         const fileName = `${Date.now()}.${fileExt}`;
         const filePath = `public/packages/${pkg.id}/${fileName}`;
-        const { data, error } = await supabase.storage.from("imgvideo-bucket1").upload(filePath, file);
+        const { error } = await supabase.storage.from("imgvideo-bucket1").upload(filePath, file);
         if (error) throw error;
         const { data: publicUrlData } = supabase.storage.from("imgvideo-bucket1").getPublicUrl(filePath);
         if (publicUrlData?.publicUrl) uploadedUrls.push(publicUrlData.publicUrl);
       }
       setCurrentImageUrls((prevUrls) => [...prevUrls, ...uploadedUrls]);
       console.log("Images uploaded successfully:", uploadedUrls);
-    } catch (error: any) {
-      console.error("Error uploading images:", error);
-      setUploadError(`Failed to upload images: ${error.message}`);
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        console.error("Error uploading images:", error.message);
+        setUploadError(`Failed to upload images: ${error.message}`);
+      } else {
+        console.error("An unknown error occurred during image upload:", error);
+        setUploadError("An unknown error occurred during image upload.");
+      }
     } finally {
       setUploading(false);
       event.target.value = "";
@@ -285,7 +294,7 @@ const ResizableWindow: React.FC<ResizableWindowProps> = ({
       <div className="package-details-content">
         <div className="package-header">
           {pkg.icon_url && <IonImg src={pkg.icon_url} alt="Package Icon" className="card-package-icon" />}
-          <IonText className="window-title">{pkg.Title}</IonText>
+          <IonText className="package-title">{pkg.Title}</IonText>
           <IonButton onClick={handleEditClick} disabled={isEditing}>Edit</IonButton>
           <IonButton onClick={handleSaveClick} disabled={!isEditing}>Save</IonButton>
         </div>
@@ -294,7 +303,7 @@ const ResizableWindow: React.FC<ResizableWindowProps> = ({
             <>
               <p><strong>Description:</strong></p>
               <div dangerouslySetInnerHTML={{ __html: pkg.description || "" }} />
-              <p><strong>Price:</strong> {formatCurrency(pkg.price)}</p>
+              <IonText className="package-price">{formatCurrency(pkg.price)}</IonText>
               <p><strong>Location:</strong> {pkg.location || "N/A"}</p>
               <p><strong>Number of Tenants:</strong> {pkg.numberOfTenant || "N/A"}</p>
               {pkg.ammenities && typeof pkg.ammenities === "object" && Object.keys(pkg.ammenities).length > 0 && (
@@ -330,6 +339,15 @@ const ResizableWindow: React.FC<ResizableWindowProps> = ({
                 <p>Loading editor...</p>
               )}
               <IonGrid>
+                <IonRow>
+                  <IonCol>
+                    <IonLabel position="stacked">Title</IonLabel>
+                    <IonInput
+                      value={editedTitle}
+                      onIonInput={(e) => setEditedTitle(e.detail.value!)}
+                    ></IonInput>
+                  </IonCol>
+                </IonRow>
                 <IonRow>
                   <IonCol>
                     <IonLabel position="stacked">Price</IonLabel>

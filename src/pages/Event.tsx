@@ -16,7 +16,7 @@ import {
 import { Fragment, useState } from "react";
 import "../Main.scss";
 import "../pages/Main.scss"; // Import the SCSS file for styling
-import supabase from "../supabaseConfig";
+import supabase from "../supabaseClient";
 import { getAssetUrls, Icons } from "../utils/homeAssets";
 
 // Define the structure for a timeline event for better type safety
@@ -110,7 +110,7 @@ const EventPage: React.FC = () => {
             className="infinite-scroll"
             style={{ "--background": "rgb(231, 223, 213)" }}
           >
-            <div className="scroll-content">{scrollItems}</div>
+            <IonCol className="scroll-content">{scrollItems}</IonCol>
           </IonItem>
 
           {/* Navigation Row */}

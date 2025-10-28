@@ -25,7 +25,7 @@ export interface Booking {
 
 export interface Package {
   id: number;
-  numberOfVisitor: number | null;
+  numberOfTenant: number | null;
   location: string | null;
   Contact: string | null; // Assuming contact information is a string or null
   ammenities: object | null; // Assuming amenities is an object or null
