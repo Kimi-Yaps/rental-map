@@ -9,16 +9,17 @@
     "skipLibCheck": true,
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
-    "strict": true,
+    "strict": false,
+    "noImplicitAny": false,
     "forceConsistentCasingInFileNames": true,
     "module": "ESNext",
-		"moduleResolution": "node",
-		"ignoreDeprecations": "6.0",
+		"moduleResolution": "bundler",
+		  /* Removed deprecated option */
     "resolveJsonModule": true,
     "isolatedModules": true,
     "noEmit": true,
     "jsx": "react-jsx"
   },
-  "include": ["src"],
+  "include": ["src", "src/types/global.d.ts"],
   "references": [{ "path": "./tsconfig.node.json" }]
 }

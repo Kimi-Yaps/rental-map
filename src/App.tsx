@@ -87,6 +87,10 @@ const App: React.FC = () => {
             id="main-content" 
             animated={false}
           >
+
+
+
+             {/* Visitor / Normal user page view & edit personal data */}
             {/* Default redirect for root path */}
             <Route exact path="/">
               <Redirect to="/home" />
@@ -103,7 +107,7 @@ const App: React.FC = () => {
             {/* Main routes */}
             <Route exact path="/home" component={Home} />
             <Route exact path="/bookpackage" component={BookPackage} />
-            <Route exact path="/booking" component={BookingPage} />
+            <Route exact path="/booking/:id" component={BookingPage} />
 
             {/* Profile Routes */}
             <Route exact path="/profile" component={Profile} />

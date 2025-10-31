@@ -45,7 +45,6 @@ const VisitorLoginPage: React.FC = () => {
 
     return () => subscription.unsubscribe();
   }, []);
->>>>>>> 74074...
 
   const handleGoogleSignIn = async () => {
     if (isPlatform('android') || isPlatform('ios')) {

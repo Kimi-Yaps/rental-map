@@ -128,7 +128,7 @@ const ResizableWindow: React.FC<ResizableWindowProps> = ({
     if (isEditing && pkg && debouncedDescription !== pkg.description) {
       autoSaveChanges(debouncedDescription);
     }
-  }, [debouncedDescription, isEditing, pkg]);
+  }, [debouncedDescription, isEditing, pkg, autoSaveChanges]);
 
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     onFocus();

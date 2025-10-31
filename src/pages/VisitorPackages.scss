@@ -18,6 +18,14 @@
   gap: 16px; /* Kept gap, might need adjustment */
 }
 
+.event-card-title {
+  font-family: 'Kaisei Tokumin', serif;
+  font-size: clamp(1.4rem, 2.5vw, 1.8rem);
+  color: var(--brand-primary-color, #503216);
+  margin-bottom: 1rem;
+  font-weight: 600;
+}
+
 /* Navigation items container */
 .nav-items-container {
   display: flex;
