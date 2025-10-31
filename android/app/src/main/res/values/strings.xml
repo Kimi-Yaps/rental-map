@@ -1,8 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">rental-map</string>
-    <string name="title_activity_main">rental-map</string>
-    <string name="package_name">rental.map</string>
-    <string name="custom_url_scheme">rental.map</string>
-    <string name="WEB_APPLICATION_CLIENT_ID">658912433985-m6vqfm2r1bsdnpblsvu8bt2ulsp4gbhl.apps.googleusercontent.com</string>
+    <string name="app_name">RentalBookingSystem</string>
+    <string name="title_activity_main">RentalBookingSystem</string>
+    <string name="package_name">your.app.id</string>
+    <string name="custom_url_scheme">your.app.id</string>
 </resources>
