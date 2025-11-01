@@ -13,19 +13,14 @@ import {
   useIonViewWillEnter,
   IonButton
 } from "@ionic/react";
-import { Fragment, useState } from "react";
+import { Fragment, useState, useEffect } from "react"; // Import useEffect
 import "../Main.scss";
 import "../pages/Main.scss"; // Import the SCSS file for styling
 import supabase from "../supabaseClient";
 import { getAssetUrls, Icons } from "../utils/homeAssets";
+import { CompanyEvent } from "../interfaces/CompanyEvent"; // Import the new CompanyEvent interface
 
-// Define the structure for a timeline event for better type safety
-interface TimelineEvent {
-  date: string;
-  title: string;
-  description: string;
-}
-
+// Removed the redundant TimelineEvent interface as CompanyEvent will be used directly.
 
   const scrollItems = Array.from({ length: 7 }, (_, i) => (
     <Fragment key={i}>
@@ -36,60 +31,71 @@ interface TimelineEvent {
 
 
 const EventPage: React.FC = () => {
-  // State to track user login status. This is useful for conditionally rendering elements like "Sign In" or "Profile" icons.
+  // State to track user login status.
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  // State for fetched events
+  const [events, setEvents] = useState<CompanyEvent[]>([]);
+  // State for loading status
+  const [isLoading, setIsLoading] = useState(true);
+  // State for error handling
+  const [error, setError] = useState<string | null>(null);
 
-  // useIonViewWillEnter is a lifecycle hook that runs when the view is about to enter.
-  // It's a good place to fetch data or perform checks that need to happen before the page is displayed.
   useIonViewWillEnter(() => {
-    // Function to check the user's login status using Supabase authentication.
+    // Function to check the user's login status
     const checkLoginStatus = async () => {
       try {
-        // Attempt to get the current session from Supabase.
-        const {
-          data: { session },
-        } = await supabase.auth.getSession();
-        // Update the isLoggedIn state based on whether a session exists.
+        const { data: { session } } = await supabase.auth.getSession();
         setIsLoggedIn(!!session);
-      } catch (error) {
-        // Log any errors encountered during the session check.
-        console.error("Error checking login status:", error);
-        setIsLoggedIn(false); // Ensure state is false if an error occurs.
+      } catch (err) {
+        console.error("Error checking login status:", err);
+        setIsLoggedIn(false);
       }
     };
-    // Call the function to check login status.
-    checkLoginStatus();
-  });
 
-  // Mock data for the timeline events. This data represents upcoming events and their details.
-  // In a real application, this data would likely be fetched from a backend or API.
-  const timelineEvents: TimelineEvent[] = [
-    {
-      date: "2024-01-15",
-      title: "Event Kick-off",
-      description: "The grand opening of our annual Mersing Festival. Join us for a day of celebration and discovery.",
-    },
-    {
-      date: "2024-01-18",
-      title: "Island Hopping Adventure",
-      description: "Embark on a thrilling journey to our pristine islands. Experience the best of Mersing's marine life.",
-    },
-    {
-      date: "2024-01-22",
-      title: "Cultural Showcase",
-      description: "Immerse yourself in the rich culture of Mersing with traditional performances and local crafts.",
-    },
-    {
-      date: "2024-01-25",
-      title: "Culinary Delights",
-      description: "Savor the authentic flavors of Mersing. A food festival celebrating local cuisine.",
-    },
-  ];
+    // Function to fetch events from Supabase
+    const fetchEvents = async () => {
+      setIsLoading(true);
+      setError(null);
+      try {
+        const { data, error: fetchError } = await supabase
+          .from('company_events')
+          .select('*')
+          .order('start_date', { ascending: true }); // Order by start_date
+
+        if (fetchError) {
+          throw fetchError;
+        }
+        // Ensure dates are strings for display, as CompanyEvent expects strings
+        const formattedEvents = data?.map(event => ({
+          ...event,
+          start_date: new Date(event.start_date).toISOString().split('T')[0], // Ensure date is string YYYY-MM-DD
+          end_date: event.end_date ? new Date(event.end_date).toISOString().split('T')[0] : null,
+          created_at: new Date(event.created_at).toISOString(),
+          updated_at: new Date(event.updated_at).toISOString(),
+        })) || [];
+        setEvents(formattedEvents);
+      } catch (err: any) {
+        console.error("Error fetching events:", err);
+        setError("Failed to load events. Please try again later.");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    // Create an async function to call both checkLoginStatus and fetchEvents
+    const loadData = async () => {
+      await checkLoginStatus();
+      await fetchEvents();
+    };
+
+    // Call the async function
+    loadData();
+  });
 
   // The main JSX structure for the Event Page.
   return (
-    <IonPage 
-  id="main-content" 
+    <IonPage
+  id="main-content"
   className="events-page"
   style={{
     '--background': 'rgba(246, 239, 229, 1)',
@@ -179,39 +185,49 @@ const EventPage: React.FC = () => {
 
         {/* Events Grid */}
         <IonGrid className="events-grid">
-          {timelineEvents.map((event: TimelineEvent, index: number) => (
-            <IonRow key={index} className="event-card">
-              <IonCol size="12" sizeMd="4" className="event-date-column">
-                <div className="event-date">
-                  <span className="date-day">{new Date(event.date).getDate()}</span>
-                  <span className="date-month">
-                    {new Date(event.date).toLocaleString('default', { month: 'short' })}
-                  </span>
-                  <span className="date-year">
-                    {new Date(event.date).getFullYear()}
-                  </span>
-                </div>
-              </IonCol>
-              <IonCol size="12" sizeMd="8" className="event-details-column">
-                <div className="event-content">
-                  <h2 className="event-card-title">{event.title}</h2>
-                  <p className="event-card-description">{event.description}</p>
-                  <IonButton 
-                    fill="clear" 
-                    className="event-learn-more"
-                    style={{ 
-                      textDecoration: 'none',
-                      '--background-hover': 'transparent'
-                    }}
-                    color="medium"
-                  >
-                    <span style={{ textDecoration: 'none', color: '#503216' }}>Learn More</span>
-                    <IonIcon slot="end" src={Icons.arrowForward} style={{ color: '#503216' }}></IonIcon>
-                  </IonButton>
-                </div>
-              </IonCol>
-            </IonRow>
-          ))}
+          {isLoading ? (
+            <p style={{ textAlign: 'center', width: '100%' }}>Loading events...</p>
+          ) : error ? (
+            <p style={{ color: 'red', textAlign: 'center', width: '100%' }}>{error}</p>
+          ) : events.length === 0 ? (
+            <p style={{ textAlign: 'center', width: '100%' }}>
+              No upcoming events found. Check back later or contact us for more information.
+            </p>
+          ) : (
+            events.map((event: CompanyEvent) => ( // Use CompanyEvent type here
+              <IonRow key={event.id} className="event-card"> {/* Use event.id for key */}
+                <IonCol size="12" sizeMd="4" className="event-date-column">
+                  <div className="event-date">
+                    <span className="date-day">{new Date(event.start_date).getDate()}</span> {/* Use start_date */}
+                    <span className="date-month">
+                      {new Date(event.start_date).toLocaleString('default', { month: 'short' })} {/* Use start_date */}
+                    </span>
+                    <span className="date-year">
+                      {new Date(event.start_date).getFullYear()} {/* Use start_date */}
+                    </span>
+                  </div>
+                </IonCol>
+                <IonCol size="12" sizeMd="8" className="event-details-column">
+                  <div className="event-content">
+                    <h2 className="event-card-title">{event.title}</h2> {/* Use title */}
+                    <p className="event-card-description">{event.description}</p> {/* Use description */}
+                    <IonButton
+                      fill="clear"
+                      className="event-learn-more"
+                      style={{
+                        textDecoration: 'none',
+                        '--background-hover': 'transparent'
+                      }}
+                      color="medium"
+                    >
+                      <span style={{ textDecoration: 'none', color: '#503216' }}>Learn More</span>
+                      <IonIcon slot="end" src={Icons.arrowForward} style={{ color: '#503216' }}></IonIcon>
+                    </IonButton>
+                  </div>
+                </IonCol>
+              </IonRow>
+            ))
+          )}
         </IonGrid>
       </IonContent>
     </IonPage>
@@ -219,4 +235,3 @@ const EventPage: React.FC = () => {
   };
 
 export default EventPage;
-

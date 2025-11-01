@@ -15,7 +15,7 @@
     "ionic:serve": "npm run dev -- --open"
   },
   "dependencies": {
-    "@capacitor/android": "^7.4.4",
+    "@capacitor/android": "7.4.3",
     "@capacitor/app": "7.0.1",
     "@capacitor/core": "7.4.3",
     "@capacitor/haptics": "7.0.1",
