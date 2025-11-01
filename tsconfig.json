@@ -13,9 +13,7 @@
     "noImplicitAny": false,
     "forceConsistentCasingInFileNames": true,
     "module": "ESNext",
-		    "moduleResolution": "bundler",
-    "ignoreDeprecations": "6.0",
-		  /* Removed deprecated option */
+		"moduleResolution": "bundler",
     "resolveJsonModule": true,
     "isolatedModules": true,
     "noEmit": true,
