@@ -16,6 +16,7 @@ import { Fragment, useState } from "react";
 import "../Main.scss";
 import supabase from "../supabaseClient";
 import { getAssetUrls, Icons } from "../utils/homeAssets";
+import Footer from "../components/Footer";
 
 const Home: React.FC = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -177,6 +178,7 @@ const Home: React.FC = () => {
         </IonGrid>
 
       </IonContent>
+      <Footer />
     </IonPage>
   );
 };

@@ -19,7 +19,7 @@ import "../pages/Main.scss"; // Import the SCSS file for styling
 import supabase from "../supabaseClient";
 import { getAssetUrls, Icons } from "../utils/homeAssets";
 import { CompanyEvent } from "../interfaces/CompanyEvent"; // Import the new CompanyEvent interface
-
+import Footer from "../components/Footer";
 // Removed the redundant TimelineEvent interface as CompanyEvent will be used directly.
 
   const scrollItems = Array.from({ length: 7 }, (_, i) => (
@@ -230,6 +230,7 @@ const EventPage: React.FC = () => {
           )}
         </IonGrid>
       </IonContent>
+      <Footer />
     </IonPage>
   );
   };
