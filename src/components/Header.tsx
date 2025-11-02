@@ -1,8 +1,6 @@
-import React, { Fragment, useState } from 'react';
+import React, { Fragment, useState } from "react";
 import {
-  IonContent,
   IonGrid,
-  IonPage,
   IonRow,
   IonCol,
   IonText,
@@ -12,15 +10,15 @@ import {
   IonRouterLink,
   IonImg,
   useIonViewWillEnter,
+  IonHeader,
+  IonToolbar,
 } from "@ionic/react";
 import supabase from "../supabaseClient";
 import { getAssetUrls, Icons } from "../utils/homeAssets";
 
-
-const Cart: React.FC = () => {
-
-const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [userType, setUserType] = useState<string | null>(null); // e.g., 'admin', 'tenant'
+const Header: React.FC = () => {
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [userType, setUserType] = useState<string | null>(null);
 
   useIonViewWillEnter(() => {
     const checkLoginStatusAndProfile = async () => {
@@ -41,7 +39,7 @@ const [isLoggedIn, setIsLoggedIn] = useState(false);
 
           if (profileError) throw profileError;
 
-          let currentUserType = null; // Declare currentUserType here
+          let currentUserType = null;
 
           if (
             profileData &&
@@ -50,11 +48,8 @@ const [isLoggedIn, setIsLoggedIn] = useState(false);
           ) {
             currentUserType = profileData.user_type.type;
           } else {
-            // Default to 'tenant' if user_type is not set or missing in profile
-            // Ensure user_type is set in Supabase
             currentUserType = "tenant";
             try {
-              // Add try-catch for the update operation
               await supabase
                 .from("profiles")
                 .update({ user_type: { type: "tenant" } })
@@ -64,13 +59,12 @@ const [isLoggedIn, setIsLoggedIn] = useState(false);
                 "Error updating user_type in profiles:",
                 updateError
               );
-              // Optionally, handle this error more gracefully, e.g., show a message to the user
             }
           }
-          setUserType(currentUserType); // Set the state after determining the type
+          setUserType(currentUserType);
         } else {
           setIsLoggedIn(false);
-          setUserType(null); // Logged out
+          setUserType(null);
         }
       } catch (error) {
         console.error("Error checking login status or profile:", error);
@@ -88,101 +82,95 @@ const [isLoggedIn, setIsLoggedIn] = useState(false);
     </Fragment>
   ));
 
+  return (
+    <IonHeader className="custom-header" style={{ boxShadow: "none" }}>
+      <IonToolbar
+        className="toolbar-wrapper"
+        style={{
+          "--background": "rgba(246, 239, 229, 1)",
+          "--box-shadow": "none",
+          boxShadow: "none",
+        }}
+      >
+        <IonGrid className="nav-grid">
+          <IonItem
+            lines="none"
+            className="infinite-scroll"
+            style={{
+              "--background": "rgb(231, 223, 213)",
+              "--box-shadow": "none",
+              boxShadow: "none",
+            }}
+          >
+            <IonCol className="scroll-content ion-no-padding">
+              {scrollItems}
+            </IonCol>
+          </IonItem>
 
-    return (
-   <IonPage
-         id="main-content"
-         style={{ "--background": "rgba(246, 239, 229, 1)" }}
-       >
-         <IonContent style={{ "--background": "rgba(246, 239, 229, 1)" }}>
-           <IonGrid>
-             <IonItem
-               lines="none"
-               className="infinite-scroll"
-               style={{ "--background": "rgb(231, 223, 213)" }}
-             >
-               <IonCol className="scroll-content">{scrollItems}</IonCol>
-             </IonItem>
-   
-             {/* Navigation Row */}
-             <IonRow className="ion-justify-content-between ion-align-items-center nav-row">
-               {/* Left Navigation Items */}
-               <IonCol size="auto" className="ion-no-padding">
-                 <div className="nav-items-container">
-                   {/* New link for visitor packages */}
-                   <IonRouterLink
-                     routerLink="/visitorPackages"
-                     className="no-style-link"
-                   >
-                     <IonText className="nav-text ion-margin-end">
-                       Explore Packages
-                     </IonText>
-                   </IonRouterLink>
-                   {/* Link to the new Event page */}
-                   <IonRouterLink routerLink="/event" className="no-style-link">
-                     <IonText className="nav-text">Event</IonText>
-                   </IonRouterLink>
-                 </div>
-               </IonCol>
-   
-               <IonRouterLink routerLink="/home" className="no-style-link">
-                 <IonCol size="auto">
-                   <div className="brand-container ion-text-center">
-                     <IonText className="brand-text">
-                       <span className="brand-visit">Visit</span>
-   
-                       {/* Group & + Travel */}
-                       <span className="brand-center">
-                         <span className="brand-ampersand">&</span>
-                         <span className="brand-travel">Travel</span>
-                       </span>
-   
-                       <span className="brand-location">Mersing</span>
-                     </IonText>
-                   </div>
-                 </IonCol>
-               </IonRouterLink>
-   
-               <IonCol size="auto" className="icon-row">
-                 {!isLoggedIn && (
-                   <IonRouterLink routerLink="/SignIn" className="no-style-link">
-                     <IonText className="nav-SignIn ion-margin-end">
-                       Sign In
-                     </IonText>
-                   </IonRouterLink>
-                 )}
-   
-                 <IonIcon src={Icons.tiktok} className="cust-icon"></IonIcon>
-                 <IonIcon src={Icons.whatsapp} className="cust-icon"></IonIcon>
-                 <IonIcon src={Icons.facebook} className="cust-icon"></IonIcon>
-                 <IonIcon src={Icons.email} className="cust-icon"></IonIcon>
-   
-                 {isLoggedIn && (
-                   <IonRouterLink routerLink="/profile" className="no-style-link">
-                     <IonIcon src={Icons.user} className="cust-icon"></IonIcon>
-                   </IonRouterLink>
-                 )}
-   
-                 <IonIcon src={Icons.malayFlag} className="cust-icon"></IonIcon>
-                 <IonRouterLink routerLink="/cart" className="no-style-link">
-                   <IonIcon src={Icons.cart} className="cust-icon"></IonIcon>
-                 </IonRouterLink>
-               </IonCol>
-             </IonRow>
-           </IonGrid>
-   
-           {/* <IonGrid className="frontPageContainer">
-             <IonImg
-               className="home-Bg"
-               src={getAssetUrls().homeBackground}
-             ></IonImg>
-             <IonImg className="home-Poly" src={getAssetUrls().polygon}></IonImg>
-             <IonImg className="home-Elips" src={getAssetUrls().elips}></IonImg>
-           </IonGrid> */}
-   
-         </IonContent>
-       </IonPage>
+          <IonRow className="ion-justify-content-between ion-align-items-center nav-row">
+            <IonCol size="auto" className="ion-no-padding nav-col">
+              <div className="nav-items-container">
+                <IonRouterLink
+                  routerLink="/visitorPackages"
+                  className="no-style-link"
+                >
+                  <IonText className="nav-text ion-margin-end">
+                    Explore Packages
+                  </IonText>
+                </IonRouterLink>
+
+                <IonRouterLink routerLink="/event" className="no-style-link">
+                  <IonText className="nav-text">Event</IonText>
+                </IonRouterLink>
+              </div>
+            </IonCol>
+
+            <IonRouterLink routerLink="/home" className="no-style-link">
+              <IonCol size="auto" className="brand-col">
+                <div className="brand-container ion-text-center">
+                  <IonText className="brand-text">
+                    <span className="brand-visit">Visit</span>
+                    <span className="brand-center">
+                      <span className="brand-ampersand">&</span>
+                      <span className="brand-travel">Travel</span>
+                    </span>
+                    <span className="brand-location">Mersing</span>
+                  </IonText>
+                </div>
+              </IonCol>
+            </IonRouterLink>
+
+            {/* Right Icons */}
+            <IonCol size="auto" className="icon-row icon-col">
+              {!isLoggedIn && (
+                <IonRouterLink routerLink="/SignIn" className="no-style-link">
+                  <IonText className="nav-SignIn ion-margin-end">
+                    Sign In
+                  </IonText>
+                </IonRouterLink>
+              )}
+
+              <IonIcon src={Icons.tiktok} className="cust-icon"></IonIcon>
+              <IonIcon src={Icons.whatsapp} className="cust-icon"></IonIcon>
+              <IonIcon src={Icons.facebook} className="cust-icon"></IonIcon>
+              <IonIcon src={Icons.email} className="cust-icon"></IonIcon>
+
+              {isLoggedIn && (
+                <IonRouterLink routerLink="/profile" className="no-style-link">
+                  <IonIcon src={Icons.user} className="cust-icon"></IonIcon>
+                </IonRouterLink>
+              )}
+
+              <IonIcon src={Icons.malayFlag} className="cust-icon"></IonIcon>
+              <IonRouterLink routerLink="/cart" className="no-style-link">
+                <IonIcon src={Icons.cart} className="cust-icon"></IonIcon>
+              </IonRouterLink>
+            </IonCol>
+          </IonRow>
+        </IonGrid>
+      </IonToolbar>
+    </IonHeader>
   );
 };
 
-export default Cart;
+export default Header;
