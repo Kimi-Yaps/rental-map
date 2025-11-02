@@ -162,7 +162,9 @@ const Home: React.FC = () => {
               )}
 
               <IonIcon src={Icons.malayFlag} className="cust-icon"></IonIcon>
-              <IonIcon src={Icons.cart} className="cust-icon"></IonIcon>
+              <IonRouterLink routerLink="/cart" className="no-style-link">
+                <IonIcon src={Icons.cart} className="cust-icon"></IonIcon>
+              </IonRouterLink>
             </IonCol>
           </IonRow>
         </IonGrid>

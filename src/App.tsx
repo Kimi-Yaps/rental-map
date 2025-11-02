@@ -47,6 +47,7 @@ const Profile = React.lazy(() => import('./pages/Profile'));
 const PaymentInsert = React.lazy(() => import('./pages/PaymentInsert'));
 const BookingPage = React.lazy(() => import('./pages/BookingPage'));
 const VisitorPackages = React.lazy(() => import('./pages/VisitorPackages'));
+const Cart = React.lazy(() => import('./pages/Cart'));
 // Direct import for AuthCallback to potentially resolve context issue
 import AuthCallback from './pages/AuthCallback';
 
@@ -117,6 +118,9 @@ const App: React.FC = () => {
 
             {/* Event Route */}
             <Route exact path="/event" component={EventPage} />
+
+            {/* Cart Route */}
+            <Route exact path="/cart" component={Cart} />
 
           </IonRouterOutlet>
         </IonReactRouter>
