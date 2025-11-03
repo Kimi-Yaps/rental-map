@@ -303,7 +303,7 @@ const VisitorPackage: React.FC = () => {
                     return (
                       <IonCol size="12" size-sm="6" size-md="4" key={pkg.id}>
                         <IonRouterLink
-                          routerLink={`/booking/${pkg.id}`}
+                          routerLink={`/packageDetails`}
                           className="no-style-link"
                         >
                           <div className="package-card">

@@ -1,0 +1,197 @@
+html,
+body {
+  height: 100%;
+  overflow: auto !important; 
+}
+
+.property-page {
+  background-color: #f2f0ec;
+  min-height: 100vh;
+  padding: 2rem;
+  overflow-x: auto; 
+  overflow-y: visible; 
+
+  .property-title {
+    font-family: "Georgia", serif;
+    font-size: 2.5rem;
+    font-weight: 600;
+    color: #4b2e05;
+    margin-bottom: 2rem;
+  }
+
+  .property-content {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 2rem;
+    min-width: 900px;
+
+    @media (max-width: 992px) {
+      grid-template-columns: 1fr;
+      min-width: 100%;
+    }
+  }
+
+  /* LEFT SECTION */
+  .property-left {
+    .property-images {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      grid-template-rows: repeat(2, 1fr);
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+
+      .main-image {
+        grid-row: span 2;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        border-radius: 12px;
+      }
+
+      .small-images {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        grid-template-rows: repeat(2, 1fr);
+        gap: 0.5rem;
+
+        img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          border-radius: 8px;
+        }
+
+        .image-overlay {
+          position: relative;
+
+          img {
+            width: 100%;
+            height: 100%;
+            border-radius: 8px;
+          }
+
+          .show-all {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            background: rgba(255, 255, 255, 0.9);
+            border: none;
+            font-size: 0.8rem;
+            padding: 6px 10px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.3s ease;
+
+            &:hover {
+              background: #fff;
+            }
+          }
+        }
+      }
+    }
+
+    .property-info {
+      border-top: 1px solid #ddd;
+      margin-top: 1.5rem;
+      padding-top: 1rem;
+
+      h2 {
+        color: #4b2e05;
+        font-size: 1.1rem;
+        font-weight: 600;
+      }
+
+      p {
+        font-size: 0.9rem;
+        color: #666;
+        margin-top: 0.3rem;
+      }
+    }
+  }
+
+  /* RIGHT SECTION */
+  .booking-card {
+    background: #fff;
+    padding: 1.5rem;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    height: fit-content;
+
+    .booking-inputs {
+      border: 1px solid #ccc;
+      border-radius: 10px;
+      overflow: hidden;
+      margin-bottom: 1rem;
+
+      .row {
+        display: flex;
+        border-bottom: 1px solid #ccc;
+
+        .field {
+          flex: 1;
+          padding: 0.75rem;
+          border-right: 1px solid #ccc;
+
+          &:last-child {
+            border-right: none;
+          }
+
+          label {
+            display: block;
+            font-size: 0.8rem;
+            color: #777;
+            margin-bottom: 0.25rem;
+          }
+
+          input {
+            width: 100%;
+            border: none;
+            outline: none;
+            font-size: 0.9rem;
+          }
+        }
+      }
+
+      .field.full {
+        padding: 0.75rem;
+
+        label {
+          display: block;
+          font-size: 0.8rem;
+          color: #777;
+          margin-bottom: 0.25rem;
+        }
+
+        input {
+          width: 100%;
+          border: none;
+          outline: none;
+          font-size: 0.9rem;
+        }
+      }
+    }
+
+    .reserve-btn {
+      width: 100%;
+      background-color: #2563eb;
+      color: white;
+      border: none;
+      padding: 0.75rem;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.3s ease;
+
+      &:hover {
+        background-color: #1d4ed8;
+      }
+    }
+
+    .note {
+      text-align: center;
+      font-size: 0.8rem;
+      color: #777;
+      margin-top: 0.75rem;
+    }
+  }
+}

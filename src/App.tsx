@@ -48,6 +48,7 @@ const PaymentInsert = React.lazy(() => import('./pages/PaymentInsert'));
 const BookingPage = React.lazy(() => import('./pages/BookingPage'));
 const VisitorPackages = React.lazy(() => import('./pages/VisitorPackages'));
 const Cart = React.lazy(() => import('./pages/Cart'));
+const PackageDetails = React.lazy(() => import('./pages/packageDetails')); 
 // Direct import for AuthCallback to potentially resolve context issue
 import AuthCallback from './pages/AuthCallback';
 
@@ -115,6 +116,9 @@ const App: React.FC = () => {
 
             {/* Visitor Packages Route */}
             <Route exact path="/visitorPackages" component={VisitorPackages} />
+
+            {/* Package Details Route */}
+            <Route exact path="/packageDetails" component={PackageDetails} />
 
             {/* Event Route */}
             <Route exact path="/event" component={EventPage} />
