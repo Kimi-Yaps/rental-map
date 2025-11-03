@@ -17,6 +17,7 @@ import "../Main.scss";
 import "../pages/VisitorPackages.scss";
 import supabase from "../supabaseClient";
 import { getAssetUrls, Icons } from "../utils/homeAssets";
+import Footer from "../components/Footer";
 
 interface PackageTypeObject {
   package_type?: { packageName?: string };
@@ -345,6 +346,7 @@ const VisitorPackage: React.FC = () => {
           )}
         </IonGrid>
       </IonContent>
+      <Footer />
     </IonPage>
   );
 };
