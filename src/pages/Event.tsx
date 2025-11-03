@@ -10,7 +10,6 @@ import {
   IonIcon,
   IonRouterLink,
   IonImg,
-  useIonViewWillEnter,
   IonButton
 } from "@ionic/react";
 import { Fragment, useState, useEffect } from "react"; // Import useEffect
@@ -40,7 +39,7 @@ const EventPage: React.FC = () => {
   // State for error handling
   const [error, setError] = useState<string | null>(null);
 
-  useIonViewWillEnter(() => {
+  useEffect(() => {
     // Function to check the user's login status
     const checkLoginStatus = async () => {
       try {
@@ -68,15 +67,16 @@ const EventPage: React.FC = () => {
         // Ensure dates are strings for display, as CompanyEvent expects strings
         const formattedEvents = data?.map(event => ({
           ...event,
-          start_date: new Date(event.start_date).toISOString().split('T')[0], // Ensure date is string YYYY-MM-DD
+          start_date: event.start_date ? new Date(event.start_date).toISOString().split('T')[0] : '', // Add null/validity check
           end_date: event.end_date ? new Date(event.end_date).toISOString().split('T')[0] : null,
-          created_at: new Date(event.created_at).toISOString(),
-          updated_at: new Date(event.updated_at).toISOString(),
+          created_at: event.created_at ? new Date(event.created_at).toISOString() : '', // Add null/validity check
+          updated_at: event.updated_at ? new Date(event.updated_at).toISOString() : '', // Add null/validity check
         })) || [];
         setEvents(formattedEvents);
       } catch (err: any) {
         console.error("Error fetching events:", err);
-        setError("Failed to load events. Please try again later.");
+        // Display more detailed error info during development
+        setError(err.message || "Failed to load events. Please try again later.");
       } finally {
         setIsLoading(false);
       }
@@ -90,7 +90,7 @@ const EventPage: React.FC = () => {
 
     // Call the async function
     loadData();
-  });
+  }, []); // Empty dependency array = run once on mount
 
   // The main JSX structure for the Event Page.
   return (
