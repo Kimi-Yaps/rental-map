@@ -111,39 +111,3 @@ export interface Profile {
   created_at: string | null; // timestamp with time zone, represented as ISO string
   updated_at: string | null; // timestamp with time zone, represented as ISO string or null
 }
-
-// --- Profile update helpers ---
-import { supabase } from '../supabaseClient';
-
-// Update userType (jsonb) for a profile
-export async function updateProfileUserType(userId: string, userType: UserType) {
-  const { data, error } = await supabase
-    .from('profiles')
-    .update({ userType, updated_at: new Date().toISOString() })
-    .eq('id', userId)
-    .select();
-  return { data, error };
-}
-
-// Update avatar_url for a profile (upload and set URL)
-export async function updateProfileAvatar(userId: string, file: File) {
-  // Upload to Supabase Storage (bucket: 'avatars')
-  const filePath = `${userId}/${Date.now()}_${file.name}`;
-  const { error: uploadError } = await supabase.storage
-    .from('avatars')
-    .upload(filePath, file, { upsert: true });
-  if (uploadError) return { data: null, error: uploadError };
-
-  // Get public URL
-  const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(filePath);
-  const avatar_url = urlData?.publicUrl || null;
-  if (!avatar_url) return { data: null, error: { message: 'Failed to get avatar URL' } };
-
-  // Update profile
-  const { data, error } = await supabase
-    .from('profiles')
-    .update({ avatar_url, updated_at: new Date().toISOString() })
-    .eq('id', userId)
-    .select();
-  return { data, error };
-}

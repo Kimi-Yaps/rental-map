@@ -36,22 +36,6 @@ export const prepareDraftForDB = (draft: Property): Partial<SupabaseProperty> =>
   // Home Type
   converted.HomeType = draft.HomeType;
 
-  // Building Name
-  converted.building_name = draft.property_name || null;
-
-  // House Rules
-  converted.house_rules = draft.house_rules || null;
-
-  // Max Guests
-  if (typeof draft.max_guests === 'string') {
-    converted.max_guests = parseInt(draft.max_guests, 10) || null;
-  } else {
-    converted.max_guests = draft.max_guests || null;
-  }
-
-  // Instant Booking
-  converted.instant_booking = draft.instant_booking || false;
-
   // Set is_active to true by default for new properties
   converted.is_active = true;
 

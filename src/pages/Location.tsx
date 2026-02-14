@@ -82,7 +82,7 @@ const Location: React.FC = () => {
   // LocalStorage rental draft data
   const [Property, setProperty] = useState<Property | null>(null);
 
-  const searchTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
+  const searchTimeoutRef = React.useRef<number | null>(null);
 
   const mapConfig = {
     mapZoom: 14,
