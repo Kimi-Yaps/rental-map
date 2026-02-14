@@ -34,6 +34,10 @@ export interface Package {
   ammenities: Record<string, any> | null;
   image_urls: string[];
   icon_url?: string | null; // Optional based on usage
+  icon_style?: {
+    position: { x: number; y: number };
+    zIndex: number;
+  } | null; // Added icon_style property
 }
 
 // Inferring OpenWindowState interface from usage in ResizableWindow.tsx
@@ -43,5 +47,14 @@ export interface OpenWindowState {
   size: { width: number; height: number };
   isMinimized: boolean;
   isMaximized: boolean;
+  zIndex: number;
+}
+
+// WindowState interface for icon states
+export interface WindowState {
+  id: number;
+  position: { x: number; y: number };
+  size: { width: number; height: number };
+  isMinimized: boolean;
   zIndex: number;
 }

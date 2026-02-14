@@ -73,6 +73,7 @@ export interface PriceType {
 export interface Property {
   id: string;
   owner_id: string;
+  title?: string; // Added title field
   description?: string;
   address: string;
   property_type: PropertyType;
