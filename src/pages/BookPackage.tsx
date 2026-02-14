@@ -26,6 +26,7 @@ interface OpenWindowState {
   size: { width: number; height: number };
   zIndex: number;
   isMinimized: boolean;
+  isMaximized: boolean;
 }
 
 export const Icons = {
@@ -127,6 +128,7 @@ const BookPackage: React.FC = () => {
         size: { width: 600, height: 400 },
         zIndex: maxZIndex + 1,
         isMinimized: false,
+        isMaximized: false,
       };
       setOpenWindows([...openWindows, newWindow]);
     }

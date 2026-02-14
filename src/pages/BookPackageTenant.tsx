@@ -81,7 +81,8 @@ const staticPackages: Package[] = [
 const BookPackageTenant: React.FC = () => {
   const history = useHistory();
   const [packages, setPackages] = useState<Package[]>(staticPackages);
-
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleBack = () => {
     history.goBack();
@@ -100,7 +101,7 @@ const BookPackageTenant: React.FC = () => {
           <div dangerouslySetInnerHTML={{ __html: pkg.description || "" }} />
           <p><strong>Price:</strong> {formatCurrency(pkg.price)}</p>
           <p><strong>Location:</strong> {pkg.location || "N/A"}</p>
-          <p><strong>Number of Visitors:</strong> {pkg.numberOfVisitor || "N/A"}</p>
+          <p><strong>Number of Tenants:</strong> {pkg.numberOfTenant || "N/A"}</p>
           {pkg.ammenities && typeof pkg.ammenities === "object" && Object.keys(pkg.ammenities).length > 0 && (
             <div className="amenity-icons">
               {Object.entries(pkg.ammenities).map(([key, value]) => (

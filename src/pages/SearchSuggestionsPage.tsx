@@ -39,7 +39,7 @@ const SearchSuggestionsPage: React.FC = () => {
   const [suggestions, setSuggestions] = useState<EnhancedSuggestion[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
-  const debounceRef = useRef<NodeJS.Timeout>();
+  const debounceRef = useRef<number>();
 
   // Load recent searches from localStorage
   useEffect(() => {
@@ -253,7 +253,7 @@ const SearchSuggestionsPage: React.FC = () => {
 
     if (val && val.length >= 2) {
       setLoading(true);
-      debounceRef.current = setTimeout(async () => {
+      debounceRef.current = window.setTimeout(async () => {
         const results = await fetchEnhancedSuggestions(val);
         setSuggestions(results);
         setLoading(false);

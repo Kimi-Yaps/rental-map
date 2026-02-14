@@ -52,18 +52,15 @@ const getProperty = (): Property => {
 const initializeNewProperty = (): Property => {
   return {
     id: `draft_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-    title: '',
-    description: '',
+    owner_id: '',
     address: '',
     city: '',
     state: '',
     postal_code: '',
-    country: '',
     property_type: 'apartment',
     bathrooms: 0,
-    size_sqft: 0,
-    monthly_rent: 0,
-    deposit_amount: 0,
+    bedrooms: {},
+    pricetype: { currency: 'MYR' },
     amenities: {
       parking: {
         available: true,

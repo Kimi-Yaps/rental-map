@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useHistory } from 'react-router-dom';
+import { useIonRouter } from '@ionic/react';
 import {
   IonContent,
   IonHeader,
@@ -44,7 +44,7 @@ interface RoomDetails {
 const BED_TYPES = ['King', 'Queen', 'Double', 'Single', 'Bunk Bed'];
 
 const Rooms: React.FC = () => {
-  const history = useHistory();
+  const ionRouter = useIonRouter();
   const [rooms, setRooms] = useState<RoomDetails[]>([]);
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
@@ -141,7 +141,7 @@ const Rooms: React.FC = () => {
       setShowToast(true);
       return;
     }
-    history.push('/photos');
+    ionRouter.push('/photos', 'forward');
   };
 
   return (
@@ -313,10 +313,9 @@ const Rooms: React.FC = () => {
       </IonContent>
       <NavigationButtons
         onNext={handleNext}
-        onBack={() => history.push('/location')}
+        onBack={() => ionRouter.push('/location', 'back')}
         nextDisabled={rooms.length === 0}
         backPath="/location"
-        nextPath="/photos"
       />
     </IonPage>
   );

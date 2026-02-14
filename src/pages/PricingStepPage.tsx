@@ -298,7 +298,6 @@ const PricingStepPage: React.FC = () => {
         onNext={handleNext}
         onBack={handleBack}
         backPath="/rooms"
-        nextPath="/photos"
       />
       <IonAlert
         isOpen={showBackAlert}

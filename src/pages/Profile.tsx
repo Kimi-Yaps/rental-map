@@ -161,17 +161,6 @@ const Profile: React.FC = () => {
     "Nickname" // Added nickname as it's in the schema
   ];
 
-  // Simplified completion progress based on available fields
-  const completionFields = [
-    "First name and last name",
-    "Contact number",
-    "Country of residence",
-    "Sex",
-    "Date of birth",
-    "Travel document",
-    "Nickname" // Added nickname as it's in the schema
-  ];
-
   const completedFieldsCount = completionFields.filter(field => {
     // Basic check for completion - adjust logic as needed
     if (field === "First name and last name" && full_name) return true;

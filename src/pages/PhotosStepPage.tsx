@@ -27,7 +27,7 @@ import {
 } from '@ionic/react';
 import { camera, trashOutline, videocamOutline, close } from 'ionicons/icons';
 import supabase from '../supabaseConfig';
-import { RentalAmenities, RoomDetails, pricing } from '../components/DbCrud';
+import { RentalAmenities, RoomDetails } from '../components/DbCrud';
 import NavigationButtons from '../components/NavigationButtons';
 import { v4 as uuidv4 } from 'uuid';
 import { savePropertyDraft } from '../services/DraftService';
@@ -43,7 +43,6 @@ interface Property {
   is_active: boolean | null;
   amenities: RentalAmenities | null;
   rooms: RoomDetails[];
-  pricing?: pricing[];
   videos: string[];
   photos: string[];
   created_at: string;
@@ -85,7 +84,6 @@ const getProperty = (): Property => {
     is_active: parsed.is_active ?? null,
     amenities: parsed.amenities ?? {},
     rooms: parsed.rooms ?? [],
-    pricing: parsed.pricing, // Preserve existing pricing
     videos: parsed.videos,
     photos: parsed.photos,
     created_at: parsed.created_at || new Date().toISOString(),

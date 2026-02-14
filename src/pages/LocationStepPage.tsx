@@ -174,15 +174,13 @@ const LocationStepPage: React.FC = () => {
     }
 
     const finalAddress = manualMode ? manualAddress : address;
-    const updatedDraft: Property = {
-      ...currentDraft,
-      location: markerPosition,
-      address: finalAddress,
-      searchQuery: searchQuery,
-      updated_at: new Date().toISOString(),
-      latitude: markerPosition.lat,
-      longitude: markerPosition.lng,
-    };
+            const updatedDraft: Property = {
+              ...currentDraft,
+              location: markerPosition,
+              address: finalAddress,
+              searchQuery: searchQuery,
+              updated_at: new Date().toISOString(),
+            };
 
     localStorage.setItem('Property', JSON.stringify(updatedDraft));
     setProperty(updatedDraft);

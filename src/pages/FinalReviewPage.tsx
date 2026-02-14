@@ -383,7 +383,7 @@ const FinalReviewPage: React.FC = () => {
                   <IonCardContent>
                     <IonText>
                       <h3>Property Details</h3>
-                      <p><strong>Property Type:</strong> {property.property_type || property.HomeType || 'Not specified'}</p>
+                    <p><strong>Property Type:</strong> {property.property_type || property.HomeType || 'Not specified'}</p>
                       <p><strong>Description:</strong> {property.description || 'N/A'}</p>
                       <p><strong>Address:</strong> {[
                         property.address,
