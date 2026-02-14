@@ -54,7 +54,7 @@ const BookPackage: React.FC = () => {
   const [offset, setOffset] = useState({ x: 0, y: 0 });
   const [editingTitleId, setEditingTitleId] = useState<number | null>(null);
   const [editedTitle, setEditedTitle] = useState<string>('');
-  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const saveTimeoutRef = useRef<number | null>(null);
   const [draggedOverPackageId, setDraggedOverPackageId] = useState<number | null>(null);
 
   const [openWindows, setOpenWindows] = useState<OpenWindowState[]>([]);

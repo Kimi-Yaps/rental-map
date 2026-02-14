@@ -14,10 +14,10 @@ import {
   IonLoading,
 } from '@ionic/react';
 import NavigationButtons from '../components/NavigationButtons';
-import { Property as DbProperty, RoomDetails } from '../components/DbCrud';
+import { Property as DbProperty, RoomDetails } from '../interfaces/DbCrud';
 import { useIonRouter } from '@ionic/react';
 import ConditionalHeader from '../components/ConditionalHeader';
-import { supabase } from '../supabaseClient';
+import supabase from '../supabaseClient';
 
 // Extend the DbProperty interface to include client-side fields like 'rooms'
 interface Property extends DbProperty {

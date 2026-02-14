@@ -61,7 +61,7 @@ const SearchbarWithSuggestions: React.FC<SearchbarWithSuggestionsProps> = ({
   // Refs for managing focus and debouncing
   const searchbarRef = useRef<HTMLIonSearchbarElement>(null);
   const suggestionsRef = useRef<HTMLDivElement>(null);
-  const debounceRef = useRef<NodeJS.Timeout | null>(null);
+  const debounceRef = useRef<number | null>(null);
 
   // Debounced handler to fetch suggestions
   const handleFetchSuggestions = useCallback(async (term: string) => {

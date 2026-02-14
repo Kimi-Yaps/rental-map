@@ -18,7 +18,7 @@ import {
   IonToast,
 } from '@ionic/react';
 import { useState, useEffect } from 'react';
-import { supabase } from '../supabaseClient';
+import supabase from '../supabaseClient';
 import { camera } from 'ionicons/icons';
 
 const TenantProfile: React.FC = () => {

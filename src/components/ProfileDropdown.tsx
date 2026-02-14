@@ -8,7 +8,7 @@ import {
   isPlatform
 } from "@ionic/react";
 import { chevronDownOutline, checkmarkOutline } from "ionicons/icons";
-import { supabase } from '../supabaseClient';
+import supabase from '../supabaseClient';
 import gsap from "gsap";
 
 const ProfileDropdown: React.FC = () => {

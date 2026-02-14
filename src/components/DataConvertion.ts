@@ -3,7 +3,7 @@
 // This file contains the logic to convert the client-side rental draft
 // data into the format required by the Supabase database schema.
 
-import { Property } from "../supabaseClient"; // Import shared types
+import { Property } from "../interfaces/DbCrud"; // Import shared types
 
 // Define the structure of the Supabase 'properties' table
 interface SupabaseProperty {
